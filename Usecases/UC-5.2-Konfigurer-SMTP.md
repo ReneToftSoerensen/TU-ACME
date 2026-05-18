@@ -32,5 +32,5 @@ Konfigurere de SMTP-oplysninger, der skal bruges til at sende advarselsmails, hv
 - **3a:** Login ikke krævet → Spring over brugernavn/adgangskode-prompt.
 
 ## Tekniske noter
-- Konfigurationsfil gemmes som: `$env:ProgramData\PoshACME-TUI\smtp-config.xml` (krypteret med Export-Clixml).
+- Konfigurationsfil gemmes som: `$env:ProgramData\TU-ACME\smtp-config.xml` (krypteret med Export-Clixml).
 - `Send-MailMessage` eller .NET `System.Net.Mail.SmtpClient` bruges til afsendelse.

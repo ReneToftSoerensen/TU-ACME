@@ -17,7 +17,7 @@ Give administratoren mulighed for med det samme at bekræfte, at SMTP-indstillin
 2. TUI'en viser: `Sender test-mail til admin@eksempel.dk...`
 3. Systemet indlæser de krypterede SMTP-indstillinger.
 4. Systemet forsøger at sende en test-e-mail med emnet:  
-   `[Posh-ACME TUI] Test-mail - SMTP konfigurationen virker`
+   `[TU-ACME] Test-mail - SMTP konfigurationen virker`
 5. Hvis afsendelse lykkes:
    ```
    [OK] Test-mail sendt med succes til admin@eksempel.dk

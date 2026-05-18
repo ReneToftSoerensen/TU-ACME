@@ -17,7 +17,7 @@ At konfigurere Posh-ACME til automatisk at køre IIS-opdateringsscriptet, hver g
 ## Hovedforløb
 1. Brugeren vælger "IIS-integration" → "Opsæt Auto-opdatering af bindings".
 2. TUI'en identificerer den fulde sti til det medfølgende plugin-script:  
-   `C:\Program Files\PoshACME-TUI\Scripts\Posh-ACME-IIS-Plugin.ps1`
+   `C:\Program Files\TU-ACME\Scripts\Posh-ACME-IIS-Plugin.ps1`
 3. TUI'en viser stien og beder om bekræftelse:  
    `Registrer IIS-plugin: [sti]? [J/N]`
 4. Brugeren bekræfter med **J**.

@@ -64,16 +64,16 @@ while ($running) {
 | Parameter | Beslutning |
 |---|---|
 | **Format** | **PowerShell-modul** (`.psm1` + manifest `.psd1`) |
-| **Install-sti** | `$env:ProgramFiles\WindowsPowerShell\Modules\PoshACME-TUI\` (AllUsers) |
+| **Install-sti** | `$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME\` (AllUsers) |
 | **Baggrund** | Modulformat giver clean namespace, versionstyring og tilgængelighed for alle brugere inkl. SYSTEM-kontoen (påkrævet til Scheduled Tasks) |
 
 ### Mappestruktur for modulet
 ```
-PoshACME-TUI\
-├── PoshACME-TUI.psd1          # Modul-manifest (version, afhængigheder)
-├── PoshACME-TUI.psm1          # Hoved-modul-fil (dot-sources Private + Public)
+TU-ACME\
+├── TU-ACME.psd1          # Modul-manifest (version, afhængigheder)
+├── TU-ACME.psm1          # Hoved-modul-fil (dot-sources Private + Public)
 ├── Public\
-│   └── Start-PoshACMETUI.ps1  # Eksporteret indgangspunkt
+│   └── Start-TUACME.ps1  # Eksporteret indgangspunkt
 ├── Private\
 │   ├── UI\
 │   │   ├── Show-Menu.ps1
@@ -99,9 +99,9 @@ PoshACME-TUI\
 ### Installation
 ```powershell
 # Kræver Administrator
-Copy-Item -Path ".\PoshACME-TUI" -Destination "$env:ProgramFiles\WindowsPowerShell\Modules\" -Recurse
-Import-Module PoshACME-TUI
-Start-PoshACMETUI
+Copy-Item -Path ".\TU-ACME" -Destination "$env:ProgramFiles\WindowsPowerShell\Modules\" -Recurse
+Import-Module TU-ACME
+Start-TUACME
 ```
 
 ---
@@ -111,8 +111,8 @@ Start-PoshACMETUI
 | Parameter | Beslutning |
 |---|---|
 | **Format** | **JSON** til ikke-hemmelige indstillinger |
-| **Sti** | `$env:ProgramData\PoshACME-TUI\config.json` |
-| **Hemmelige data** | `$env:ProgramData\PoshACME-TUI\smtp-credentials.xml` (krypteret via `Export-Clixml` / DPAPI) |
+| **Sti** | `$env:ProgramData\TU-ACME\config.json` |
+| **Hemmelige data** | `$env:ProgramData\TU-ACME\smtp-credentials.xml` (krypteret via `Export-Clixml` / DPAPI) |
 | **Baggrund** | ProgramData er tilgængeligt for alle brugere og SYSTEM-kontoen. JSON er menneskelæsbart og nemt at debugge |
 
 ### Konfigurationsfilens struktur (`config.json`)
@@ -145,10 +145,10 @@ Start-PoshACMETUI
 [PSCustomObject]@{
     Username = $smtpUser
     Password = $smtpPassword   # SecureString
-} | Export-Clixml -Path "$env:ProgramData\PoshACME-TUI\smtp-credentials.xml"
+} | Export-Clixml -Path "$env:ProgramData\TU-ACME\smtp-credentials.xml"
 
 # Indlæs
-$creds = Import-Clixml -Path "$env:ProgramData\PoshACME-TUI\smtp-credentials.xml"
+$creds = Import-Clixml -Path "$env:ProgramData\TU-ACME\smtp-credentials.xml"
 ```
 
 ---
@@ -183,7 +183,7 @@ foreach ($binding in $bindings) {
 
 ### E-mail-skabelon (UC-5.4)
 ```
-Emne: [Posh-ACME TUI] FEJL ved certifikatfornyelse - eksempel.dk
+Emne: [TU-ACME] FEJL ved certifikatfornyelse - eksempel.dk
 
 Tidsstempel:  2026-05-18 03:01:55
 Server:       WIN-SERVER01
@@ -192,13 +192,13 @@ Fejltype:     DNS-validering mislykkedes
 Fejlbesked:   [præcis fejl fra Posh-ACME]
 
 Handling påkrævet:
-Tjek certifikatstatus i Posh-ACME TUI eller kør:
+Tjek certifikatstatus i TU-ACME eller kør:
   Submit-Renewal -Force -Domain "eksempel.dk"
 
 Logfil:
-  C:\ProgramData\PoshACME-TUI\renewal.log
+  C:\ProgramData\TU-ACME\renewal.log
 
--- Sendt automatisk af Posh-ACME TUI --
+-- Sendt automatisk af TU-ACME --
 ```
 
 ---
@@ -208,17 +208,17 @@ Logfil:
 | Parameter | Beslutning |
 |---|---|
 | **Log** | `Application` |
-| **Kilde** | `Posh-ACME-TUI` |
+| **Kilde** | `TU-ACME` |
 | **Registrering** | Sker automatisk ved første kørsel som Administrator |
 
 ```powershell
 # Registrer kilde (kræver admin, kun én gang)
-if (-not [System.Diagnostics.EventLog]::SourceExists("Posh-ACME-TUI")) {
-    New-EventLog -LogName Application -Source "Posh-ACME-TUI"
+if (-not [System.Diagnostics.EventLog]::SourceExists("TU-ACME")) {
+    New-EventLog -LogName Application -Source "TU-ACME"
 }
 
 # Skriv til log
-Write-EventLog -LogName Application -Source "Posh-ACME-TUI" `
+Write-EventLog -LogName Application -Source "TU-ACME" `
     -EventId 1001 -EntryType Information `
     -Message "Certifikat fornyet: eksempel.dk. Nyt thumbprint: A1B2C3..."
 ```
@@ -241,10 +241,10 @@ Write-EventLog -LogName Application -Source "Posh-ACME-TUI" `
 | Runtime | Windows PowerShell 5.1 |
 | TUI-engine | Ren konsol I/O (`[Console]`, `$Host.UI.RawUI`) |
 | Distribution | PowerShell-modul (`.psm1` + `.psd1`) |
-| Install-sti | `$env:ProgramFiles\WindowsPowerShell\Modules\PoshACME-TUI\` (AllUsers) |
-| Konfiguration | JSON (`$env:ProgramData\PoshACME-TUI\config.json`) |
+| Install-sti | `$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME\` (AllUsers) |
+| Konfiguration | JSON (`$env:ProgramData\TU-ACME\config.json`) |
 | Hemmelige data | `Export-Clixml` DPAPI-kryptering (`.xml`) |
 | E-mail | `Send-MailMessage` plaintext |
 | IIS-scope | Lokal IIS med thumbprint-matching |
-| Logging | Windows Event Log (Application / Posh-ACME-TUI) |
+| Logging | Windows Event Log (Application / TU-ACME) |
 | Post-renewal | `Posh-ACME-IIS-Plugin.ps1` via `Set-PAConfig -PostScript` |

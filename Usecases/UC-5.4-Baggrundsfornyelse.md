@@ -33,7 +33,7 @@ Det script, der kører i Task Scheduler, skal forny certifikater og sende e-mail
       Logfil:       C:\...\posh-acme.log
       ```
    c. Scriptet sender fejl-mailen til den konfigurerede modtager.
-   d. Scriptet logger en fejl i Windows Event Log (kilde: `Posh-ACME-TUI`).
+   d. Scriptet logger en fejl i Windows Event Log (kilde: `TU-ACME`).
 7. Post-renewal scriptet til IIS-opdatering (UC-8.4) trigges automatisk af Posh-ACME.
 
 ## Postkonditioner
@@ -43,5 +43,5 @@ Det script, der kører i Task Scheduler, skal forny certifikater og sende e-mail
 
 ## Tekniske noter
 - PowerShell-kommando: `Submit-Renewal`
-- Windows Event Log: `New-EventLog -Source "Posh-ACME-TUI" -LogName Application`
+- Windows Event Log: `New-EventLog -Source "TU-ACME" -LogName Application`
 - Scriptet køres med `-NonInteractive -WindowStyle Hidden` for headless-drift.

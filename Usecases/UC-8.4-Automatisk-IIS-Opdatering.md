@@ -26,7 +26,7 @@ Den automatiske baggrundsproces, der sikrer, at IIS-bindings altid har det nyest
    - Binding opdateres med det nye thumbprint.
 6. Hændelsen logges i Windows Event Log:
    ```
-   Source:  Posh-ACME-TUI
+   Source:  TU-ACME
    Message: IIS-binding for eksempel.dk (*:443:) opdateret.
             Gammelt thumbprint: A1B2C3...
             Nyt thumbprint:     D4E5F6...
