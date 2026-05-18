@@ -66,7 +66,7 @@ function Show-Menu {
     Render-Menu
 
     while ($true) {
-        $key = [Console]::ReadKey($true)
+        $key = Invoke-ConsoleReadKey
 
         # F3 — staging-toggle signal
         if ($key.Key -eq [ConsoleKey]::F3) {

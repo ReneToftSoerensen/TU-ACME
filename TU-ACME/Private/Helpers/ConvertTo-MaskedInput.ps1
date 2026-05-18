@@ -13,7 +13,7 @@ function ConvertTo-MaskedInput {
     $row       = [Console]::CursorTop
 
     while ($true) {
-        $key = [Console]::ReadKey($true)
+        $key = Invoke-ConsoleReadKey
 
         if ($key.Key -eq [ConsoleKey]::Enter) {
             Write-Host ''

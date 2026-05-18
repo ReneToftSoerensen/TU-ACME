@@ -128,7 +128,7 @@ function _Register-NewAccount {
         Write-Host '  Kontrollér at serveren accepterer nye registreringer.' -ForegroundColor Yellow
         Write-Host ''
         Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-        [Console]::ReadKey($true) | Out-Null
+        Invoke-ConsoleWaitKey
         return $null
     }
 }
@@ -194,7 +194,7 @@ function _Show-CnameInstruction {
     Write-Host '  Tryk [ESC] for at afbryde.' -ForegroundColor DarkGray
 
     while ($true) {
-        $key = [Console]::ReadKey($true)
+        $key = Invoke-ConsoleReadKey
         if ($key.Key -eq [ConsoleKey]::Enter)  { return $true }
         if ($key.Key -eq [ConsoleKey]::Escape) { return $false }
     }
