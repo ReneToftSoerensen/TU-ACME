@@ -29,6 +29,21 @@ TU-ACME/
     └── Posh-ACME-IIS-Plugin.ps1
 ```
 
+## Teknisk stack
+| Komponent | Valg |
+|---|---|
+| Runtime | Windows PowerShell **5.1** (kun) |
+| TUI-engine | Ren konsol I/O — `[Console]::ReadKey()`, `$Host.UI.RawUI` |
+| Distribution | PowerShell-modul (`.psm1` + `.psd1`) |
+| Install-sti | `$env:ProgramFiles\WindowsPowerShell\Modules\PoshACME-TUI\` (AllUsers) |
+| Konfiguration | JSON (`$env:ProgramData\PoshACME-TUI\config.json`) |
+| Hemmelige data | `Export-Clixml` DPAPI-kryptering (`.xml`) |
+| E-mail | `Send-MailMessage` plaintext |
+| IIS-scope | Lokal IIS med thumbprint-matching |
+| Logging | Windows Event Log (Application / kilde: `Posh-ACME-TUI`) |
+
+Se `Usecases/UC-0.0-Teknisk-Stack-og-Specs.md` for fulde detaljer, kodeeksempler og mappestruktur.
+
 ## Arkitekturprincipper
 - **Rent TUI-mønster:** Al interaktion sker via tekstbaserede menuer, tabelvisninger og prompter i terminalen. Ingen GUI-afhængigheder.
 - **Wrapper-arkitektur:** TUI'en kalder Posh-ACME-kommandoer direkte. Ingen forretningslogik duplikeres — Posh-ACME er kilden til sandhed.
