@@ -1,4 +1,4 @@
-# CLAUDE.md — Posh-ACME TUI
+# CLAUDE.md — TU-ACME
 
 ## Projektbeskrivelse
 En interaktiv tekstbaseret terminal-brugerflade (TUI) til PowerShell-modulet Posh-ACME. Projektet giver systemadministratorer et fuldt menustyret interface til at administrere ACME/Let's Encrypt-certifikater på Windows-servere, inklusiv IIS-integration og automatisk fornyelse.
@@ -25,7 +25,7 @@ TU-ACME/
 │   ├── UC-7.x-*.md         # Fejlsøgning
 │   └── UC-8.x-*.md         # IIS Integration
 └── Scripts/                # PowerShell-scripts (implementering)
-    ├── Start-PoshACMETUI.ps1
+    ├── Start-TUACME.ps1
     └── Posh-ACME-IIS-Plugin.ps1
 ```
 
@@ -35,12 +35,12 @@ TU-ACME/
 | Runtime | Windows PowerShell **5.1** (kun) |
 | TUI-engine | Ren konsol I/O — `[Console]::ReadKey()`, `$Host.UI.RawUI` |
 | Distribution | PowerShell-modul (`.psm1` + `.psd1`) |
-| Install-sti | `$env:ProgramFiles\WindowsPowerShell\Modules\PoshACME-TUI\` (AllUsers) |
-| Konfiguration | JSON (`$env:ProgramData\PoshACME-TUI\config.json`) |
+| Install-sti | `$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME\` (AllUsers) |
+| Konfiguration | JSON (`$env:ProgramData\TU-ACME\config.json`) |
 | Hemmelige data | `Export-Clixml` DPAPI-kryptering (`.xml`) |
 | E-mail | `Send-MailMessage` plaintext |
 | IIS-scope | Lokal IIS med thumbprint-matching |
-| Logging | Windows Event Log (Application / kilde: `Posh-ACME-TUI`) |
+| Logging | Windows Event Log (Application / kilde: `TU-ACME`) |
 
 Se `Usecases/UC-0.0-Teknisk-Stack-og-Specs.md` for fulde detaljer, kodeeksempler og mappestruktur.
 

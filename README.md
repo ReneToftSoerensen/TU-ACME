@@ -1,4 +1,4 @@
-# Posh-ACME TUI
+# TU-ACME
 
 En interaktiv, tekstbaseret terminal-brugerflade (TUI) til PowerShell-modulet [Posh-ACME](https://github.com/rmbolger/Posh-ACME). Administrér Let's Encrypt-certifikater, DNS-validering, automatisk fornyelse og IIS-integration — alt sammen direkte fra terminalen.
 
@@ -40,7 +40,7 @@ git clone https://github.com/renetoftsoerensen/tu-acme.git
 cd tu-acme
 
 # 3. Start TUI'en (kør som Administrator for fuld adgang)
-.\Scripts\Start-PoshACMETUI.ps1
+.\Scripts\Start-TUACME.ps1
 ```
 
 ---
@@ -50,7 +50,7 @@ cd tu-acme
 Start TUI'en i en PowerShell-session. For fuld funktionalitet (IIS, Scheduled Tasks) skal PowerShell køres som Administrator.
 
 ```
-Posh-ACME TUI v1.0
+TU-ACME v1.0
 ==========================================
 Aktiv konto: admin@eksempel.dk | Let's Encrypt Production
 
