@@ -76,7 +76,7 @@ function Show-Table {
     try { [Console]::CursorVisible = $false } catch {}
 
     while ($true) {
-        $key = [Console]::ReadKey($true)
+        $key = Invoke-ConsoleReadKey
 
         switch ($key.Key) {
             ([ConsoleKey]::UpArrow) {
