@@ -20,6 +20,11 @@ function Get-TUACMEConfig {
             WarnDaysThreshold = 30
             DefaultSort       = 'ExpiryAscending'
         }
+        DNS           = [PSCustomObject]@{
+            DefaultDnsSleep         = 120
+            DefaultValidationTimeout = 60
+            PersistentRecords       = $false
+        }
     }
 
     if (-not (Test-Path $configPath)) {

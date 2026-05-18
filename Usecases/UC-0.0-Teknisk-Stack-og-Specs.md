@@ -135,6 +135,11 @@ Start-TUACME
   "Dashboard": {
     "WarnDaysThreshold": 30,
     "DefaultSort": "ExpiryAscending"
+  },
+  "DNS": {
+    "DefaultDnsSleep": 120,
+    "DefaultValidationTimeout": 60,
+    "PersistentRecords": false
   }
 }
 ```
