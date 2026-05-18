@@ -35,8 +35,13 @@ function Invoke-OrderCertificate {
     $plugin = _Select-DNSPlugin
     if ($plugin -eq $null) { return }
 
-    # UC-3.2 + 3.3: Indsaml plugin-parametre
-    $pluginArgs = _Collect-PluginArgs -Plugin $plugin
+    # UC-3.2 + 3.3 / UC-3.5: Indsaml plugin-parametre
+    $allDomains = @($mainDomain) + $sans
+    if ($plugin -eq 'AcmeDns') {
+        $pluginArgs = _Collect-AcmeDnsArgs -Domains $allDomains
+    } else {
+        $pluginArgs = _Collect-PluginArgs -Plugin $plugin
+    }
     if ($pluginArgs -eq $null) { return }
 
     # UC-3.4: DNS-01 challenge-konfiguration
@@ -63,8 +68,7 @@ function Invoke-OrderCertificate {
     if ($confirm -notmatch '^[Jj]') { return }
 
     # UC-2.2: Bestil certifikat med DNS-01 trin
-    $allDomains = @($mainDomain) + $sans
-    $result     = $null
+    $result = $null
 
     Write-Host ''
     Write-Host '  [ > ] Opretter DNS TXT-record...' -ForegroundColor Cyan
@@ -256,4 +260,59 @@ function _Collect-PluginArgs {
     }
 
     return $pArgs
+}
+
+function _Collect-AcmeDnsArgs {
+    param([string[]] $Domains)
+
+    # Tjek om der allerede er gemt en konto for det primære domæne
+    $primaryDomain  = $Domains[0] -replace '^\*\.', ''
+    $existingPath   = Get-AcmeDnsAccountPath -Domain $primaryDomain
+
+    if ($existingPath) {
+        [Console]::Clear()
+        Write-Host '  === ACME-DNS ===' -ForegroundColor Cyan
+        Write-Host ''
+        Write-Host "  Gemt konto fundet: $existingPath" -ForegroundColor Green
+        try {
+            $data = Get-Content -Path $existingPath -Raw | ConvertFrom-Json
+            Write-Host "  FullDomain: $($data.fulldomain)" -ForegroundColor White
+        } catch {}
+        Write-Host ''
+
+        $reuse = Read-Host '  Genbrug eksisterende konto? (J/N)'
+        if ($reuse -match '^[Jj]') {
+            # Hent server-URL fra config
+            $config = Get-TUACMEConfig
+            $server = if ($config.DNS -and $config.DNS.AcmeDnsServer) {
+                $config.DNS.AcmeDnsServer
+            } else {
+                Read-Host '  ACME-DNS server URL'
+            }
+            return @{
+                ACMEDnsServer      = $server
+                ACMEDnsAccountJson = $existingPath
+            }
+        }
+    }
+
+    # Guidet opsætning (UC-3.5)
+    $result = Invoke-AcmeDnsSetup -Domains $Domains
+    if ($result -eq $null) { return $null }
+
+    # Gem server-URL i config til genbrugVed fornyelse
+    $config = Get-TUACMEConfig
+    if (-not $config.DNS) {
+        $config.DNS = [PSCustomObject]@{
+            DefaultDnsSleep          = 120
+            DefaultValidationTimeout = 60
+            PersistentRecords        = $false
+            AcmeDnsServer            = $result.ACMEDnsServer
+        }
+    } else {
+        $config.DNS | Add-Member -NotePropertyName 'AcmeDnsServer' -NotePropertyValue $result.ACMEDnsServer -Force
+    }
+    Set-TUACMEConfig -Config $config
+
+    return $result
 }
