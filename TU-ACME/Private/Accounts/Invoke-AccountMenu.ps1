@@ -76,16 +76,8 @@ function _New-ACMEAccount {
     Write-Host "  Opretter konto med $email ..." -ForegroundColor Cyan
 
     try {
-        $acctParams = @{
-            AcceptTOS = $true
-            Contact   = "mailto:$email"
-        }
-        if ($server -notin @('LE_PROD', 'LE_STAGE')) {
-            $acctParams['DirectoryUrl'] = $server
-        } else {
-            Set-PAServer $server
-        }
-        New-PAAccount @acctParams | Out-Null
+        Set-PAServer $server
+        New-PAAccount -AcceptTOS -Contact "mailto:$email" | Out-Null
         Write-Host '  Konto oprettet.' -ForegroundColor Green
     } catch {
         Write-Host "  Fejl: $_" -ForegroundColor Red
