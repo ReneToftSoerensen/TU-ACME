@@ -156,7 +156,7 @@ function _Configure-DNS01Challenge {
         if ([int]::TryParse($sleepInput, [ref] $parsed) -and $parsed -ge 0) {
             $dnsSleep = $parsed
         } else {
-            Write-Host "  Ugyldigt tal — bruger standard ($defaultSleep sek)." -ForegroundColor Yellow
+            Write-Host "  Ugyldigt tal — bruger standard $defaultSleep sek." -ForegroundColor Yellow
         }
     }
 
@@ -172,7 +172,7 @@ function _Configure-DNS01Challenge {
         if ([int]::TryParse($timeoutInput, [ref] $parsed) -and $parsed -ge 0) {
             $validationTimeout = $parsed
         } else {
-            Write-Host "  Ugyldigt tal — bruger standard ($defaultTimeout sek)." -ForegroundColor Yellow
+            Write-Host "  Ugyldigt tal — bruger standard $defaultTimeout sek." -ForegroundColor Yellow
         }
     }
 
