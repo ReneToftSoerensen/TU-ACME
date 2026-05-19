@@ -56,3 +56,15 @@ function global:New-FakeCharKey {
     return New-Object System.ConsoleKeyInfo($Char, $key, $false, $false, $false)
 }
 
+# Posh-ACME stubs — allow Pester to mock these commands when Posh-ACME is not installed.
+function global:Get-PAAccount     { param([switch]$List) }
+function global:New-PAAccount     { param([switch]$AcceptTOS, [string]$Contact, [string]$KeyLength) }
+function global:Set-PAAccount     { param([string]$ID) }
+function global:Get-PACertificate { param([switch]$List) }
+function global:New-PACertificate { param([string[]]$Domain, [string]$Plugin, $PluginArgs, [switch]$Force) }
+function global:Get-PAServer      { param([string]$DirectoryUrl) }
+function global:Set-PAConfig      { param([string]$PostScript, [string]$Server) }
+function global:Get-PAPlugin      { param([string]$Name) }
+function global:Get-PAPluginArgs  { param([string]$Domain) }
+function global:Submit-Renewal    { param([string]$MainDomain, [switch]$AllAccounts, [switch]$Force) }
+
