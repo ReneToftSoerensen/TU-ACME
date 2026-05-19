@@ -2,6 +2,8 @@
 . "$PSScriptRoot\..\..\Bootstrap.ps1"
 . "$PSScriptRoot\..\..\Fixtures\FakeObjects.ps1"
 
+BeforeDiscovery { Import-TUACMEModule }
+
 Describe 'Invoke-ExportMenu' -Tag Unit, Export {
 
     BeforeAll { Import-TUACMEModule }

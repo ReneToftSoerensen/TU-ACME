@@ -1,6 +1,8 @@
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 . "$PSScriptRoot\..\..\Bootstrap.ps1"
 
+BeforeDiscovery { Import-TUACMEModule }
+
 Describe 'Show-StatusBar' -Tag Unit, UI {
 
     BeforeAll { Import-TUACMEModule }
