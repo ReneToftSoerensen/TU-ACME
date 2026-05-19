@@ -1,4 +1,4 @@
-function Invoke-ConsoleReadKey {
+﻿function Invoke-ConsoleReadKey {
     return [Console]::ReadKey($true)
 }
 

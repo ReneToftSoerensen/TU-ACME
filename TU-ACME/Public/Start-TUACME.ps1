@@ -1,4 +1,4 @@
-function Start-TUACME {
+﻿function Start-TUACME {
     <#
     .SYNOPSIS
         Starter TU-ACME Terminal UI til administration af Posh-ACME certifikater.

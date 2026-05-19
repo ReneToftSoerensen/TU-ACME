@@ -1,4 +1,4 @@
-# Reusable fake objects for TU-ACME tests.
+﻿# Reusable fake objects for TU-ACME tests.
 
 function New-FakeAccount {
     param(

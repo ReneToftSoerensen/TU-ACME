@@ -94,8 +94,16 @@ Set-PAConfig -PostScript "<sti-til-plugin>"
 - Tjek administrator-rettigheder ved opstart (UC-0.1) — deaktivér admin-menuer hvis ikke forhøjet.
 - Log til Windows Event Log i baggrundsscripts — aldrig til filer i klartekst der indeholder credentials.
 
+## Filkodning
+Alle `.ps1`, `.psm1` og `.psd1` filer i repositoriet **skal** gemmes som **UTF-8 med BOM** (Byte Order Mark, `EF BB BF`).
+- Windows PowerShell 5.1 forventer UTF-8 BOM for korrekt håndtering af ikke-ASCII-tegn (f.eks. danske bogstaver æ, ø, å).
+- Uden BOM kan PS 5.1 fejltolke filen som Windows-1252, hvilket ødelægger strenge med diakritiske tegn.
+- Verificér med: `(Get-Content -Path file.ps1 -Raw -Encoding Byte)[0..2] | ForEach-Object { '{0:X2}' -f $_ }` → skal vise `EF BB BF`.
+- Ved oprettelse af nye filer: gem eksplicit som UTF-8 BOM i din editor, eller brug `$content | Set-Content -Path file.ps1 -Encoding UTF8` i PowerShell (PS 5.1's `UTF8` inkluderer BOM).
+
 ## Udviklings-workflow
 1. Alle use cases er atomare og kan implementeres uafhængigt.
 2. Brug `claude/posh-acme-tui-specs-9Sbhg` som udviklingsbranch.
 3. Commit hyppigt med beskrivende commit-beskeder på dansk eller engelsk.
-4. Test TUI-input/output manuelt i en PowerShell 5.0-session inden push.
+4. Test TUI-input/output manuelt i en PowerShell 5.1-session inden push.
+5. Alle nye `.ps1`/`.psm1`/`.psd1` filer skal have UTF-8 BOM (se **Filkodning** ovenfor).

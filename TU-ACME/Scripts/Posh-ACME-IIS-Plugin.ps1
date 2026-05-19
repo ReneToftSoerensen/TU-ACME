@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     Post-renewal plugin til automatisk opdatering af IIS HTTPS-bindings.

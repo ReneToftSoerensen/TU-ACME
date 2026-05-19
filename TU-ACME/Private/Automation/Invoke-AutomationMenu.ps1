@@ -1,4 +1,4 @@
-function Invoke-AutomationMenu {
+﻿function Invoke-AutomationMenu {
     if (-not $script:TUACMEIsAdmin) {
         Show-StatusBar -AdminWarning 'Automatisering kræver administratorrettigheder'
         Start-Sleep -Seconds 2

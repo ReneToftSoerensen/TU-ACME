@@ -1,4 +1,4 @@
-function Invoke-LogViewer {
+﻿function Invoke-LogViewer {
     # Find Posh-ACME log-filer
     $logDir   = Join-Path $env:LOCALAPPDATA 'Posh-ACME'
     $logFiles = @(Get-ChildItem -Path $logDir -Filter '*.log' -ErrorAction SilentlyContinue)

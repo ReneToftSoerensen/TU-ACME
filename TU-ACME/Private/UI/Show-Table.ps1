@@ -1,4 +1,4 @@
-function Show-Table {
+﻿function Show-Table {
     param(
         [Parameter(Mandatory)] [object[]]  $Data,
         [Parameter(Mandatory)] [string[]]  $Columns,
