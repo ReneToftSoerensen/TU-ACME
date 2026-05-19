@@ -1,4 +1,4 @@
-function ConvertTo-MaskedInput {
+﻿function ConvertTo-MaskedInput {
     param(
         [Parameter(Mandatory)] [string] $Prompt,
         [char]   $MaskChar       = '*',

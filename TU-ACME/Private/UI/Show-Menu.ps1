@@ -1,4 +1,4 @@
-function Show-Menu {
+﻿function Show-Menu {
     param(
         [Parameter(Mandatory)] [string]   $Title,
         [Parameter(Mandatory)] [string[]] $Options,

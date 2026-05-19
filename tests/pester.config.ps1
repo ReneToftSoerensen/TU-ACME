@@ -1,4 +1,4 @@
-# Pester 5.x configuration for TU-ACME test suite.
+﻿# Pester 5.x configuration for TU-ACME test suite.
 # Usage: Invoke-Pester -Configuration (& "$PSScriptRoot\pester.config.ps1")
 
 $cfg = New-PesterConfiguration

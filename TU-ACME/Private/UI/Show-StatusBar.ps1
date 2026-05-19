@@ -1,4 +1,4 @@
-function Show-StatusBar {
+﻿function Show-StatusBar {
     param(
         [string] $ActiveAccount = '',
         [string] $AdminWarning  = '',

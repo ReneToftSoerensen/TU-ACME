@@ -1,4 +1,4 @@
-function Invoke-AcmeDnsSetup {
+﻿function Invoke-AcmeDnsSetup {
     <#
     .SYNOPSIS
         Guidet opsætning af ACME-DNS plugin (UC-3.5).

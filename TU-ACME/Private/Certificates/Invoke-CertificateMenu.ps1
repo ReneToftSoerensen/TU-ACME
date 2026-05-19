@@ -1,4 +1,4 @@
-function Invoke-CertificateMenu {
+﻿function Invoke-CertificateMenu {
     param([switch] $ShowOrder)
 
     if ($ShowOrder) {

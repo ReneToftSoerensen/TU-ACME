@@ -1,4 +1,4 @@
-# Shared bootstrap for all TU-ACME test files.
+﻿# Shared bootstrap for all TU-ACME test files.
 # Dot-source this at the top of every Describe block's BeforeAll.
 
 $script:ModuleRoot = (Resolve-Path "$PSScriptRoot\..\TU-ACME").Path

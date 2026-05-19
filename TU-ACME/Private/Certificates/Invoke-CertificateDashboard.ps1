@@ -1,4 +1,4 @@
-function Invoke-CertificateDashboard {
+﻿function Invoke-CertificateDashboard {
     $warnDays = (Get-TUACMEConfig).Dashboard.WarnDaysThreshold
 
     while ($true) {

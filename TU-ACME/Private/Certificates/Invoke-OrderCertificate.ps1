@@ -1,4 +1,4 @@
-function Invoke-OrderCertificate {
+﻿function Invoke-OrderCertificate {
     [Console]::Clear()
     Write-Host '  === Bestil nyt certifikat ===' -ForegroundColor Cyan
     Write-Host ''

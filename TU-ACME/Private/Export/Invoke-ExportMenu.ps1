@@ -1,4 +1,4 @@
-function Invoke-ExportMenu {
+﻿function Invoke-ExportMenu {
     param($Cert = $null)
 
     # Hvis intet certifikat er sendt ind, lad brugeren vaelge fra dashboard

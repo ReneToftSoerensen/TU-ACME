@@ -1,4 +1,4 @@
-function Invoke-ScheduledTaskSetup {
+﻿function Invoke-ScheduledTaskSetup {
     if (-not $script:TUACMEIsAdmin) {
         Show-StatusBar -AdminWarning 'Scheduled Tasks kræver administratorrettigheder'
         Start-Sleep -Seconds 2

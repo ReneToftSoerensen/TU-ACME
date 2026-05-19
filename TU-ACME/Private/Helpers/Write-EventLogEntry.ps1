@@ -1,4 +1,4 @@
-function Write-EventLogEntry {
+﻿function Write-EventLogEntry {
     param(
         [Parameter(Mandatory)] [int]    $EventId,
         [Parameter(Mandatory)] [string] $Message,

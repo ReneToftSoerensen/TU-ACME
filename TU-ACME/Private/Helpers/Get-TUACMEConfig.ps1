@@ -1,4 +1,4 @@
-function Get-TUACMEConfig {
+﻿function Get-TUACMEConfig {
     $configPath = Join-Path $env:ProgramData 'TU-ACME\config.json'
 
     $defaults = [PSCustomObject]@{

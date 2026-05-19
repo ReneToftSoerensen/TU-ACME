@@ -1,4 +1,4 @@
-#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
+﻿#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 . "$PSScriptRoot\..\..\Bootstrap.ps1"
 . "$PSScriptRoot\..\..\Fixtures\FakeObjects.ps1"
 
@@ -35,7 +35,11 @@ Describe 'Invoke-CertificateDashboard' -Tag Unit, Certificates {
         Context 'Certificates exist — Show-Table called with data' {
             BeforeEach {
                 Mock -CommandName 'Get-PACertificate' -MockWith {
-                    @(New-FakeCertificate, New-FakeWarnCertificate, New-FakeExpiredCertificate)
+                    @(
+                        (New-FakeCertificate)
+                        (New-FakeWarnCertificate)
+                        (New-FakeExpiredCertificate)
+                    )
                 }
             }
             It 'calls Show-Table once' {

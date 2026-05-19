@@ -1,4 +1,4 @@
-function Show-Spinner {
+﻿function Show-Spinner {
     param(
         [Parameter(Mandatory)] [string]      $Message,
         [Parameter(Mandatory)] [scriptblock] $ScriptBlock,

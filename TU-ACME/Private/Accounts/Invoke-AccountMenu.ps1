@@ -1,4 +1,4 @@
-function Invoke-AccountMenu {
+﻿function Invoke-AccountMenu {
     param([switch] $StagingToggle)
 
     $stagingUrl    = 'https://acme-staging-v02.api.letsencrypt.org/directory'
