@@ -219,7 +219,7 @@ function _Save-AcmeDnsAccount {
         # DPAPI-krypteret backup via Export-Clixml
         $xmlPath = $jsonPath -replace '\.json$', '.xml'
         [PSCustomObject]@{
-            Server     = $AccountData.PSObject.Properties['server']?.Value
+            Server     = if ($AccountData.PSObject.Properties['server']) { $AccountData.PSObject.Properties['server'].Value } else { $null }
             Username   = $AccountData.username
             Password   = $AccountData.password
             Subdomain  = $AccountData.subdomain
