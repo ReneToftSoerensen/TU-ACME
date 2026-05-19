@@ -68,7 +68,12 @@ function _New-ACMEAccount {
     $server = switch ($serverSel) {
         0 { 'LE_PROD' }
         1 { 'LE_STAGE' }
-        2 { Read-Host '  Server URL' }
+        2 {
+            Invoke-ConsoleClear
+            Write-Host '  === Angiv ACME-server URL ===' -ForegroundColor Cyan
+            Write-Host ''
+            Read-Host '  Server URL'
+        }
         default { return }
     }
 
