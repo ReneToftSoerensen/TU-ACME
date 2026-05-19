@@ -25,7 +25,7 @@ Describe 'Invoke-AccountMenu' -Tag Unit, Accounts {
         Context '_Toggle-StagingAccount — currently production, switches to staging' {
             It 'calls Set-PAServer with LE_STAGE' {
                 _Toggle-StagingAccount
-                Should -Invoke Set-PAServer -ParameterFilter { $args[0] -eq 'LE_STAGE' -or $_ -eq 'LE_STAGE' } -Times 1 -Exactly
+                Should -Invoke Set-PAServer -ParameterFilter { $DirectoryUrl -eq 'LE_STAGE' } -Times 1 -Exactly
             }
         }
 

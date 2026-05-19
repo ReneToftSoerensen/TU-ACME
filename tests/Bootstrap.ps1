@@ -74,3 +74,12 @@ function global:Get-WebBinding        { param([string]$Protocol) }
 function global:Set-WebBinding        { param([string]$Name, [string]$PropertyName, [string]$Value) }
 function global:Import-PfxCertificate { param([string]$FilePath, [string]$CertStoreLocation, [switch]$Exportable) }
 
+# ScheduledTask cmdlet stubs — allow mocking when ScheduledTasks module is not loaded.
+function global:Get-ScheduledTask          { param([string]$TaskName) }
+function global:Register-ScheduledTask     { param([string]$TaskName, $Action, $Trigger, $Settings, $Principal, [string]$User, [string]$RunLevel) }
+function global:Unregister-ScheduledTask   { param([string]$TaskName, [switch]$Confirm) }
+function global:New-ScheduledTaskAction    { param([string]$Execute, [string]$Argument) }
+function global:New-ScheduledTaskTrigger   { param([switch]$Daily, [string]$At) }
+function global:New-ScheduledTaskSettingsSet { param($ExecutionTimeLimit, [switch]$StartWhenAvailable) }
+function global:New-ScheduledTaskPrincipal { param([string]$UserId, [string]$RunLevel) }
+

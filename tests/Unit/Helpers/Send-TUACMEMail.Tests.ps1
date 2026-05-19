@@ -76,7 +76,7 @@ Describe 'Send-TUACMEMail' -Tag Unit, Helpers {
                 $authConfig = New-FakeConfig
                 $authConfig.Email.UseAuth = $true
                 Mock -CommandName 'Get-TUACMEConfig' -MockWith { $authConfig }
-                Mock -CommandName 'Test-Path'        -MockWith { $true }
+                Mock -CommandName 'Test-Path'        -MockWith { $true }  -ParameterFilter { $Path -match 'smtp-credentials' }
                 Mock -CommandName 'Import-Clixml'    -MockWith { throw 'DPAPI error' }
             }
             It 'returns false without throwing' {
