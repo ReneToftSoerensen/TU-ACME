@@ -12,6 +12,7 @@ Describe 'Invoke-ScheduledTaskSetup' -Tag Unit, Automation {
     InModuleScope TU-ACME {
         BeforeEach {
             $script:TUACMEIsAdmin = $true
+            $script:OnWindows     = $true
             Mock -CommandName 'Write-Host'                  -MockWith {}
             Mock -CommandName 'Invoke-ConsoleClear'         -MockWith {}
             Mock -CommandName 'Invoke-ConsoleWaitKey'       -MockWith {}

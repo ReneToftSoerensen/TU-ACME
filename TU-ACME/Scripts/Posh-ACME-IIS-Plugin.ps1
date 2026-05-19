@@ -22,6 +22,12 @@ if (-not $OldThumbprint) { $OldThumbprint = $env:POSHACME_OLD_CERT_THUMBPRINT }
 if (-not $CertFile)      { $CertFile      = $env:POSHACME_CERT_FILE }
 if (-not $Thumbprint)    { $Thumbprint    = $env:POSHACME_THUMBPRINT }
 
+$onWindows = if (Test-Path variable:IsWindows) { $IsWindows } else { $true }
+if (-not $onWindows) {
+    Write-Host 'Posh-ACME-IIS-Plugin.ps1 er kun understøttet på Windows (kræver IIS).' -ForegroundColor Yellow
+    exit 0
+}
+
 $logSource = 'TU-ACME'
 $logName   = 'Application'
 

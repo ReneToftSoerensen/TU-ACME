@@ -70,7 +70,11 @@
             }
             4  { Invoke-ExportMenu }
             5  {
-                if (-not $script:TUACMEIsAdmin) {
+                if (-not $script:OnWindows) {
+                    Write-Host ''
+                    Write-Host '  IIS Integration er kun tilgængeligt på Windows.' -ForegroundColor Yellow
+                    Start-Sleep -Seconds 2
+                } elseif (-not $script:TUACMEIsAdmin) {
                     Show-StatusBar -AdminWarning 'IIS Integration kraever administratorrettigheder'
                     Start-Sleep -Seconds 2
                 } else {

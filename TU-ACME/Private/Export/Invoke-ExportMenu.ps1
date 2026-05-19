@@ -41,7 +41,9 @@ function _Export-PFX {
     Write-Host '  === Eksporter PFX ===' -ForegroundColor Cyan
     Write-Host ''
 
-    $defaultPath = Join-Path ([System.Environment]::GetFolderPath('Desktop')) "$($Cert.MainDomain).pfx"
+    $desktop = [System.Environment]::GetFolderPath('Desktop')
+    if (-not $desktop) { $desktop = [System.IO.Path]::GetTempPath() }
+    $defaultPath = Join-Path $desktop "$($Cert.MainDomain).pfx"
     Write-Host "  Destinationssti (standard: $defaultPath):" -ForegroundColor Gray
     $path = Read-Host '  Sti'
     if ($path -eq '') { $path = $defaultPath }
@@ -94,6 +96,7 @@ function _Export-PEM {
     Write-Host ''
 
     $defaultDir = [System.Environment]::GetFolderPath('Desktop')
+    if (-not $defaultDir) { $defaultDir = [System.IO.Path]::GetTempPath() }
     Write-Host "  Destinationsmappe (standard: $defaultDir):" -ForegroundColor Gray
     $dir = Read-Host '  Mappe'
     if ($dir -eq '') { $dir = $defaultDir }

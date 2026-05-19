@@ -1,4 +1,13 @@
 ﻿function Invoke-IISMenu {
+    if (-not $script:OnWindows) {
+        Write-Host ''
+        Write-Host '  IIS Integration er kun tilgængeligt på Windows.' -ForegroundColor Yellow
+        Write-Host ''
+        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+        Invoke-ConsoleWaitKey
+        return
+    }
+
     if (-not $script:TUACMEIsAdmin) {
         Show-StatusBar -AdminWarning 'IIS Integration kræver administratorrettigheder'
         Start-Sleep -Seconds 2

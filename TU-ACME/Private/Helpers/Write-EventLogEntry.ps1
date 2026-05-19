@@ -6,6 +6,8 @@
         [string] $EntryType = 'Information'
     )
 
+    if (-not $script:OnWindows) { return }
+
     $logName = 'Application'
     $source  = 'TU-ACME'
 

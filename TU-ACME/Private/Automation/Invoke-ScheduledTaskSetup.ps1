@@ -5,6 +5,19 @@
         return
     }
 
+    if (-not $script:OnWindows) {
+        Invoke-ConsoleClear
+        Write-Host '  Scheduled Tasks er ikke tilgængeligt på Linux/macOS.' -ForegroundColor Yellow
+        Write-Host '  Brug cron til at planlægge automatisk fornyelse.' -ForegroundColor Gray
+        Write-Host ''
+        Write-Host '  Eksempel crontab-linje (dagligt kl. 03:00):' -ForegroundColor DarkGray
+        Write-Host '  0 3 * * * pwsh -NonInteractive -File "/pfx/Invoke-RenewalBackground.ps1"' -ForegroundColor DarkGray
+        Write-Host ''
+        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+        Invoke-ConsoleWaitKey
+        return
+    }
+
     Invoke-ConsoleClear
     Write-Host '  === Opret Scheduled Task til automatisk fornyelse ===' -ForegroundColor Cyan
     Write-Host ''

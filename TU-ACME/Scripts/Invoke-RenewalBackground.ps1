@@ -6,6 +6,17 @@
 #>
 
 $ErrorActionPreference = 'Stop'
+
+$onWindows = if (Test-Path variable:IsWindows) { $IsWindows } else { $true }
+if (-not $onWindows) {
+    Write-Host 'Invoke-RenewalBackground.ps1 er designet til Windows Scheduled Tasks.' -ForegroundColor Yellow
+    Write-Host 'Brug cron + pwsh Submit-Renewal til Linux/macOS.' -ForegroundColor Gray
+    exit 0
+}
+
+if (-not $env:ProgramData)  { $env:ProgramData  = '/tmp/TU-ACME' }
+if (-not $env:COMPUTERNAME) { $env:COMPUTERNAME = [System.Net.Dns]::GetHostName() }
+
 $configDir  = Join-Path $env:ProgramData 'TU-ACME'
 $logSource  = 'TU-ACME'
 $logName    = 'Application'
