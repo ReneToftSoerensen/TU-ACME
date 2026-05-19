@@ -60,7 +60,7 @@ Dette er en test-mail fra TU-ACME.
 
 Tidsstempel: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 Server:      $env:COMPUTERNAME
-Version:     1.0
+Version:     0.0.2
 
 -- Sendt automatisk af TU-ACME --
 "@

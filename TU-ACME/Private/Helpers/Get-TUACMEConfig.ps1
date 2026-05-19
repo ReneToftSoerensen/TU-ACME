@@ -2,7 +2,7 @@
     $configPath = Join-Path $env:ProgramData 'TU-ACME\config.json'
 
     $defaults = [PSCustomObject]@{
-        Version       = '1.0'
+        Version       = '0.0.2'
         ScheduledTask = [PSCustomObject]@{
             TaskName     = 'Posh-ACME-AutoRenewal'
             RunTime      = '03:00'

@@ -50,7 +50,7 @@ cd tu-acme
 Start TUI'en i en PowerShell-session. For fuld funktionalitet (IIS, Scheduled Tasks) skal PowerShell køres som Administrator.
 
 ```
-TU-ACME v1.0
+TU-ACME v0.0.2
 ==========================================
 Aktiv konto: admin@eksempel.dk | Let's Encrypt Production
 

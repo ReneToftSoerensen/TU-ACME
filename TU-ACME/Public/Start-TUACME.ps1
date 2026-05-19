@@ -46,7 +46,7 @@
             'Q. Afslut'
         )
 
-        $selection = Show-Menu -Title 'TU-ACME v1.0 — Certifikatstyring' -Options $menuOptions
+        $selection = Show-Menu -Title 'TU-ACME v0.0.2 — Certifikatstyring' -Options $menuOptions
 
         switch ($selection) {
             -2 {
