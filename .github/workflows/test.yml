@@ -39,7 +39,8 @@ jobs:
           $cfg = & ".\tests\pester.config.ps1"
           $cfg.Filter.Tag = @('Unit')
           $cfg.Filter.ExcludeTag = @('LiveExternal', 'Integration')
-          $result = Invoke-Pester -Configuration $cfg -PassThru
+          $cfg.Run.PassThru = $true
+          $result = Invoke-Pester -Configuration $cfg
           if ($result.FailedCount -gt 0) { exit 1 }
 
       - name: Run Integration Tests
@@ -48,7 +49,8 @@ jobs:
           $cfg = & ".\tests\pester.config.ps1"
           $cfg.Filter.Tag = @('Integration')
           $cfg.Filter.ExcludeTag = @('LiveExternal')
-          $result = Invoke-Pester -Configuration $cfg -PassThru
+          $cfg.Run.PassThru = $true
+          $result = Invoke-Pester -Configuration $cfg
           if ($result.FailedCount -gt 0) { exit 1 }
 
       - name: Publish Test Results
@@ -92,5 +94,6 @@ jobs:
           $cfg = & ".\tests\pester.config.ps1"
           $cfg.Filter.Tag = @('Scripts')
           $cfg.Filter.ExcludeTag = @('LiveExternal')
-          $result = Invoke-Pester -Configuration $cfg -PassThru
+          $cfg.Run.PassThru = $true
+          $result = Invoke-Pester -Configuration $cfg
           if ($result.FailedCount -gt 0) { exit 1 }
