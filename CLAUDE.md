@@ -44,6 +44,8 @@ TU-ACME/
 
 Se `Usecases/UC-0.0-Teknisk-Stack-og-Specs.md` for fulde detaljer, kodeeksempler og mappestruktur.
 
+Benyt UTF8 BOM altid
+
 ## Arkitekturprincipper
 - **Rent TUI-mønster:** Al interaktion sker via tekstbaserede menuer, tabelvisninger og prompter i terminalen. Ingen GUI-afhængigheder.
 - **Wrapper-arkitektur:** TUI'en kalder Posh-ACME-kommandoer direkte. Ingen forretningslogik duplikeres — Posh-ACME er kilden til sandhed.
