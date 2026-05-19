@@ -9,7 +9,7 @@
         [switch]      $Interactive
     )
 
-    $w = [Math]::Max([Console]::WindowWidth, 80)
+    $w = Get-ConsoleWidth
 
     # Brug Columns som Headers hvis ikke angivet
     if ($Headers.Count -eq 0) { $Headers = $Columns }
@@ -73,7 +73,7 @@
     Invoke-ConsoleClear
     Render-Table -CurrentIndex $index
 
-    try { [Console]::CursorVisible = $false } catch {}
+    Set-ConsoleCursorVisible -Visible $false
 
     while ($true) {
         $key = Invoke-ConsoleReadKey
@@ -90,11 +90,11 @@
                 Render-Table -CurrentIndex $index
             }
             ([ConsoleKey]::Enter) {
-                try { [Console]::CursorVisible = $true } catch {}
+                Set-ConsoleCursorVisible -Visible $true
                 return $index
             }
             ([ConsoleKey]::Escape) {
-                try { [Console]::CursorVisible = $true } catch {}
+                Set-ConsoleCursorVisible -Visible $true
                 return -1
             }
         }

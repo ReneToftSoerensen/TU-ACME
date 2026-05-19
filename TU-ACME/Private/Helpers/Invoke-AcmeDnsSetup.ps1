@@ -106,7 +106,7 @@ function _Register-NewAccount {
         Write-Host '  Konto oprettet!' -ForegroundColor Green
         Write-Host ''
 
-        $w = [Math]::Max([Console]::WindowWidth - 4, 60)
+        $w = [Math]::Max((Get-ConsoleWidth) - 4, 60)
         $border = '+' + ('-' * ($w - 2)) + '+'
         Write-Host "  $border" -ForegroundColor DarkCyan
 
@@ -169,7 +169,7 @@ function _Show-CnameInstruction {
     Write-Host '  Dette goeres KUN EN GANG og er permanent.' -ForegroundColor White
     Write-Host ''
 
-    $w      = [Math]::Max([Console]::WindowWidth - 4, 72)
+    $w      = [Math]::Max((Get-ConsoleWidth) - 4, 72)
     $border = '+' + ('-' * ($w - 2)) + '+'
 
     Write-Host "  $border" -ForegroundColor Yellow

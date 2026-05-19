@@ -1,13 +1,17 @@
-﻿function Invoke-ConsoleReadKey {
-    return [Console]::ReadKey($true)
+function Invoke-ConsoleReadKey {
+    try {
+        return [Console]::ReadKey($true)
+    } catch {
+        return New-Object System.ConsoleKeyInfo([char]0, [System.ConsoleKey]::Escape, $false, $false, $false)
+    }
 }
 
 function Invoke-ConsoleWaitKey {
-    [Console]::ReadKey($true) | Out-Null
+    try { [Console]::ReadKey($true) | Out-Null } catch {}
 }
 
 function Invoke-ConsoleClear {
-    [Console]::Clear()
+    try { [Console]::Clear() } catch {}
 }
 
 function Set-ConsoleCursorPos {
@@ -16,9 +20,22 @@ function Set-ConsoleCursorPos {
 }
 
 function Get-ConsoleWidth {
-    return [Math]::Max([Console]::WindowWidth, 80)
+    try { return [Math]::Max([Console]::WindowWidth, 80) } catch { return 80 }
 }
 
 function Get-ConsoleHeight {
-    return [Math]::Max([Console]::WindowHeight, 24)
+    try { return [Math]::Max([Console]::WindowHeight, 24) } catch { return 24 }
+}
+
+function Get-ConsoleCursorLeft {
+    try { return [Console]::CursorLeft } catch { return 0 }
+}
+
+function Get-ConsoleCursorTop {
+    try { return [Console]::CursorTop } catch { return 0 }
+}
+
+function Set-ConsoleCursorVisible {
+    param([bool] $Visible)
+    try { [Console]::CursorVisible = $Visible } catch {}
 }

@@ -7,7 +7,7 @@
         [switch] $AllowSearch
     )
 
-    $w           = [Math]::Max([Console]::WindowWidth, 80)
+    $w           = Get-ConsoleWidth
     $index       = $InitialIndex
     $filter      = ''
     $searching   = $false
@@ -17,10 +17,10 @@
     $visibleIndices = 0..($allOptions.Count - 1)
 
     function Render-Menu {
-        $saveLeft = [Console]::CursorLeft
-        $saveTop  = [Console]::CursorTop
+        $saveLeft = Get-ConsoleCursorLeft
+        $saveTop  = Get-ConsoleCursorTop
         Set-ConsoleCursorPos -X 0 -Y 0
-        try { [Console]::CursorVisible = $false } catch {}
+        Set-ConsoleCursorVisible -Visible $false
 
         $border = '=' * [Math]::Min($w - 1, 79)
         Write-Host "  $Title" -ForegroundColor Cyan
@@ -59,7 +59,7 @@
             Write-Host "  $StatusMessage" -ForegroundColor Yellow -NoNewline
         }
 
-        try { [Console]::CursorVisible = $true } catch {}
+        Set-ConsoleCursorVisible -Visible $true
     }
 
     Invoke-ConsoleClear
@@ -70,7 +70,7 @@
 
         # F3 — staging-toggle signal
         if ($key.Key -eq [ConsoleKey]::F3) {
-            try { [Console]::CursorVisible = $true } catch {}
+            Set-ConsoleCursorVisible -Visible $true
             return -2
         }
 
@@ -126,11 +126,11 @@
                 Render-Menu
             }
             ([ConsoleKey]::Enter) {
-                try { [Console]::CursorVisible = $true } catch {}
+                Set-ConsoleCursorVisible -Visible $true
                 return $visibleIndices[$index]
             }
             ([ConsoleKey]::Escape) {
-                try { [Console]::CursorVisible = $true } catch {}
+                Set-ConsoleCursorVisible -Visible $true
                 return -1
             }
             default {
@@ -142,12 +142,12 @@
                     # Genvejstast: ciffer matcher optionens foerste ciffer
                     $digit = [int]::Parse($key.KeyChar.ToString()) - 1
                     if ($digit -ge 0 -and $digit -lt $visibleOptions.Count) {
-                        try { [Console]::CursorVisible = $true } catch {}
+                        Set-ConsoleCursorVisible -Visible $true
                         return $visibleIndices[$digit]
                     }
                 } elseif ($key.KeyChar -eq 'q' -or $key.KeyChar -eq 'Q') {
                     # Q som genvej til afslut-option (sidst i listen)
-                    try { [Console]::CursorVisible = $true } catch {}
+                    Set-ConsoleCursorVisible -Visible $true
                     return $visibleIndices[$visibleOptions.Count - 1]
                 }
             }

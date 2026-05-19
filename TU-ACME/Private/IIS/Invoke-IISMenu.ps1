@@ -132,7 +132,7 @@ function _Bind-CertToIIS {
     }
 
     Render-BindingList
-    try { [Console]::CursorVisible = $false } catch {}
+    Set-ConsoleCursorVisible -Visible $false
 
     while ($true) {
         $key = Invoke-ConsoleReadKey
@@ -140,13 +140,13 @@ function _Bind-CertToIIS {
             ([ConsoleKey]::UpArrow)   { if ($index -gt 0) { $index-- }; Render-BindingList }
             ([ConsoleKey]::DownArrow) { if ($index -lt $bindings.Count - 1) { $index++ }; Render-BindingList }
             ([ConsoleKey]::Spacebar)  { $selected[$index] = -not $selected[$index]; Render-BindingList }
-            ([ConsoleKey]::Escape)    { try { [Console]::CursorVisible = $true } catch {}; return }
+            ([ConsoleKey]::Escape)    { Set-ConsoleCursorVisible -Visible $true; return }
             ([ConsoleKey]::Enter)     { break }
         }
         if ($key.Key -eq [ConsoleKey]::Enter) { break }
     }
 
-    try { [Console]::CursorVisible = $true } catch {}
+    Set-ConsoleCursorVisible -Visible $true
 
     $toUpdate = 0..($bindings.Count - 1) | Where-Object { $selected[$_] }
     if ($toUpdate.Count -eq 0) {

@@ -6,13 +6,13 @@
         [string] $RightHint     = ''
     )
 
-    $w   = [Math]::Max([Console]::WindowWidth, 80)
-    $row = [Math]::Max([Console]::WindowHeight - 1, 0)
+    $w   = Get-ConsoleWidth
+    $row = [Math]::Max((Get-ConsoleHeight) - 1, 0)
 
-    $savedLeft = [Console]::CursorLeft
-    $savedTop  = [Console]::CursorTop
+    $savedLeft = Get-ConsoleCursorLeft
+    $savedTop  = Get-ConsoleCursorTop
 
-    try { [Console]::CursorVisible = $false } catch {}
+    Set-ConsoleCursorVisible -Visible $false
 
     Set-ConsoleCursorPos -X 0 -Y $row
 
@@ -34,5 +34,5 @@
     }
 
     Set-ConsoleCursorPos -X $savedLeft -Y $savedTop
-    try { [Console]::CursorVisible = $true } catch {}
+    Set-ConsoleCursorVisible -Visible $true
 }
