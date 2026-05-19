@@ -1,4 +1,4 @@
-﻿function Invoke-IISMenu {
+function Invoke-IISMenu {
     if (-not $script:TUACMEIsAdmin) {
         Show-StatusBar -AdminWarning 'IIS Integration kræver administratorrettigheder'
         Start-Sleep -Seconds 2
@@ -14,7 +14,7 @@
         Write-Host '  IIS er muligvis ikke installeret på dette system.' -ForegroundColor Yellow
         Write-Host ''
         Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-        [Console]::ReadKey($true) | Out-Null
+        Invoke-ConsoleWaitKey
         return
     }
 
@@ -38,7 +38,7 @@
 }
 
 function _Show-IISBindings {
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === HTTPS Bindings ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -48,7 +48,7 @@ function _Show-IISBindings {
         Write-Host '  Ingen HTTPS-bindings fundet.' -ForegroundColor Yellow
         Write-Host ''
         Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-        [Console]::ReadKey($true) | Out-Null
+        Invoke-ConsoleWaitKey
         return
     }
 
@@ -84,7 +84,7 @@ function _Show-IISBindings {
 
     Write-Host ''
     Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-    [Console]::ReadKey($true) | Out-Null
+    Invoke-ConsoleWaitKey
 }
 
 function _Bind-CertToIIS {
@@ -109,7 +109,7 @@ function _Bind-CertToIIS {
         return
     }
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === Vaelg bindings (Mellemrum = toggle, Enter = bekraeft) ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -117,7 +117,7 @@ function _Bind-CertToIIS {
     $index    = 0
 
     function Render-BindingList {
-        [Console]::SetCursorPosition(0, 2)
+        Set-ConsoleCursorPos -X 0 -Y 2
         for ($i = 0; $i -lt $bindings.Count; $i++) {
             $check  = if ($selected[$i]) { '[X]' } else { '[ ]' }
             $site   = $bindings[$i].ItemXPath -replace ".*\[@name='(.+?)'\].*", '$1'
@@ -135,7 +135,7 @@ function _Bind-CertToIIS {
     try { [Console]::CursorVisible = $false } catch {}
 
     while ($true) {
-        $key = [Console]::ReadKey($true)
+        $key = Invoke-ConsoleReadKey
         switch ($key.Key) {
             ([ConsoleKey]::UpArrow)   { if ($index -gt 0) { $index-- }; Render-BindingList }
             ([ConsoleKey]::DownArrow) { if ($index -lt $bindings.Count - 1) { $index++ }; Render-BindingList }
@@ -180,13 +180,13 @@ function _Bind-CertToIIS {
 
     Write-Host ''
     Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-    [Console]::ReadKey($true) | Out-Null
+    Invoke-ConsoleWaitKey
 }
 
 function _Register-PostRenewalPlugin {
     $scriptPath = Join-Path $env:ProgramFiles "WindowsPowerShell\Modules\TU-ACME\Scripts\Posh-ACME-IIS-Plugin.ps1"
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === Opsæt automatisk IIS-opdatering ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -195,7 +195,7 @@ function _Register-PostRenewalPlugin {
         Write-Host '  Placer Posh-ACME-IIS-Plugin.ps1 i TU-ACME\Scripts\ og prøv igen.' -ForegroundColor Yellow
         Write-Host ''
         Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-        [Console]::ReadKey($true) | Out-Null
+        Invoke-ConsoleWaitKey
         return
     }
 
@@ -220,5 +220,5 @@ function _Register-PostRenewalPlugin {
 
     Write-Host ''
     Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-    [Console]::ReadKey($true) | Out-Null
+    Invoke-ConsoleWaitKey
 }
