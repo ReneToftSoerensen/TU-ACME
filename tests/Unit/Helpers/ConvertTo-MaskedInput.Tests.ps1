@@ -68,7 +68,7 @@ Describe 'ConvertTo-MaskedInput' -Tag Unit, Helpers {
                 Mock -CommandName 'Invoke-ConsoleReadKey' -MockWith {
                     $key = $script:seq[$script:ki]; $script:ki++; return $key
                 }
-                Mock -CommandName '[Console]::SetCursorPosition' -MockWith {} -ErrorAction SilentlyContinue
+                Mock -CommandName 'Set-ConsoleCursorPos' -MockWith {}
             }
             It 'returns x (y removed by backspace)' {
                 $r = ConvertTo-MaskedInput -Prompt 'P'

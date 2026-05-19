@@ -63,8 +63,14 @@ function global:Set-PAAccount     { param([string]$ID) }
 function global:Get-PACertificate { param([switch]$List) }
 function global:New-PACertificate { param([string[]]$Domain, [string]$Plugin, $PluginArgs, [switch]$Force) }
 function global:Get-PAServer      { param([string]$DirectoryUrl) }
+function global:Set-PAServer      { param([string]$DirectoryUrl) }
 function global:Set-PAConfig      { param([string]$PostScript, [string]$Server) }
 function global:Get-PAPlugin      { param([string]$Name) }
 function global:Get-PAPluginArgs  { param([string]$Domain) }
 function global:Submit-Renewal    { param([string]$MainDomain, [switch]$AllAccounts, [switch]$Force) }
+
+# IIS cmdlet stubs — allow mocking when WebAdministration is not loaded.
+function global:Get-WebBinding        { param([string]$Protocol) }
+function global:Set-WebBinding        { param([string]$Name, [string]$PropertyName, [string]$Value) }
+function global:Import-PfxCertificate { param([string]$FilePath, [string]$CertStoreLocation, [switch]$Exportable) }
 

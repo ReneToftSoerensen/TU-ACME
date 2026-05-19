@@ -210,7 +210,7 @@ function _Save-AcmeDnsAccount {
     }
 
     # Brug primære domæne som filnavn (saniteret)
-    $primaryDomain  = ($Domains[0] -replace '^\*\.', '') -replace '[^a-zA-Z0-9\-\.]', '_'
+    $primaryDomain  = ($Domains[0] -replace '^\*\.', '') -replace '[^a-zA-Z0-9\-]', '_'
     $jsonPath       = Join-Path $accountDir "$primaryDomain.json"
 
     try {
@@ -244,7 +244,7 @@ function Get-AcmeDnsAccountPath {
     #>
     param([string] $Domain)
 
-    $baseDomain = ($Domain -replace '^\*\.', '') -replace '[^a-zA-Z0-9\-\.]', '_'
+    $baseDomain = ($Domain -replace '^\*\.', '') -replace '[^a-zA-Z0-9\-]', '_'
     $jsonPath   = Join-Path $env:ProgramData "TU-ACME\acmedns-accounts\$baseDomain.json"
 
     if (Test-Path $jsonPath) { return $jsonPath }

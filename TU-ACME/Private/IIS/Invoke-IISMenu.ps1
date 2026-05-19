@@ -1,4 +1,4 @@
-function Invoke-IISMenu {
+﻿function Invoke-IISMenu {
     if (-not $script:TUACMEIsAdmin) {
         Show-StatusBar -AdminWarning 'IIS Integration kræver administratorrettigheder'
         Start-Sleep -Seconds 2

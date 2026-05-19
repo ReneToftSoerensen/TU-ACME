@@ -1,6 +1,6 @@
 ﻿# Reusable fake objects for TU-ACME tests.
 
-function New-FakeAccount {
+function global:New-FakeAccount {
     param(
         [string] $Id      = 'acc-001',
         [string] $Contact = 'mailto:admin@eksempel.dk',
@@ -9,7 +9,7 @@ function New-FakeAccount {
     [PSCustomObject]@{ id = $Id; contact = $Contact; status = $Status }
 }
 
-function New-FakeCertificate {
+function global:New-FakeCertificate {
     param(
         [string]   $Domain     = 'eksempel.dk',
         [int]      $DaysLeft   = 60,
@@ -34,15 +34,15 @@ function New-FakeCertificate {
     }
 }
 
-function New-FakeExpiredCertificate {
+function global:New-FakeExpiredCertificate {
     New-FakeCertificate -Domain 'expired.dk' -DaysLeft -5 -Thumbprint 'DEADBEEF00000000DEADBEEF00000000DEADBEEF'
 }
 
-function New-FakeWarnCertificate {
+function global:New-FakeWarnCertificate {
     New-FakeCertificate -Domain 'warn.dk' -DaysLeft 20 -Thumbprint '1111222233334444111122223333444411112222'
 }
 
-function New-FakeIISBinding {
+function global:New-FakeIISBinding {
     param(
         [string] $SiteName   = 'Default Web Site',
         [string] $Thumbprint = 'AABBCCDDEEFF00112233445566778899AABBCCDD',
@@ -56,18 +56,18 @@ function New-FakeIISBinding {
     }
 }
 
-function New-FakePlugin {
+function global:New-FakePlugin {
     param([string] $Name = 'Cloudflare')
     [PSCustomObject]@{ Plugin = $Name }
 }
 
-function New-FakePluginArgs {
+function global:New-FakePluginArgs {
     [PSCustomObject]@{
         CFToken = ''
     }
 }
 
-function New-FakeConfig {
+function global:New-FakeConfig {
     [PSCustomObject]@{
         Version       = '1.0'
         ScheduledTask = [PSCustomObject]@{ TaskName = 'Posh-ACME-AutoRenewal'; RunTime = '03:00'; RunAsAccount = 'SYSTEM' }
@@ -77,17 +77,17 @@ function New-FakeConfig {
     }
 }
 
-function New-FakeRenewalResult {
+function global:New-FakeRenewalResult {
     param([string] $Domain = 'eksempel.dk')
     [PSCustomObject]@{ MainDomain = $Domain; Thumbprint = 'NEWTHUMPRINT1234'; NotAfter = (Get-Date).AddDays(90) }
 }
 
-function New-FakeScheduledTask {
+function global:New-FakeScheduledTask {
     param([string] $Name = 'Posh-ACME-AutoRenewal', [string] $State = 'Ready')
     [PSCustomObject]@{ TaskName = $Name; State = $State }
 }
 
-function New-FakeAcmeDnsAccount {
+function global:New-FakeAcmeDnsAccount {
     [PSCustomObject]@{
         username   = 'a0b1c2d3-0000-0000-0000-000000000001'
         password   = 'supersecretpassword1234567890abcdef'
