@@ -4,7 +4,7 @@
 $script:ModuleRoot = (Resolve-Path "$PSScriptRoot\..\TU-ACME").Path
 $script:ModulePsd1 = Join-Path $script:ModuleRoot 'TU-ACME.psd1'
 
-function Import-TUACMEModule {
+function global:Import-TUACMEModule {
     $bootstrapFile = $MyInvocation.MyCommand.ScriptBlock.File
     $repoRoot = Split-Path -Parent (Split-Path -Parent $bootstrapFile)
     $psd1 = Join-Path $repoRoot 'TU-ACME\TU-ACME.psd1'
@@ -12,24 +12,24 @@ function Import-TUACMEModule {
     Import-Module $psd1 -Force -ErrorAction Stop
 }
 
-function Remove-TUACMEModule {
+function global:Remove-TUACMEModule {
     Remove-Module TU-ACME -ErrorAction SilentlyContinue -Force
 }
 
-function New-TempTestDir {
+function global:New-TempTestDir {
     $path = Join-Path ([System.IO.Path]::GetTempPath()) "TUACME-Test-$([System.Guid]::NewGuid().ToString('N'))"
     New-Item -ItemType Directory -Path $path -Force | Out-Null
     return $path
 }
 
-function Remove-TempTestDir {
+function global:Remove-TempTestDir {
     param([string] $Path)
     if ($Path -and (Test-Path $Path)) {
         Remove-Item -Path $Path -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
 
-function New-TempConfigEnv {
+function global:New-TempConfigEnv {
     $tmp = New-TempTestDir
     $env:_TUACME_TEST_PROGRAMDATA = Join-Path $tmp 'ProgramData'
     $env:_TUACME_TEST_LOCALAPPDATA = Join-Path $tmp 'LocalAppData'
@@ -39,7 +39,7 @@ function New-TempConfigEnv {
 }
 
 # Helper: build a ConsoleKeyInfo object (PS 5.1 compatible)
-function New-FakeKey {
+function global:New-FakeKey {
     param(
         [System.ConsoleKey] $Key = [System.ConsoleKey]::Enter,
         [char]              $Char = [char]0
@@ -47,7 +47,7 @@ function New-FakeKey {
     return New-Object System.ConsoleKeyInfo($Char, $Key, $false, $false, $false)
 }
 
-function New-FakeCharKey {
+function global:New-FakeCharKey {
     param([char] $Char)
     $key = switch ($Char) {
         'Q' { [System.ConsoleKey]::Q } 'q' { [System.ConsoleKey]::Q }
