@@ -8,7 +8,8 @@ Describe 'TU-ACME Module Contract' -Tag Unit, Module {
 
     Context 'Manifest (TU-ACME.psd1)' {
         BeforeAll {
-            $script:manifest = Test-ModuleManifest -Path $script:ModulePsd1 -ErrorAction Stop
+            $psd1 = Join-Path $PSScriptRoot '..\..\..\TU-ACME\TU-ACME.psd1'
+            $script:manifest = Test-ModuleManifest -Path $psd1 -ErrorAction Stop
         }
 
         It 'passes Test-ModuleManifest' {

@@ -10,16 +10,18 @@ Describe 'Show-Table' -Tag Unit, UI {
     AfterAll  { Remove-TUACMEModule }
 
     InModuleScope TU-ACME {
+        BeforeAll {
+            $script:FakeCerts = @(
+                (New-FakeCertificate -Domain 'a.dk' -DaysLeft 60)
+                (New-FakeCertificate -Domain 'b.dk' -DaysLeft 20)
+                (New-FakeExpiredCertificate)
+            )
+        }
+
         BeforeEach {
             Mock -CommandName 'Write-Host'          -MockWith {}
             Mock -CommandName 'Invoke-ConsoleClear' -MockWith {}
         }
-
-        $script:FakeCerts = @(
-            New-FakeCertificate -Domain 'a.dk' -DaysLeft 60,
-            New-FakeCertificate -Domain 'b.dk' -DaysLeft 20,
-            (New-FakeExpiredCertificate)
-        )
 
         Context 'Non-interactive — no return value' {
             It 'does not throw' {

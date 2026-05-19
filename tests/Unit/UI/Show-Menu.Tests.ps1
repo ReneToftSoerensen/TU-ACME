@@ -9,18 +9,20 @@ Describe 'Show-Menu' -Tag Unit, UI {
     AfterAll  { Remove-TUACMEModule }
 
     InModuleScope TU-ACME {
+        BeforeAll {
+            function Set-KeySequence {
+                param([System.ConsoleKeyInfo[]] $Keys)
+                $script:_Keys = $Keys
+                $script:_ki   = 0
+                Mock -CommandName 'Invoke-ConsoleReadKey' -MockWith {
+                    $k = $script:_Keys[$script:_ki]; $script:_ki++; return $k
+                }
+            }
+        }
+
         BeforeEach {
             Mock -CommandName 'Write-Host'           -MockWith {}
             Mock -CommandName 'Invoke-ConsoleClear'  -MockWith {}
-        }
-
-        function Set-KeySequence {
-            param([System.ConsoleKeyInfo[]] $Keys)
-            $script:_ki = 0
-            Mock -CommandName 'Invoke-ConsoleReadKey' -MockWith {
-                $k = $script:_Keys[$script:_ki]; $script:_ki++; return $k
-            }
-            $script:_Keys = $Keys
         }
 
         Context 'Enter on first item returns index 0' {

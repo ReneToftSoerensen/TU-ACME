@@ -2,11 +2,12 @@
 . "$PSScriptRoot\..\Bootstrap.ps1"
 . "$PSScriptRoot\..\Fixtures\FakeObjects.ps1"
 
-$script:PluginPath = (Resolve-Path "$PSScriptRoot\..\..\TU-ACME\Scripts\Posh-ACME-IIS-Plugin.ps1").Path
-
 Describe 'Posh-ACME-IIS-Plugin.ps1' -Tag Unit, Scripts {
 
-    BeforeAll { Import-TUACMEModule }
+    BeforeAll {
+        Import-TUACMEModule
+        $script:PluginPath = Join-Path $PSScriptRoot '..\..\TU-ACME\Scripts\Posh-ACME-IIS-Plugin.ps1'
+    }
     AfterAll  { Remove-TUACMEModule }
 
     Context 'Script file is valid' {

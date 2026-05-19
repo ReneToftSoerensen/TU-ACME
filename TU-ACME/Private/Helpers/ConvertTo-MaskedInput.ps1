@@ -33,7 +33,7 @@
                 }
                 Set-ConsoleCursorPos -X $col -Y $row
                 Write-Host ($MaskChar.ToString() * $chars.Count + ' ') -NoNewline
-                Set-ConsoleCursorPos -X $col + $chars.Count -Y $row
+                Set-ConsoleCursorPos -X ($col + $chars.Count) -Y $row
             }
             continue
         }

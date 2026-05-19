@@ -2,14 +2,15 @@
 . "$PSScriptRoot\..\Bootstrap.ps1"
 . "$PSScriptRoot\..\Fixtures\FakeObjects.ps1"
 
-$script:ScriptPath = (Resolve-Path "$PSScriptRoot\..\..\TU-ACME\Scripts\Invoke-RenewalBackground.ps1").Path
-
 Describe 'Invoke-RenewalBackground.ps1' -Tag Unit, Scripts {
 
     # The background script is standalone (not in the module) — we dot-source it into
     # a fresh scope for each context, replacing external functions with mocks first.
 
-    BeforeAll { Import-TUACMEModule }
+    BeforeAll {
+        Import-TUACMEModule
+        $script:ScriptPath = Join-Path $PSScriptRoot '..\..\TU-ACME\Scripts\Invoke-RenewalBackground.ps1'
+    }
     AfterAll  { Remove-TUACMEModule }
 
     Context 'Script file exists and is valid PowerShell' {

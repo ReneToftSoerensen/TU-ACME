@@ -27,7 +27,7 @@
         Write-Host "  $border" -ForegroundColor DarkCyan
 
         for ($i = 0; $i -lt $visibleOptions.Count; $i++) {
-            Set-ConsoleCursorPos -X 0 -Y $i + 2
+            Set-ConsoleCursorPos -X 0 -Y ($i + 2)
             $line = '  ' + $visibleOptions[$i]
             $line = $line.PadRight([Math]::Min($w - 1, 79))
             if ($i -eq $index) {
@@ -46,7 +46,7 @@
 
         # Vis soegefelt hvis aktivt
         if ($AllowSearch) {
-            Set-ConsoleCursorPos -X 0 -Y $visibleOptions.Count + 3
+            Set-ConsoleCursorPos -X 0 -Y ($visibleOptions.Count + 3)
             if ($searching) {
                 Write-Host "  Soeg: $filter_" -ForegroundColor Yellow -NoNewline
             } else {
@@ -55,7 +55,7 @@
         }
 
         if ($StatusMessage -ne '') {
-            Set-ConsoleCursorPos -X 0 -Y $visibleOptions.Count + 4
+            Set-ConsoleCursorPos -X 0 -Y ($visibleOptions.Count + 4)
             Write-Host "  $StatusMessage" -ForegroundColor Yellow -NoNewline
         }
 

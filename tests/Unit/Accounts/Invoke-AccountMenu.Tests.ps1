@@ -43,7 +43,10 @@ Describe 'Invoke-AccountMenu' -Tag Unit, Accounts {
 
         Context '_Set-ActiveAccount — calls Set-PAAccount' {
             BeforeEach {
-                $script:accounts = @(New-FakeAccount -Id 'acc-001', New-FakeAccount -Id 'acc-002')
+                $script:accounts = @(
+                    (New-FakeAccount -Id 'acc-001')
+                    (New-FakeAccount -Id 'acc-002')
+                )
                 Mock -CommandName 'Show-Menu' -MockWith { 0 }
             }
             It 'calls Set-PAAccount' {
