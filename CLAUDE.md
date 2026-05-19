@@ -1,79 +1,79 @@
 # CLAUDE.md — TU-ACME
 
-## Projektbeskrivelse
-En interaktiv tekstbaseret terminal-brugerflade (TUI) til PowerShell-modulet Posh-ACME. Projektet giver systemadministratorer et fuldt menustyret interface til at administrere ACME/Let's Encrypt-certifikater på Windows-servere, inklusiv IIS-integration og automatisk fornyelse.
+## Project description
+An interactive text-based terminal user interface (TUI) for the PowerShell module Posh-ACME. The project gives system administrators a fully menu-driven interface for managing ACME/Let's Encrypt certificates on Windows servers, including IIS integration and automatic renewal.
 
-## Platform og minimumskrav
-- **OS:** Windows (klient og server, inkl. Windows Server Core)
-- **PowerShell:** 5.0 minimum (matcher Posh-ACME's eget minimumskrav)
-- **Kørselsmiljø:** Direkte i eksisterende konsol-session — ingen grafiske afhængigheder
-- **Remoting:** Understøtter PowerShell Remoting (WinRM/SSH) på headless systemer
+## Platform and minimum requirements
+- **OS:** Windows (client and server, including Windows Server Core)
+- **PowerShell:** 5.0 minimum (matches Posh-ACME's own minimum requirement)
+- **Runtime environment:** Directly in an existing console session — no graphical dependencies
+- **Remoting:** Supports PowerShell Remoting (WinRM/SSH) on headless systems
 
-## Mappestruktur
+## Folder structure
 ```
 TU-ACME/
-├── CLAUDE.md               # Denne fil
-├── README.md               # Projektdokumentation
-├── Usecases/               # Granulerede use case-dokumenter (UC-X.Y)
+├── CLAUDE.md               # This file
+├── README.md               # Project documentation
+├── Usecases/               # Granular use case documents (UC-X.Y)
 │   ├── UC-0.1-*.md         # System
-│   ├── UC-1.x-*.md         # Kontostyring
-│   ├── UC-2.x-*.md         # Certifikatbestilling
-│   ├── UC-3.x-*.md         # DNS-Plugins og Credentials
+│   ├── UC-1.x-*.md         # Account management
+│   ├── UC-2.x-*.md         # Certificate ordering
+│   ├── UC-3.x-*.md         # DNS plugins and credentials
 │   ├── UC-4.x-*.md         # Dashboard
-│   ├── UC-5.x-*.md         # Automatisering
-│   ├── UC-6.x-*.md         # Eksport og Import
-│   ├── UC-7.x-*.md         # Fejlsøgning
+│   ├── UC-5.x-*.md         # Automation
+│   ├── UC-6.x-*.md         # Export and Import
+│   ├── UC-7.x-*.md         # Troubleshooting
 │   └── UC-8.x-*.md         # IIS Integration
-└── Scripts/                # PowerShell-scripts (implementering)
+└── Scripts/                # PowerShell scripts (implementation)
     ├── Start-TUACME.ps1
     └── Posh-ACME-IIS-Plugin.ps1
 ```
 
-## Teknisk stack
-| Komponent | Valg |
+## Technical stack
+| Component | Choice |
 |---|---|
-| Runtime | Windows PowerShell **5.1** (kun) |
-| TUI-engine | Ren konsol I/O — `[Console]::ReadKey()`, `$Host.UI.RawUI` |
-| Distribution | PowerShell-modul (`.psm1` + `.psd1`) |
-| Install-sti | `$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME\` (AllUsers) |
-| Konfiguration | JSON (`$env:ProgramData\TU-ACME\config.json`) |
-| Hemmelige data | `Export-Clixml` DPAPI-kryptering (`.xml`) |
-| E-mail | `Send-MailMessage` plaintext |
-| IIS-scope | Lokal IIS med thumbprint-matching |
-| Logging | Windows Event Log (Application / kilde: `TU-ACME`) |
+| Runtime | Windows PowerShell **5.1** (only) |
+| TUI engine | Pure console I/O — `[Console]::ReadKey()`, `$Host.UI.RawUI` |
+| Distribution | PowerShell module (`.psm1` + `.psd1`) |
+| Install path | `$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME\` (AllUsers) |
+| Configuration | JSON (`$env:ProgramData\TU-ACME\config.json`) |
+| Secret data | `Export-Clixml` DPAPI encryption (`.xml`) |
+| Email | `Send-MailMessage` plaintext |
+| IIS scope | Local IIS with thumbprint matching |
+| Logging | Windows Event Log (Application / source: `TU-ACME`) |
 
-Se `Usecases/UC-0.0-Teknisk-Stack-og-Specs.md` for fulde detaljer, kodeeksempler og mappestruktur.
+See `Usecases/UC-0.0-Teknisk-Stack-og-Specs.md` for full details, code examples, and folder structure.
 
-Benyt UTF8 BOM altid
+Always use UTF-8 BOM
 
-## Arkitekturprincipper
-- **Rent TUI-mønster:** Al interaktion sker via tekstbaserede menuer, tabelvisninger og prompter i terminalen. Ingen GUI-afhængigheder.
-- **Wrapper-arkitektur:** TUI'en kalder Posh-ACME-kommandoer direkte. Ingen forretningslogik duplikeres — Posh-ACME er kilden til sandhed.
-- **Sikkerhed first:** Følsomme data (API-nøgler, SMTP-adgangskoder) gemmes aldrig i klartekst. Brug altid `SecureString` og DPAPI (`Export-Clixml`).
-- **Headless-kompatibilitet:** Baggrundsscripts kører med `-NonInteractive -WindowStyle Hidden` og bruger Windows Event Log til output.
+## Architecture principles
+- **Pure TUI pattern:** All interaction takes place through text-based menus, table views, and prompts in the terminal. No GUI dependencies.
+- **Wrapper architecture:** The TUI calls Posh-ACME commands directly. No business logic is duplicated — Posh-ACME is the source of truth.
+- **Security first:** Sensitive data (API keys, SMTP passwords) is never stored in plain text. Always use `SecureString` and DPAPI (`Export-Clixml`).
+- **Headless compatibility:** Background scripts run with `-NonInteractive -WindowStyle Hidden` and use the Windows Event Log for output.
 
-## Brugerroller
-| Rolle | Adgang |
+## User roles
+| Role | Access |
 |---|---|
-| **Systemadministrator (Admin)** | Fuld adgang — konfigurering, bestilling, automatisering, IIS |
-| **Overvåger/Tekniker (ReadOnly)** | Kun dashboard (UC-4.x) og logvisning (UC-7.1) |
+| **System administrator (Admin)** | Full access — configuration, ordering, automation, IIS |
+| **Monitor/Technician (ReadOnly)** | Dashboard only (UC-4.x) and log viewing (UC-7.1) |
 
-## Nøgle-use cases (prioriteret)
-Alle use cases er dokumenteret i mappen `Usecases/`. Høj-prioriterede cases:
-- **UC-0.1** — Rettighedstjek ved opstart (fundament for alle admin-funktioner)
-- **UC-2.2** — Certifikatbestilling med realtids-spinner
-- **UC-4.1** — Farvekodet certifikat-dashboard
-- **UC-5.1 + UC-5.4** — Automatisk fornyelse via Task Scheduler
-- **UC-8.3 + UC-8.4** — Automatisk IIS-opdatering via post-renewal plugin
+## Key use cases (prioritized)
+All use cases are documented in the `Usecases/` folder. High-priority cases:
+- **UC-0.1** — Privilege check at startup (foundation for all admin functions)
+- **UC-2.2** — Certificate ordering with real-time spinner
+- **UC-4.1** — Color-coded certificate dashboard
+- **UC-5.1 + UC-5.4** — Automatic renewal via Task Scheduler
+- **UC-8.3 + UC-8.4** — Automatic IIS update via post-renewal plugin
 
-## Vigtige PowerShell-kommandoer
+## Important PowerShell commands
 ```powershell
-# Kontostyring
+# Account management
 Get-PAAccount -List
 New-PACAccount -AcceptTOS -Contact "mail@eks.dk"
 Set-PAAccount -ID "<id>"
 
-# Certifikater
+# Certificates
 Get-PACertificate -List
 New-PACertificate -Domain "eks.dk" -Plugin Cloudflare -PluginArgs $args
 Submit-Renewal
@@ -83,27 +83,27 @@ Import-Module WebAdministration
 Get-WebBinding -Protocol "https"
 Set-WebBinding -Name "<site>" -PropertyName "certificateHash" -Value $thumbprint
 
-# Automatisering
+# Automation
 Register-ScheduledTask -TaskName "Posh-ACME-AutoRenewal" ...
-Set-PAConfig -PostScript "<sti-til-plugin>"
+Set-PAConfig -PostScript "<path-to-plugin>"
 ```
 
-## Sikkerhedsretningslinjer
-- Kald altid `Read-Host -AsSecureString` til adgangskoder og API-nøgler — aldrig `Read-Host` uden.
-- Gem kun krypteret: `Export-Clixml` (DPAPI-baseret, maskin/bruger-bundet).
-- Tjek administrator-rettigheder ved opstart (UC-0.1) — deaktivér admin-menuer hvis ikke forhøjet.
-- Log til Windows Event Log i baggrundsscripts — aldrig til filer i klartekst der indeholder credentials.
+## Security guidelines
+- Always use `Read-Host -AsSecureString` for passwords and API keys — never plain `Read-Host`.
+- Store only encrypted: `Export-Clixml` (DPAPI-based, machine/user-bound).
+- Check administrator privileges at startup (UC-0.1) — disable admin menus if not elevated.
+- Log to the Windows Event Log in background scripts — never to plain-text files containing credentials.
 
-## Filkodning
-Alle `.ps1`, `.psm1` og `.psd1` filer i repositoriet **skal** gemmes som **UTF-8 med BOM** (Byte Order Mark, `EF BB BF`).
-- Windows PowerShell 5.1 forventer UTF-8 BOM for korrekt håndtering af ikke-ASCII-tegn (f.eks. danske bogstaver æ, ø, å).
-- Uden BOM kan PS 5.1 fejltolke filen som Windows-1252, hvilket ødelægger strenge med diakritiske tegn.
-- Verificér med: `(Get-Content -Path file.ps1 -Raw -Encoding Byte)[0..2] | ForEach-Object { '{0:X2}' -f $_ }` → skal vise `EF BB BF`.
-- Ved oprettelse af nye filer: gem eksplicit som UTF-8 BOM i din editor, eller brug `$content | Set-Content -Path file.ps1 -Encoding UTF8` i PowerShell (PS 5.1's `UTF8` inkluderer BOM).
+## File encoding
+All `.ps1`, `.psm1`, and `.psd1` files in the repository **must** be saved as **UTF-8 with BOM** (Byte Order Mark, `EF BB BF`).
+- Windows PowerShell 5.1 expects a UTF-8 BOM for correct handling of non-ASCII characters (e.g. Danish letters ae, oe, aa).
+- Without a BOM, PS 5.1 may misinterpret the file as Windows-1252, which corrupts strings containing diacritics.
+- Verify with: `(Get-Content -Path file.ps1 -Raw -Encoding Byte)[0..2] | ForEach-Object { '{0:X2}' -f $_ }` → must show `EF BB BF`.
+- When creating new files: save explicitly as UTF-8 BOM in your editor, or use `$content | Set-Content -Path file.ps1 -Encoding UTF8` in PowerShell (PS 5.1's `UTF8` includes the BOM).
 
-## Udviklings-workflow
-1. Alle use cases er atomare og kan implementeres uafhængigt.
-2. Brug `claude/posh-acme-tui-specs-9Sbhg` som udviklingsbranch.
-3. Commit hyppigt med beskrivende commit-beskeder på dansk eller engelsk.
-4. Test TUI-input/output manuelt i en PowerShell 5.1-session inden push.
-5. Alle nye `.ps1`/`.psm1`/`.psd1` filer skal have UTF-8 BOM (se **Filkodning** ovenfor).
+## Development workflow
+1. All use cases are atomic and can be implemented independently.
+2. Use `claude/posh-acme-tui-specs-9Sbhg` as the development branch.
+3. Commit frequently with descriptive commit messages in Danish or English.
+4. Test TUI input/output manually in a PowerShell 5.1 session before pushing.
+5. All new `.ps1`/`.psm1`/`.psd1` files must have a UTF-8 BOM (see **File encoding** above).

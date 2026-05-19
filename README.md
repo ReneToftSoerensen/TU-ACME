@@ -1,134 +1,134 @@
 # TU-ACME
 
-En interaktiv, tekstbaseret terminal-brugerflade (TUI) til PowerShell-modulet [Posh-ACME](https://github.com/rmbolger/Posh-ACME). Administrér Let's Encrypt-certifikater, DNS-validering, automatisk fornyelse og IIS-integration — alt sammen direkte fra terminalen.
+An interactive text-based terminal user interface (TUI) for the PowerShell module [Posh-ACME](https://github.com/rmbolger/Posh-ACME). Manage Let's Encrypt certificates, DNS validation, automatic renewal, and IIS integration — all directly from the terminal.
 
 ---
 
-## Funktioner
+## Features
 
-| Kategori | Funktion |
+| Category | Feature |
 |---|---|
-| **Kontostyring** | Opret, skift og administrér ACME-konti (Production/Staging) |
-| **Certifikater** | Bestil certifikater med DNS-validering og realtids-statusindikator |
-| **DNS-Plugins** | Understøtter alle Posh-ACME DNS-plugins (Azure, Cloudflare, Route53 m.fl.) |
-| **Dashboard** | Farvekodet overblik over certifikatstatus og udløbsdatoer |
-| **Automatisering** | Windows Scheduled Task til natlig fornyelse med e-mail-advisering ved fejl |
-| **Eksport/Import** | Eksportér til PFX, PEM/CRT/KEY, eller importér direkte til Windows Certificate Store |
-| **IIS Integration** | Scan, kobl og opdatér IIS HTTPS-bindings automatisk ved fornyelse |
-| **Fejlsøgning** | Læs og eksportér Posh-ACME logfiler direkte i TUI'en |
+| **Account management** | Create, switch, and manage ACME accounts (Production/Staging) |
+| **Certificates** | Order certificates with DNS validation and a real-time status indicator |
+| **DNS plugins** | Supports all Posh-ACME DNS plugins (Azure, Cloudflare, Route53, and more) |
+| **Dashboard** | Color-coded overview of certificate status and expiration dates |
+| **Automation** | Windows Scheduled Task for nightly renewal with email notification on failure |
+| **Export/Import** | Export to PFX, PEM/CRT/KEY, or import directly into the Windows Certificate Store |
+| **IIS integration** | Scan, bind, and update IIS HTTPS bindings automatically on renewal |
+| **Troubleshooting** | Read and export Posh-ACME log files directly in the TUI |
 
 ---
 
-## Krav
+## Requirements
 
-- **OS:** Windows (Windows 10/11, Windows Server 2016 og nyere, inkl. Server Core)
-- **PowerShell:** 5.0 eller nyere
-- **Posh-ACME:** Installeret via `Install-Module Posh-ACME`
-- **Administratorrettigheder:** Kræves til IIS-administration og oprettelse af Scheduled Tasks
-- **IIS-funktioner** *(kun til UC-8.x)*: Internet Information Services med modulet `WebAdministration`
+- **OS:** Windows (Windows 10/11, Windows Server 2016 and newer, including Server Core)
+- **PowerShell:** 5.0 or newer
+- **Posh-ACME:** Installed via `Install-Module Posh-ACME`
+- **Administrator privileges:** Required for IIS administration and creating Scheduled Tasks
+- **IIS features** *(only for UC-8.x)*: Internet Information Services with the `WebAdministration` module
 
 ---
 
 ## Installation
 
 ```powershell
-# 1. Installér Posh-ACME hvis ikke allerede installeret
+# 1. Install Posh-ACME if it is not already installed
 Install-Module -Name Posh-ACME -Scope AllUsers
 
-# 2. Klon eller download dette repository
+# 2. Clone or download this repository
 git clone https://github.com/renetoftsoerensen/tu-acme.git
 cd tu-acme
 
-# 3. Start TUI'en (kør som Administrator for fuld adgang)
+# 3. Start the TUI (run as Administrator for full access)
 .\Scripts\Start-TUACME.ps1
 ```
 
 ---
 
-## Brug
+## Usage
 
-Start TUI'en i en PowerShell-session. For fuld funktionalitet (IIS, Scheduled Tasks) skal PowerShell køres som Administrator.
+Start the TUI in a PowerShell session. For full functionality (IIS, Scheduled Tasks), PowerShell must be run as Administrator.
 
 ```
 TU-ACME v0.0.2
 ==========================================
-Aktiv konto: admin@eksempel.dk | Let's Encrypt Production
+Active account: admin@example.com | Let's Encrypt Production
 
-  1. Kontostyring
-  2. Bestil nyt certifikat
-  3. Certifikat-dashboard
-  4. Automatisering
-  5. Eksport / Import
+  1. Account Management
+  2. Order new certificate
+  3. Certificate dashboard
+  4. Automation
+  5. Export / Import
   6. IIS Integration
-  7. Fejlsoegning / Logs
-  Q. Afslut
+  7. Troubleshooting / Logs
+  Q. Quit
 
-[F3] Skift til Staging   [F1] Hjælp
+[F3] Switch to Staging   [F1] Help
 ```
 
-Naviger med **piletasterne**, vælg med **Enter**, og gå tilbage med **ESC** eller **Q**.
+Navigate with the **arrow keys**, select with **Enter**, and go back with **ESC** or **Q**.
 
 ---
 
 ## Use Cases
 
-Alle funktioner er dokumenteret som atomare use cases i mappen [`Usecases/`](./Usecases/):
+All features are documented as atomic use cases in the [`Usecases/`](./Usecases/) folder:
 
-| ID | Beskrivelse | Prioritet |
+| ID | Description | Priority |
 |---|---|---|
-| UC-0.1 | Kontrol af administrator-rettigheder ved opstart | Høj |
-| UC-1.1 | Vis liste over eksisterende ACME-konti | Høj |
-| UC-1.2 | Opret ny ACME-konto | Høj |
-| UC-1.3 | Skift aktiv ACME-konto | Høj |
-| UC-1.4 | Hurtig skift til Staging/Test-miljø | Høj |
-| UC-2.1 | Indtast domænenavn og alternative navne (SAN) | Høj |
-| UC-2.2 | Bestil certifikat og vis realtids statusindikator | Høj |
-| UC-3.1 | Vis understøttede DNS-plugins i menu | Høj |
-| UC-3.2 | Indtast og maskér API-credentials i prompt | Høj |
-| UC-3.3 | Gem API-credentials krypteret på disken | Høj |
-| UC-4.1 | Vis interaktiv tabel over certifikater (Farvekodet) | Høj |
-| UC-4.2 | Sortering og filtrering af certifikatlisten | Medium |
-| UC-4.3 | Vis detaljerede oplysninger om et valgt certifikat | Medium |
-| UC-5.1 | Opret Windows Scheduled Task til natlig kørsel | Høj |
-| UC-5.2 | Konfigurer og gem SMTP-indstillinger til e-mail | Høj |
-| UC-5.3 | Test SMTP-forbindelse og send test-mail fra TUI | Medium |
-| UC-5.4 | Kør lydløs baggrundsfornyelse med fejlopsamling | Høj |
-| UC-6.1 | Eksportér certifikat til PFX-fil | Medium |
-| UC-6.2 | Eksportér certifikat til PEM/Key/Cert filer | Medium |
-| UC-6.3 | Importér certifikat direkte til Windows Certificate Store | Høj |
-| UC-7.1 | Gennemse seneste logfiler direkte i TUI (Pager) | Medium |
-| UC-7.2 | Eksporter logfiler til ekstern fil | Lav |
-| UC-8.1 | Scan lokale IIS-sites og HTTPS-bindings | Høj |
-| UC-8.2 | Kobl certifikat til IIS-endpoints manuelt via TUI | Høj |
-| UC-8.3 | Registrer Post-Renewal Plugin (IIS Update) i Posh-ACME | Høj |
-| UC-8.4 | Automatisk IIS-opdatering via Post-Renewal script | Høj |
+| UC-0.1 | Check administrator privileges at startup | High |
+| UC-1.1 | Show list of existing ACME accounts | High |
+| UC-1.2 | Create new ACME account | High |
+| UC-1.3 | Switch active ACME account | High |
+| UC-1.4 | Quick switch to Staging/Test environment | High |
+| UC-2.1 | Enter domain name and alternative names (SAN) | High |
+| UC-2.2 | Order certificate and show real-time status indicator | High |
+| UC-3.1 | Show supported DNS plugins in menu | High |
+| UC-3.2 | Enter and mask API credentials in prompt | High |
+| UC-3.3 | Store API credentials encrypted on disk | High |
+| UC-4.1 | Show interactive table of certificates (color-coded) | High |
+| UC-4.2 | Sort and filter the certificate list | Medium |
+| UC-4.3 | Show detailed information about a selected certificate | Medium |
+| UC-5.1 | Create Windows Scheduled Task for nightly run | High |
+| UC-5.2 | Configure and save SMTP settings for email | High |
+| UC-5.3 | Test SMTP connection and send test email from the TUI | Medium |
+| UC-5.4 | Run silent background renewal with error collection | High |
+| UC-6.1 | Export certificate to PFX file | Medium |
+| UC-6.2 | Export certificate to PEM/Key/Cert files | Medium |
+| UC-6.3 | Import certificate directly into Windows Certificate Store | High |
+| UC-7.1 | Browse recent log files directly in the TUI (pager) | Medium |
+| UC-7.2 | Export log files to an external file | Low |
+| UC-8.1 | Scan local IIS sites and HTTPS bindings | High |
+| UC-8.2 | Bind certificate to IIS endpoints manually via the TUI | High |
+| UC-8.3 | Register Post-Renewal Plugin (IIS Update) in Posh-ACME | High |
+| UC-8.4 | Automatic IIS update via Post-Renewal script | High |
 
 ---
 
-## Sikkerhed
+## Security
 
-- API-nøgler og adgangskoder gemmes **aldrig i klartekst**. Al hemmelig information krypteres med Windows DPAPI via PowerShells `Export-Clixml`.
-- TUI'en detekterer automatisk om den kører med forhøjede rettigheder og deaktiverer administrative funktioner hvis ikke (UC-0.1).
-- Krypterede data er bundet til den bruger og maskine, der gemte dem — og kan ikke læses af andre brugere eller på andre maskiner.
+- API keys and passwords are **never stored in plain text**. All secret information is encrypted with Windows DPAPI via PowerShell's `Export-Clixml`.
+- The TUI automatically detects whether it is running with elevated privileges and disables administrative functions if not (UC-0.1).
+- Encrypted data is bound to the user and machine that saved it — and cannot be read by other users or on other machines.
 
 ---
 
-## Automatisk fornyelse
+## Automatic renewal
 
-Når automatisering er konfigureret (UC-5.1), kører fornyelsen natligt uden brugerinteraktion:
+Once automation is configured (UC-5.1), renewal runs nightly without user interaction:
 
 ```
 Task Scheduler (03:00)
-  └── Invoke-RenewalBackground.ps1
-        └── Submit-Renewal (Posh-ACME)
-              ├── [Succes] → Log til Windows Event Log
-              ├── [Fejl]   → Send fejl-email til administrator (UC-5.4)
-              └── [Fornyelse] → Trigger Posh-ACME-IIS-Plugin.ps1 (UC-8.4)
-                                  └── Opdatér IIS-bindings automatisk
+  +-- Invoke-RenewalBackground.ps1
+        +-- Submit-Renewal (Posh-ACME)
+              +-- [Success]  -> Log to Windows Event Log
+              +-- [Failure]  -> Send error email to administrator (UC-5.4)
+              +-- [Renewed]  -> Trigger Posh-ACME-IIS-Plugin.ps1 (UC-8.4)
+                                  +-- Update IIS bindings automatically
 ```
 
 ---
 
-## Licens
+## License
 
-Se [LICENSE](./LICENSE) for licensbetingelser.
+See [LICENSE](./LICENSE) for license terms.

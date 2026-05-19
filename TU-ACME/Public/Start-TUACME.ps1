@@ -1,60 +1,60 @@
 ﻿function Start-TUACME {
     <#
     .SYNOPSIS
-        Starter TU-ACME Terminal UI til administration af Posh-ACME certifikater.
+        Starts the TU-ACME Terminal UI for managing Posh-ACME certificates.
     #>
     [CmdletBinding()]
     param()
 
-    # Tjek at Posh-ACME er installeret
+    # Check that Posh-ACME is installed
     if (-not (Get-Module -ListAvailable -Name 'Posh-ACME')) {
         Write-Host ''
-        Write-Host '  [FEJL] Posh-ACME modulet er ikke installeret.' -ForegroundColor Red
-        Write-Host '  Installer med: Install-Module -Name Posh-ACME -Scope AllUsers' -ForegroundColor Yellow
+        Write-Host '  [ERROR] The Posh-ACME module is not installed.' -ForegroundColor Red
+        Write-Host '  Install with: Install-Module -Name Posh-ACME -Scope AllUsers' -ForegroundColor Yellow
         Write-Host ''
         return
     }
 
-    # Saet admin-status i modul-scope
+    # Set admin status in module scope
     $script:TUACMEIsAdmin = Get-AdminStatus
 
-    # Opret konfigurationsmappe hvis den ikke eksisterer
+    # Create configuration folder if it does not exist
     $configDir = Join-Path $env:ProgramData 'TU-ACME'
     if (-not (Test-Path $configDir)) {
         New-Item -ItemType Directory -Path $configDir -Force | Out-Null
     }
 
-    # Registrer Event Log kilde hvis admin
+    # Register Event Log source if admin
     if ($script:TUACMEIsAdmin) {
-        Write-EventLogEntry -EventId 1000 -Message 'TU-ACME startet.' -EntryType Information
+        Write-EventLogEntry -EventId 1000 -Message 'TU-ACME started.' -EntryType Information
     }
 
-    # Hovedmenu-loop
+    # Main menu loop
     $running = $true
     while ($running) {
         Invoke-ConsoleClear
         Show-StatusBar
 
         $menuOptions = @(
-            '1. Kontostyring',
-            '2. Bestil nyt certifikat',
-            '3. Certifikat-dashboard',
-            '4. Automatisering',
-            '5. Eksport / Import',
+            '1. Account Management',
+            '2. Order new certificate',
+            '3. Certificate Dashboard',
+            '4. Automation',
+            '5. Export / Import',
             '6. IIS Integration',
-            '7. Fejlsoegning / Logs',
-            'Q. Afslut'
+            '7. Troubleshooting / Logs',
+            'Q. Exit'
         )
 
-        $selection = Show-Menu -Title 'TU-ACME v0.0.2 — Certifikatstyring' -Options $menuOptions
+        $selection = Show-Menu -Title 'TU-ACME v0.0.2 — Certificate Management' -Options $menuOptions
 
         switch ($selection) {
             -2 {
-                # F3 — Staging-toggle (haandteres i Invoke-AccountMenu)
+                # F3 — Staging toggle (handled in Invoke-AccountMenu)
                 Invoke-AccountMenu -StagingToggle
             }
             -1 {
-                # ESC — Afslut
+                # ESC — Exit
                 $running = $false
             }
             0  { Invoke-AccountMenu }
@@ -62,7 +62,7 @@
             2  { Invoke-CertificateDashboard }
             3  {
                 if (-not $script:TUACMEIsAdmin) {
-                    Show-StatusBar -AdminWarning 'Automatisering kraever administratorrettigheder'
+                    Show-StatusBar -AdminWarning 'Automation requires administrator privileges'
                     Start-Sleep -Seconds 2
                 } else {
                     Invoke-AutomationMenu
@@ -72,10 +72,10 @@
             5  {
                 if (-not $script:OnWindows) {
                     Write-Host ''
-                    Write-Host '  IIS Integration er kun tilgængeligt på Windows.' -ForegroundColor Yellow
+                    Write-Host '  IIS Integration is only available on Windows.' -ForegroundColor Yellow
                     Start-Sleep -Seconds 2
                 } elseif (-not $script:TUACMEIsAdmin) {
-                    Show-StatusBar -AdminWarning 'IIS Integration kraever administratorrettigheder'
+                    Show-StatusBar -AdminWarning 'IIS Integration requires administrator privileges'
                     Start-Sleep -Seconds 2
                 } else {
                     Invoke-IISMenu
@@ -87,5 +87,5 @@
     }
 
     Invoke-ConsoleClear
-    Write-Host 'TU-ACME afsluttet.' -ForegroundColor Cyan
+    Write-Host 'TU-ACME exited.' -ForegroundColor Cyan
 }

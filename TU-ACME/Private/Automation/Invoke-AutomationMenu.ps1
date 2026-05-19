@@ -1,32 +1,32 @@
 ﻿function Invoke-AutomationMenu {
     if (-not $script:TUACMEIsAdmin) {
-        Show-StatusBar -AdminWarning 'Automatisering kræver administratorrettigheder'
+        Show-StatusBar -AdminWarning 'Automation requires administrator privileges'
         Start-Sleep -Seconds 2
         return
     }
 
     while ($true) {
         $options = @(
-            '1. Opret Scheduled Task (automatisk fornyelse)',
-            '2. Konfigurer SMTP-fejladvisering',
-            '3. Send test-mail',
-            'B. Tilbage'
+            '1. Create Scheduled Task (automatic renewal)',
+            '2. Configure SMTP failure notification',
+            '3. Send test email',
+            'B. Back'
         )
-        $sel = Show-Menu -Title 'Automatisering' -Options $options
+        $sel = Show-Menu -Title 'Automation' -Options $options
 
         switch ($sel) {
             -1 { return }
             0  { Invoke-ScheduledTaskSetup }
             1  { Invoke-SMTPConfig }
             2  {
-                # Direkte test-mail uden at aabne hele SMTP-konfigurationen
-                $subject = '[TU-ACME] Manuel test-mail'
-                $body    = "Manuel test-mail fra TU-ACME.`n`nTidsstempel: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')`nServer: $env:COMPUTERNAME"
+                # Direct test email without opening the full SMTP configuration
+                $subject = '[TU-ACME] Manual test email'
+                $body    = "Manual test email from TU-ACME.`n`nTimestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')`nServer: $env:COMPUTERNAME"
                 $ok = Send-TUACMEMail -Subject $subject -Body $body
                 if ($ok) {
-                    Write-Host '  Test-mail sendt.' -ForegroundColor Green
+                    Write-Host '  Test email sent.' -ForegroundColor Green
                 } else {
-                    Write-Host '  Fejl. Tjek SMTP-konfiguration.' -ForegroundColor Red
+                    Write-Host '  Error. Check SMTP configuration.' -ForegroundColor Red
                 }
                 Start-Sleep -Seconds 2
             }

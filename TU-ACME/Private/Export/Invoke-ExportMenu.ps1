@@ -1,28 +1,28 @@
 ﻿function Invoke-ExportMenu {
     param($Cert = $null)
 
-    # Hvis intet certifikat er sendt ind, lad brugeren vaelge fra dashboard
+    # If no certificate is passed in, let the user select one from the dashboard
     if ($Cert -eq $null) {
         $certs = @(Get-PACertificate -List 2>$null)
         if ($certs.Count -eq 0) {
-            Write-Host '  Ingen certifikater fundet.' -ForegroundColor Yellow
+            Write-Host '  No certificates found.' -ForegroundColor Yellow
             Start-Sleep -Seconds 1
             return
         }
         $options = $certs | ForEach-Object { $_.MainDomain }
-        $sel     = Show-Menu -Title 'Vaelg certifikat til eksport' -Options $options
+        $sel     = Show-Menu -Title 'Select certificate to export' -Options $options
         if ($sel -lt 0) { return }
         $Cert = $certs[$sel]
     }
 
     while ($true) {
         $options = @(
-            '1. Eksporter som PFX',
-            '2. Eksporter som PEM/CRT/KEY',
-            '3. Importer til Windows Certificate Store',
-            'B. Tilbage'
+            '1. Export as PFX',
+            '2. Export as PEM/CRT/KEY',
+            '3. Import to Windows Certificate Store',
+            'B. Back'
         )
-        $sel = Show-Menu -Title "Eksport: $($Cert.MainDomain)" -Options $options
+        $sel = Show-Menu -Title "Export: $($Cert.MainDomain)" -Options $options
 
         switch ($sel) {
             -1 { return }

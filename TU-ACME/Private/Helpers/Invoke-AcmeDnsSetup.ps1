@@ -1,39 +1,39 @@
 ﻿function Invoke-AcmeDnsSetup {
     <#
     .SYNOPSIS
-        Guidet opsætning af ACME-DNS plugin (UC-3.5).
-        Returnerer et hashtable med ACMEDnsServer og ACMEDnsAccountJson klar til New-PACertificate,
-        eller $null hvis brugeren afbryder.
+        Guided setup for the ACME-DNS plugin (UC-3.5).
+        Returns a hashtable with ACMEDnsServer and ACMEDnsAccountJson ready for New-PACertificate,
+        or $null if the user cancels.
     #>
     param(
         [string[]] $Domains
     )
 
     Invoke-ConsoleClear
-    Write-Host '  === ACME-DNS Opsætning ===' -ForegroundColor Cyan
+    Write-Host '  === ACME-DNS Setup ===' -ForegroundColor Cyan
     Write-Host ''
-    Write-Host '  ACME-DNS er en dedikeret DNS-server til ACME-challenges.' -ForegroundColor Gray
-    Write-Host '  Den kræver kun én permanent CNAME-record i din DNS-zone.' -ForegroundColor Gray
+    Write-Host '  ACME-DNS is a dedicated DNS server for ACME challenges.' -ForegroundColor Gray
+    Write-Host '  It only requires a single permanent CNAME record in your DNS zone.' -ForegroundColor Gray
     Write-Host ''
 
-    # Trin 1: ACME-DNS server URL
+    # Step 1: ACME-DNS server URL
     $server = _Get-AcmeDnsServer
     if ($server -eq $null) { return $null }
 
-    # Trin 2: Ny konto eller eksisterende
+    # Step 2: New or existing account
     $accountJson = _Get-AcmeDnsAccount -Server $server -Domains $Domains
     if ($accountJson -eq $null) { return $null }
 
-    # Trin 3: Vis CNAME-instruktion og vent på bekræftelse
+    # Step 3: Show CNAME instruction and wait for confirmation
     $cnameOk = _Show-CnameInstruction -Domains $Domains -AccountData $accountJson
     if (-not $cnameOk) { return $null }
 
-    # Trin 4: Gem credentials krypteret
+    # Step 4: Save credentials encrypted
     $jsonPath = _Save-AcmeDnsAccount -AccountData $accountJson -Domains $Domains
     if ($jsonPath -eq $null) { return $null }
 
     Write-Host ''
-    Write-Host '  ACME-DNS opsætning fuldfoert.' -ForegroundColor Green
+    Write-Host '  ACME-DNS setup completed.' -ForegroundColor Green
 
     return @{
         ACMEDnsServer      = $server
@@ -43,35 +43,35 @@
 
 function _Get-AcmeDnsServer {
     Write-Host '  ACME-DNS server URL:' -ForegroundColor Gray
-    Write-Host '  Eksempler:' -ForegroundColor DarkGray
-    Write-Host '    https://auth.acme-dns.io       (offentlig)' -ForegroundColor DarkGray
-    Write-Host '    https://acmedns.eksempel.dk    (selvhostet)' -ForegroundColor DarkGray
+    Write-Host '  Examples:' -ForegroundColor DarkGray
+    Write-Host '    https://auth.acme-dns.io       (public)' -ForegroundColor DarkGray
+    Write-Host '    https://acmedns.example.com    (self-hosted)' -ForegroundColor DarkGray
     Write-Host ''
 
     while ($true) {
         $url = Read-Host '  Server URL'
         if ($url -eq '') {
-            Write-Host '  URL er paakraevet.' -ForegroundColor Red
+            Write-Host '  URL is required.' -ForegroundColor Red
             continue
         }
 
-        # Valider at serveren svarer
-        Write-Host '  Tester forbindelse...' -ForegroundColor Cyan -NoNewline
+        # Validate that the server responds
+        Write-Host '  Testing connection...' -ForegroundColor Cyan -NoNewline
         try {
             $resp = Invoke-WebRequest -Uri "$url/register" -Method Get `
                 -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
             Write-Host ' OK' -ForegroundColor Green
             return $url.TrimEnd('/')
         } catch {
-            # 405 Method Not Allowed er forventet for GET /register — serveren svarer
+            # 405 Method Not Allowed is expected for GET /register — the server is responding
             if ($_.Exception.Response -and $_.Exception.Response.StatusCode.value__ -in @(405, 400)) {
                 Write-Host ' OK' -ForegroundColor Green
                 return $url.TrimEnd('/')
             }
-            Write-Host ' FEJL' -ForegroundColor Red
-            Write-Host "  Kunne ikke forbinde: $_" -ForegroundColor Red
-            $retry = Read-Host '  Prøv igen? (J/N)'
-            if ($retry -notmatch '^[Jj]') { return $null }
+            Write-Host ' ERROR' -ForegroundColor Red
+            Write-Host "  Could not connect: $_" -ForegroundColor Red
+            $retry = Read-Host '  Try again? (Y/N)'
+            if ($retry -notmatch '^[Yy]') { return $null }
         }
     }
 }
@@ -80,9 +80,9 @@ function _Get-AcmeDnsAccount {
     param([string] $Server, [string[]] $Domains)
 
     Write-Host ''
-    $existing = Read-Host '  Har du allerede en ACME-DNS konto til dette domæne? (J/N)'
+    $existing = Read-Host '  Do you already have an ACME-DNS account for this domain? (Y/N)'
 
-    if ($existing -match '^[Jj]') {
+    if ($existing -match '^[Yy]') {
         return _Load-ExistingAccount
     }
 
@@ -93,7 +93,7 @@ function _Register-NewAccount {
     param([string] $Server)
 
     Write-Host ''
-    Write-Host '  Registrerer ny konto på ' -NoNewline -ForegroundColor Cyan
+    Write-Host '  Registering new account on ' -NoNewline -ForegroundColor Cyan
     Write-Host $Server -ForegroundColor White -NoNewline
     Write-Host '...' -ForegroundColor Cyan
 
@@ -103,7 +103,7 @@ function _Register-NewAccount {
             -TimeoutSec 30 -ErrorAction Stop
 
         Write-Host ''
-        Write-Host '  Konto oprettet!' -ForegroundColor Green
+        Write-Host '  Account created!' -ForegroundColor Green
         Write-Host ''
 
         $w = [Math]::Max((Get-ConsoleWidth) - 4, 60)
@@ -125,10 +125,10 @@ function _Register-NewAccount {
         return $response
     } catch {
         Write-Host ''
-        Write-Host "  [FEJL] Registrering fejlede: $_" -ForegroundColor Red
-        Write-Host '  Kontrollér at serveren accepterer nye registreringer.' -ForegroundColor Yellow
+        Write-Host "  [ERROR] Registration failed: $_" -ForegroundColor Red
+        Write-Host '  Verify that the server accepts new registrations.' -ForegroundColor Yellow
         Write-Host ''
-        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+        Write-Host '  Press any key...' -ForegroundColor DarkGray
         Invoke-ConsoleWaitKey
         return $null
     }
@@ -136,25 +136,25 @@ function _Register-NewAccount {
 
 function _Load-ExistingAccount {
     Write-Host ''
-    Write-Host '  Angiv sti til eksisterende konto-JSON:' -ForegroundColor Gray
-    $path = Read-Host '  JSON-sti'
+    Write-Host '  Enter path to existing account JSON:' -ForegroundColor Gray
+    $path = Read-Host '  JSON path'
 
     if (-not (Test-Path $path)) {
-        Write-Host "  Filen '$path' blev ikke fundet." -ForegroundColor Red
+        Write-Host "  The file '$path' was not found." -ForegroundColor Red
         return $null
     }
 
     try {
         $data = Get-Content -Path $path -Raw -Encoding UTF8 | ConvertFrom-Json
         if (-not ($data.username -and $data.password -and $data.fulldomain)) {
-            Write-Host '  JSON mangler paakaevede felter (username, password, fulldomain).' -ForegroundColor Red
+            Write-Host '  JSON is missing required fields (username, password, fulldomain).' -ForegroundColor Red
             return $null
         }
-        Write-Host "  Indlaest. Username: $($data.username)" -ForegroundColor Green
+        Write-Host "  Loaded. Username: $($data.username)" -ForegroundColor Green
         Write-Host "  FullDomain: $($data.fulldomain)" -ForegroundColor White
         return $data
     } catch {
-        Write-Host "  Fejl ved laesning af JSON: $_" -ForegroundColor Red
+        Write-Host "  Error reading JSON: $_" -ForegroundColor Red
         return $null
     }
 }
@@ -163,10 +163,10 @@ function _Show-CnameInstruction {
     param($Domains, $AccountData)
 
     Invoke-ConsoleClear
-    Write-Host '  === HANDLING PAAKRAEVET ===' -ForegroundColor Yellow
+    Write-Host '  === ACTION REQUIRED ===' -ForegroundColor Yellow
     Write-Host ''
-    Write-Host '  Opret foelgende CNAME-record(s) hos din DNS-provider.' -ForegroundColor White
-    Write-Host '  Dette goeres KUN EN GANG og er permanent.' -ForegroundColor White
+    Write-Host '  Create the following CNAME record(s) at your DNS provider.' -ForegroundColor White
+    Write-Host '  This is done ONLY ONCE and is permanent.' -ForegroundColor White
     Write-Host ''
 
     $w      = [Math]::Max((Get-ConsoleWidth) - 4, 72)
@@ -174,15 +174,15 @@ function _Show-CnameInstruction {
 
     Write-Host "  $border" -ForegroundColor Yellow
     foreach ($domain in $Domains) {
-        # Strip wildcard prefix til CNAME-navn
+        # Strip wildcard prefix for the CNAME name
         $baseDomain  = $domain -replace '^\*\.', ''
         $cnameName   = "_acme-challenge.$baseDomain"
         $cnameTarget = "$($AccountData.fulldomain)."
 
-        Write-Host "  | Domæne: $domain" -ForegroundColor White
-        Write-Host "  |   Navn:  $cnameName" -ForegroundColor Cyan
+        Write-Host "  | Domain: $domain" -ForegroundColor White
+        Write-Host "  |   Name:  $cnameName" -ForegroundColor Cyan
         Write-Host "  |   Type:  CNAME" -ForegroundColor Cyan
-        Write-Host "  |   Vaerdi: $cnameTarget" -ForegroundColor Cyan
+        Write-Host "  |   Value: $cnameTarget" -ForegroundColor Cyan
         Write-Host "  |   TTL:   300" -ForegroundColor Cyan
         if ($Domains.Count -gt 1 -and $domain -ne $Domains[-1]) {
             Write-Host "  |" -ForegroundColor Yellow
@@ -191,8 +191,8 @@ function _Show-CnameInstruction {
     Write-Host "  $border" -ForegroundColor Yellow
 
     Write-Host ''
-    Write-Host '  Tryk [Enter] naer CNAME-recorden er oprettet og propageret.' -ForegroundColor DarkGray
-    Write-Host '  Tryk [ESC] for at afbryde.' -ForegroundColor DarkGray
+    Write-Host '  Press [Enter] when the CNAME record has been created and propagated.' -ForegroundColor DarkGray
+    Write-Host '  Press [ESC] to cancel.' -ForegroundColor DarkGray
 
     while ($true) {
         $key = Invoke-ConsoleReadKey
@@ -209,15 +209,15 @@ function _Save-AcmeDnsAccount {
         New-Item -ItemType Directory -Path $accountDir -Force | Out-Null
     }
 
-    # Brug primære domæne som filnavn (saniteret)
+    # Use the primary domain as the file name (sanitized)
     $primaryDomain  = ($Domains[0] -replace '^\*\.', '') -replace '[^a-zA-Z0-9\-]', '_'
     $jsonPath       = Join-Path $accountDir "$primaryDomain.json"
 
     try {
         $AccountData | ConvertTo-Json -Compress | Set-Content -Path $jsonPath -Encoding UTF8
-        Write-Host "  Credentials gemt: $jsonPath" -ForegroundColor Green
+        Write-Host "  Credentials saved: $jsonPath" -ForegroundColor Green
 
-        # DPAPI-krypteret backup via Export-Clixml
+        # DPAPI-encrypted backup via Export-Clixml
         $xmlPath = $jsonPath -replace '\.json$', '.xml'
         $serverProp = $AccountData.PSObject.Properties['server']
         [PSCustomObject]@{
@@ -227,11 +227,11 @@ function _Save-AcmeDnsAccount {
             Subdomain  = $AccountData.subdomain
             FullDomain = $AccountData.fulldomain
         } | Export-Clixml -Path $xmlPath
-        Write-Host '  Krypteret backup gemt (DPAPI).' -ForegroundColor DarkGray
+        Write-Host '  Encrypted backup saved (DPAPI).' -ForegroundColor DarkGray
 
         return $jsonPath
     } catch {
-        Write-Host "  Fejl ved gemning af credentials: $_" -ForegroundColor Red
+        Write-Host "  Error saving credentials: $_" -ForegroundColor Red
         return $null
     }
 }
@@ -239,8 +239,8 @@ function _Save-AcmeDnsAccount {
 function Get-AcmeDnsAccountPath {
     <#
     .SYNOPSIS
-        Returnerer stien til en gemt ACME-DNS konto-JSON for et givet domæne.
-        Returnerer $null hvis ingen konto er fundet.
+        Returns the path to a saved ACME-DNS account JSON for a given domain.
+        Returns $null if no account is found.
     #>
     param([string] $Domain)
 

@@ -1,83 +1,83 @@
 ﻿function Invoke-SMTPConfig {
     Invoke-ConsoleClear
-    Write-Host '  === Konfigurer SMTP-fejladvisering ===' -ForegroundColor Cyan
+    Write-Host '  === Configure SMTP failure notification ===' -ForegroundColor Cyan
     Write-Host ''
 
     $config = Get-TUACMEConfig
     $email  = $config.Email
 
-    # Indsaml SMTP-indstillinger
-    $server = Read-Host "  SMTP-server (nuværende: $($email.SmtpServer))"
+    # Collect SMTP settings
+    $server = Read-Host "  SMTP server (current: $($email.SmtpServer))"
     if ($server -ne '') { $email.SmtpServer = $server }
 
-    $portStr = Read-Host "  Port (nuværende: $($email.SmtpPort))"
+    $portStr = Read-Host "  Port (current: $($email.SmtpPort))"
     if ($portStr -ne '') { $email.SmtpPort = [int]$portStr }
 
-    $sslStr = Read-Host "  Brug SSL? (J/N, nuværende: $(if ($email.UseSsl) { 'J' } else { 'N' }))"
-    if ($sslStr -match '^[JjYy]') { $email.UseSsl = $true }
+    $sslStr = Read-Host "  Use SSL? (Y/N, current: $(if ($email.UseSsl) { 'Y' } else { 'N' }))"
+    if ($sslStr -match '^[Yy]') { $email.UseSsl = $true }
     elseif ($sslStr -match '^[Nn]') { $email.UseSsl = $false }
 
-    $sender = Read-Host "  Afsenderadresse (nuværende: $($email.SenderAddress))"
+    $sender = Read-Host "  Sender address (current: $($email.SenderAddress))"
     if ($sender -ne '') { $email.SenderAddress = $sender }
 
-    $recipient = Read-Host "  Modtageradresse (nuværende: $($email.RecipientAddress))"
+    $recipient = Read-Host "  Recipient address (current: $($email.RecipientAddress))"
     if ($recipient -ne '') { $email.RecipientAddress = $recipient }
 
-    $authStr = Read-Host "  Brug godkendelse? (J/N, nuværende: $(if ($email.UseAuth) { 'J' } else { 'N' }))"
-    if ($authStr -match '^[JjYy]') { $email.UseAuth = $true }
+    $authStr = Read-Host "  Use authentication? (Y/N, current: $(if ($email.UseAuth) { 'Y' } else { 'N' }))"
+    if ($authStr -match '^[Yy]') { $email.UseAuth = $true }
     elseif ($authStr -match '^[Nn]') { $email.UseAuth = $false }
 
     if ($email.UseAuth) {
         Write-Host ''
-        $smtpUser = Read-Host '  SMTP brugernavn'
-        $smtpPass = ConvertTo-MaskedInput -Prompt '  SMTP adgangskode' -AsSecureString
+        $smtpUser = Read-Host '  SMTP username'
+        $smtpPass = ConvertTo-MaskedInput -Prompt '  SMTP password' -AsSecureString
         if ($smtpPass -ne $null -and $smtpUser -ne '') {
             $credPath = Join-Path $env:ProgramData 'TU-ACME\smtp-credentials.xml'
             [PSCustomObject]@{
                 Username = $smtpUser
                 Password = $smtpPass
             } | Export-Clixml -Path $credPath
-            Write-Host '  Credentials gemt (DPAPI-krypteret).' -ForegroundColor Green
-            Write-Host '  Bemærk: Credentials er bundet til denne bruger og maskine.' -ForegroundColor DarkGray
+            Write-Host '  Credentials saved (DPAPI-encrypted).' -ForegroundColor Green
+            Write-Host '  Note: Credentials are bound to this user and machine.' -ForegroundColor DarkGray
         }
     }
 
     $config.Email = $email
     Set-TUACMEConfig -Config $config
-    Write-Host '  SMTP-konfiguration gemt.' -ForegroundColor Green
+    Write-Host '  SMTP configuration saved.' -ForegroundColor Green
 
     Write-Host ''
-    $sendTest = Read-Host '  Send test-mail nu? (J/N)'
-    if ($sendTest -match '^[JjYy]') {
+    $sendTest = Read-Host '  Send test email now? (Y/N)'
+    if ($sendTest -match '^[Yy]') {
         _Send-TestMail
     }
 }
 
 function _Send-TestMail {
-    $subject = '[TU-ACME] Test-mail'
+    $subject = '[TU-ACME] Test email'
     $body    = @"
-Dette er en test-mail fra TU-ACME.
+This is a test email from TU-ACME.
 
-Tidsstempel: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+Timestamp:   $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 Server:      $env:COMPUTERNAME
 Version:     0.0.2
 
--- Sendt automatisk af TU-ACME --
+-- Sent automatically by TU-ACME --
 "@
 
-    Write-Host '  Sender test-mail ...' -ForegroundColor Cyan
+    Write-Host '  Sending test email ...' -ForegroundColor Cyan
 
     $success = Send-TUACMEMail -Subject $subject -Body $body
 
     if ($success) {
         $config = Get-TUACMEConfig
-        Write-Host "  Test-mail sendt til $($config.Email.RecipientAddress)." -ForegroundColor Green
+        Write-Host "  Test email sent to $($config.Email.RecipientAddress)." -ForegroundColor Green
     } else {
-        Write-Host '  Fejl ved afsendelse af test-mail.' -ForegroundColor Red
-        Write-Host '  Kontrollér SMTP-indstillinger og prøv igen.' -ForegroundColor Yellow
+        Write-Host '  Error sending test email.' -ForegroundColor Red
+        Write-Host '  Check SMTP settings and try again.' -ForegroundColor Yellow
     }
 
     Write-Host ''
-    Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+    Write-Host '  Press any key...' -ForegroundColor DarkGray
     Invoke-ConsoleWaitKey
 }

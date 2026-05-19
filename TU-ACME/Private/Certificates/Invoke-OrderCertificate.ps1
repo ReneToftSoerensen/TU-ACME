@@ -1,24 +1,24 @@
 ﻿function Invoke-OrderCertificate {
     Invoke-ConsoleClear
-    Write-Host '  === Bestil nyt certifikat ===' -ForegroundColor Cyan
+    Write-Host '  === Order new certificate ===' -ForegroundColor Cyan
     Write-Host ''
 
-    # UC-2.1: Domænevalidering
+    # UC-2.1: Domain validation
     $domainRegex = '^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
     $mainDomain  = ''
 
     while ($mainDomain -eq '') {
-        $input = Read-Host '  Primært domæne (f.eks. eksempel.dk)'
+        $input = Read-Host '  Primary domain (e.g. example.com)'
         if ($input -match $domainRegex) {
             $mainDomain = $input.Trim().ToLower()
         } else {
-            Write-Host '  Ugyldigt domænenavn. Prøv igen.' -ForegroundColor Red
+            Write-Host '  Invalid domain name. Please try again.' -ForegroundColor Red
         }
     }
 
-    # SAN-domæner (valgfrit)
+    # SAN domains (optional)
     $sans = @()
-    Write-Host '  Ekstra domæner/SAN (kommasepareret, blank = ingen):' -ForegroundColor Gray
+    Write-Host '  Additional domains/SAN (comma-separated, blank = none):' -ForegroundColor Gray
     $sanInput = Read-Host '  SAN'
     if ($sanInput -ne '') {
         foreach ($s in ($sanInput -split ',')) {
@@ -26,16 +26,16 @@
             if ($s -match $domainRegex) {
                 $sans += $s
             } else {
-                Write-Host "  '$s' er ikke et gyldigt domænenavn og springes over." -ForegroundColor Yellow
+                Write-Host "  '$s' is not a valid domain name and will be skipped." -ForegroundColor Yellow
             }
         }
     }
 
-    # UC-3.1: Vælg DNS-plugin
+    # UC-3.1: Select DNS plugin
     $plugin = _Select-DNSPlugin
     if ($plugin -eq $null) { return }
 
-    # UC-3.2 + 3.3 / UC-3.5: Indsaml plugin-parametre
+    # UC-3.2 + 3.3 / UC-3.5: Collect plugin parameters
     $allDomains = @($mainDomain) + $sans
     if ($plugin -eq 'AcmeDns') {
         $pluginArgs = _Collect-AcmeDnsArgs -Domains $allDomains
@@ -44,37 +44,37 @@
     }
     if ($pluginArgs -eq $null) { return }
 
-    # UC-3.4: DNS-01 challenge-konfiguration
+    # UC-3.4: DNS-01 challenge configuration
     $dnsConfig = _Configure-DNS01Challenge -Plugin $plugin
     if ($dnsConfig -eq $null) { return }
 
-    # Opsummeringsvisning
+    # Summary view
     Invoke-ConsoleClear
-    Write-Host '  === Opsummering ===' -ForegroundColor Cyan
+    Write-Host '  === Summary ===' -ForegroundColor Cyan
     Write-Host ''
-    Write-Host "  Domæne:          $mainDomain" -ForegroundColor White
+    Write-Host "  Domain:          $mainDomain" -ForegroundColor White
     if ($sans.Count -gt 0) {
         Write-Host "  SAN:             $($sans -join ', ')" -ForegroundColor White
     }
     Write-Host "  Plugin:          $plugin" -ForegroundColor White
     Write-Host "  Challenge:       DNS-01" -ForegroundColor White
-    Write-Host "  DNS-sleep:       $($dnsConfig.DnsSleep) sek" -ForegroundColor White
-    Write-Host "  Timeout:         $($dnsConfig.ValidationTimeout) sek" -ForegroundColor White
-    $persistTxt = if ($dnsConfig.PersistentRecords) { 'Ja (records slettes ikke)' } else { 'Nej' }
+    Write-Host "  DNS sleep:       $($dnsConfig.DnsSleep) sec" -ForegroundColor White
+    Write-Host "  Timeout:         $($dnsConfig.ValidationTimeout) sec" -ForegroundColor White
+    $persistTxt = if ($dnsConfig.PersistentRecords) { 'Yes (records will not be deleted)' } else { 'No' }
     Write-Host "  Persistent DNS:  $persistTxt" -ForegroundColor $(if ($dnsConfig.PersistentRecords) { 'Yellow' } else { 'White' })
     Write-Host ''
 
-    $confirm = Read-Host '  Bekræft bestilling? (J/N)'
-    if ($confirm -notmatch '^[Jj]') { return }
+    $confirm = Read-Host '  Confirm order? (Y/N)'
+    if ($confirm -notmatch '^[Yy]') { return }
 
-    # UC-2.2: Bestil certifikat med DNS-01 trin
+    # UC-2.2: Order certificate with DNS-01 step
     $result = $null
 
     Write-Host ''
-    Write-Host '  [ > ] Opretter DNS TXT-record...' -ForegroundColor Cyan
+    Write-Host '  [ > ] Creating DNS TXT record...' -ForegroundColor Cyan
 
     try {
-        $result = Show-Spinner -Message "Venter paa DNS-propagation ($($dnsConfig.DnsSleep) sek)..." -ScriptBlock {
+        $result = Show-Spinner -Message "Waiting for DNS propagation ($($dnsConfig.DnsSleep) sec)..." -ScriptBlock {
             $certParams = @{
                 Domain            = $allDomains
                 Plugin            = $plugin
@@ -88,41 +88,41 @@
     } catch {
         $errMsg = "$_"
         Write-Host ''
-        Write-Host '  [FEJL] Certifikatbestilling mislykkedes:' -ForegroundColor Red
+        Write-Host '  [ERROR] Certificate order failed:' -ForegroundColor Red
         Write-Host "  $errMsg" -ForegroundColor Red
 
         if ($errMsg -match 'rateLimited|too many') {
             Write-Host ''
-            Write-Host '  Tip: Du har ramt rate-limit. Skift til Staging med [F3].' -ForegroundColor Yellow
+            Write-Host '  Tip: You have hit the rate limit. Switch to Staging with [F3].' -ForegroundColor Yellow
         }
         if ($errMsg -match 'DNS|TXT|propagat|timeout') {
             Write-Host ''
-            Write-Host '  DNS-tip: Forøg DnsSleep til 300+ sekunder og prøv igen.' -ForegroundColor Yellow
-            Write-Host '           Kontrollér at TXT-recorden er oprettet hos din DNS-provider.' -ForegroundColor Yellow
+            Write-Host '  DNS tip: Increase DnsSleep to 300+ seconds and try again.' -ForegroundColor Yellow
+            Write-Host '           Verify that the TXT record has been created at your DNS provider.' -ForegroundColor Yellow
         }
         Write-Host ''
-        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+        Write-Host '  Press any key...' -ForegroundColor DarkGray
         Invoke-ConsoleWaitKey
         return
     }
 
-    # Succes
+    # Success
     Write-Host ''
-    Write-Host '  Certifikat bestilt!' -ForegroundColor Green
+    Write-Host '  Certificate ordered!' -ForegroundColor Green
     if ($result) {
-        Write-Host "  Domæne:     $($result.MainDomain)" -ForegroundColor White
-        Write-Host "  Udlober:    $($result.NotAfter.ToString('yyyy-MM-dd'))" -ForegroundColor White
+        Write-Host "  Domain:     $($result.MainDomain)" -ForegroundColor White
+        Write-Host "  Expires:    $($result.NotAfter.ToString('yyyy-MM-dd'))" -ForegroundColor White
         Write-Host "  Thumbprint: $($result.Thumbprint)" -ForegroundColor White
     }
 
     if ($dnsConfig.PersistentRecords) {
         Write-Host ''
-        Write-Host '  Bemærk: DNS TXT-records er ikke slettet (persistent mode).' -ForegroundColor Yellow
-        Write-Host '          Fjern dem manuelt hos din DNS-provider når de ikke længere bruges.' -ForegroundColor Yellow
+        Write-Host '  Note: DNS TXT records have not been deleted (persistent mode).' -ForegroundColor Yellow
+        Write-Host '        Remove them manually at your DNS provider when they are no longer needed.' -ForegroundColor Yellow
     }
 
     Write-Host ''
-    Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+    Write-Host '  Press any key...' -ForegroundColor DarkGray
     Invoke-ConsoleWaitKey
 }
 
@@ -137,72 +137,72 @@ function _Configure-DNS01Challenge {
     $defaultPersist = if ($dnsDefaults -and $dnsDefaults.PersistentRecords)         { $dnsDefaults.PersistentRecords }         else { $false }
 
     Invoke-ConsoleClear
-    Write-Host '  === DNS-01 Challenge-indstillinger ===' -ForegroundColor Cyan
+    Write-Host '  === DNS-01 Challenge Settings ===' -ForegroundColor Cyan
     Write-Host ''
 
     if ($Plugin -eq 'Manual') {
-        Write-Host '  Plugin: Manual — DNS TXT-records oprettes og slettes manuelt.' -ForegroundColor Yellow
-        Write-Host '  Records fjernes ikke automatisk efter validering.' -ForegroundColor DarkGray
+        Write-Host '  Plugin: Manual — DNS TXT records are created and deleted manually.' -ForegroundColor Yellow
+        Write-Host '  Records are not removed automatically after validation.' -ForegroundColor DarkGray
         Write-Host ''
     }
 
     # DnsSleep
-    Write-Host "  DNS-propagation ventetid (DnsSleep):" -ForegroundColor Gray
-    Write-Host "  Standard: $defaultSleep sekunder" -ForegroundColor DarkGray
-    $sleepInput = Read-Host "  Angiv sekunder (blank = $defaultSleep)"
+    Write-Host "  DNS propagation wait time (DnsSleep):" -ForegroundColor Gray
+    Write-Host "  Default: $defaultSleep seconds" -ForegroundColor DarkGray
+    $sleepInput = Read-Host "  Enter seconds (blank = $defaultSleep)"
     $dnsSleep   = $defaultSleep
     if ($sleepInput -ne '') {
         $parsed = 0
         if ([int]::TryParse($sleepInput, [ref] $parsed) -and $parsed -ge 0) {
             $dnsSleep = $parsed
         } else {
-            Write-Host "  Ugyldigt tal — bruger standard ($defaultSleep sek)." -ForegroundColor Yellow
+            Write-Host "  Invalid number — using default ($defaultSleep sec)." -ForegroundColor Yellow
         }
     }
 
     Write-Host ''
 
     # ValidationTimeout
-    Write-Host "  Valideringstimeout:" -ForegroundColor Gray
-    Write-Host "  Standard: $defaultTimeout sekunder" -ForegroundColor DarkGray
-    $timeoutInput      = Read-Host "  Angiv sekunder (blank = $defaultTimeout)"
+    Write-Host "  Validation timeout:" -ForegroundColor Gray
+    Write-Host "  Default: $defaultTimeout seconds" -ForegroundColor DarkGray
+    $timeoutInput      = Read-Host "  Enter seconds (blank = $defaultTimeout)"
     $validationTimeout = $defaultTimeout
     if ($timeoutInput -ne '') {
         $parsed = 0
         if ([int]::TryParse($timeoutInput, [ref] $parsed) -and $parsed -ge 0) {
             $validationTimeout = $parsed
         } else {
-            Write-Host "  Ugyldigt tal — bruger standard ($defaultTimeout sek)." -ForegroundColor Yellow
+            Write-Host "  Invalid number — using default ($defaultTimeout sec)." -ForegroundColor Yellow
         }
     }
 
     Write-Host ''
 
-    # Persistent mode (kun relevant for non-Manual plugins)
+    # Persistent mode (only relevant for non-Manual plugins)
     $persistentRecords = $defaultPersist
     if ($Plugin -ne 'Manual') {
-        $persistInput = Read-Host "  Behold DNS TXT-records efter validering? (J/N, standard: $(if ($defaultPersist) { 'J' } else { 'N' }))"
-        if ($persistInput -match '^[Jj]') {
+        $persistInput = Read-Host "  Keep DNS TXT records after validation? (Y/N, default: $(if ($defaultPersist) { 'Y' } else { 'N' }))"
+        if ($persistInput -match '^[Yy]') {
             $persistentRecords = $true
             Write-Host ''
-            Write-Host '  Advarsel: TXT-records forbliver synlige i DNS efter validering.' -ForegroundColor Yellow
-            Write-Host '            Fjern dem manuelt hos din DNS-provider når de ikke er i brug.' -ForegroundColor Yellow
+            Write-Host '  Warning: TXT records will remain visible in DNS after validation.' -ForegroundColor Yellow
+            Write-Host '            Remove them manually at your DNS provider when they are no longer in use.' -ForegroundColor Yellow
         } elseif ($persistInput -match '^[Nn]') {
             $persistentRecords = $false
         }
     }
 
-    # Gem som nye standarder
+    # Save as new defaults
     Write-Host ''
-    $saveDefaults = Read-Host '  Gem som standard-indstillinger? (J/N)'
-    if ($saveDefaults -match '^[Jj]') {
+    $saveDefaults = Read-Host '  Save as default settings? (Y/N)'
+    if ($saveDefaults -match '^[Yy]') {
         $config.DNS = [PSCustomObject]@{
             DefaultDnsSleep          = $dnsSleep
             DefaultValidationTimeout = $validationTimeout
             PersistentRecords        = $persistentRecords
         }
         Set-TUACMEConfig -Config $config
-        Write-Host '  DNS-indstillinger gemt.' -ForegroundColor Green
+        Write-Host '  DNS settings saved.' -ForegroundColor Green
     }
 
     return [PSCustomObject]@{

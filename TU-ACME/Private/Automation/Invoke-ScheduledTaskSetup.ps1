@@ -1,49 +1,49 @@
 ﻿function Invoke-ScheduledTaskSetup {
     if (-not $script:TUACMEIsAdmin) {
-        Show-StatusBar -AdminWarning 'Scheduled Tasks kræver administratorrettigheder'
+        Show-StatusBar -AdminWarning 'Scheduled Tasks requires administrator privileges'
         Start-Sleep -Seconds 2
         return
     }
 
     if (-not $script:OnWindows) {
         Invoke-ConsoleClear
-        Write-Host '  Scheduled Tasks er ikke tilgængeligt på Linux/macOS.' -ForegroundColor Yellow
-        Write-Host '  Brug cron til at planlægge automatisk fornyelse.' -ForegroundColor Gray
+        Write-Host '  Scheduled Tasks is not available on Linux/macOS.' -ForegroundColor Yellow
+        Write-Host '  Use cron to schedule automatic renewal.' -ForegroundColor Gray
         Write-Host ''
-        Write-Host '  Eksempel crontab-linje (dagligt kl. 03:00):' -ForegroundColor DarkGray
+        Write-Host '  Example crontab line (daily at 03:00):' -ForegroundColor DarkGray
         Write-Host '  0 3 * * * pwsh -NonInteractive -File "/pfx/Invoke-RenewalBackground.ps1"' -ForegroundColor DarkGray
         Write-Host ''
-        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+        Write-Host '  Press any key...' -ForegroundColor DarkGray
         Invoke-ConsoleWaitKey
         return
     }
 
     Invoke-ConsoleClear
-    Write-Host '  === Opret Scheduled Task til automatisk fornyelse ===' -ForegroundColor Cyan
+    Write-Host '  === Create Scheduled Task for automatic renewal ===' -ForegroundColor Cyan
     Write-Host ''
 
     $config    = Get-TUACMEConfig
     $taskCfg   = $config.ScheduledTask
     $scriptPath = Join-Path $env:ProgramFiles "WindowsPowerShell\Modules\TU-ACME\Scripts\Invoke-RenewalBackground.ps1"
 
-    $runTime = Read-Host "  Kørselstidspunkt (HH:MM, standard: $($taskCfg.RunTime))"
+    $runTime = Read-Host "  Run time (HH:MM, default: $($taskCfg.RunTime))"
     if ($runTime -eq '') { $runTime = $taskCfg.RunTime }
 
-    $accountOptions = @('1. SYSTEM-konto', '2. Specifik brugerkonto')
-    $accSel = Show-Menu -Title 'Kør som' -Options $accountOptions
+    $accountOptions = @('1. SYSTEM account', '2. Specific user account')
+    $accSel = Show-Menu -Title 'Run as' -Options $accountOptions
     if ($accSel -lt 0) { return }
 
     $runAs = 'SYSTEM'
     if ($accSel -eq 1) {
-        $runAs = Read-Host '  Brugernavn (f.eks. DOMAIN\ServiceAccount)'
+        $runAs = Read-Host '  Username (e.g. DOMAIN\ServiceAccount)'
         if ($runAs -eq '') { return }
     }
 
-    # Tjek om task allerede eksisterer
+    # Check if task already exists
     $existing = Get-ScheduledTask -TaskName $taskCfg.TaskName -ErrorAction SilentlyContinue
     if ($existing -ne $null) {
-        $overwrite = Read-Host "  Task '$($taskCfg.TaskName)' eksisterer allerede. Overskriv? (J/N)"
-        if ($overwrite -notmatch '^[Jj]') { return }
+        $overwrite = Read-Host "  Task '$($taskCfg.TaskName)' already exists. Overwrite? (Y/N)"
+        if ($overwrite -notmatch '^[Yy]') { return }
         Unregister-ScheduledTask -TaskName $taskCfg.TaskName -Confirm:$false
     }
 
@@ -76,19 +76,19 @@
                 -RunLevel Highest | Out-Null
         }
 
-        # Gem konfiguration
+        # Save configuration
         $taskCfg.RunTime      = $runTime
         $taskCfg.RunAsAccount = $runAs
         $config.ScheduledTask = $taskCfg
         Set-TUACMEConfig -Config $config
 
-        Write-Host "  Scheduled Task '$($taskCfg.TaskName)' oprettet." -ForegroundColor Green
-        Write-Host "  Kørsel: dagligt kl. $runTime som $runAs" -ForegroundColor White
+        Write-Host "  Scheduled Task '$($taskCfg.TaskName)' created." -ForegroundColor Green
+        Write-Host "  Schedule: daily at $runTime as $runAs" -ForegroundColor White
     } catch {
-        Write-Host "  Fejl ved oprettelse af task: $_" -ForegroundColor Red
+        Write-Host "  Error creating task: $_" -ForegroundColor Red
     }
 
     Write-Host ''
-    Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+    Write-Host '  Press any key...' -ForegroundColor DarkGray
     Invoke-ConsoleWaitKey
 }

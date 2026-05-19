@@ -1,73 +1,73 @@
-# Installation af TU-ACME
+# Installing TU-ACME
 
-## Indholdsfortegnelse
+## Table of Contents
 
-1. [Systemkrav](#1-systemkrav)
-2. [Forudsætninger](#2-forudsætninger)
+1. [System requirements](#1-system-requirements)
+2. [Prerequisites](#2-prerequisites)
 3. [Installation](#3-installation)
-4. [Konfiguration af data-mapper](#4-konfiguration-af-data-mapper)
-5. [Første opstart](#5-første-opstart)
-6. [Valgfri: IIS-integration](#6-valgfri-iis-integration)
-7. [Valgfri: Automatisk fornyelse](#7-valgfri-automatisk-fornyelse)
-8. [Afinstallation](#8-afinstallation)
-9. [Fejlfinding](#9-fejlfinding)
+4. [Configuring data folders](#4-configuring-data-folders)
+5. [First run](#5-first-run)
+6. [Optional: IIS integration](#6-optional-iis-integration)
+7. [Optional: Automatic renewal](#7-optional-automatic-renewal)
+8. [Uninstallation](#8-uninstallation)
+9. [Troubleshooting](#9-troubleshooting)
 
 ---
 
-## 1. Systemkrav
+## 1. System requirements
 
-| Krav | Minimum | Anbefalet |
+| Requirement | Minimum | Recommended |
 |---|---|---|
-| Operativsystem | Windows Server 2016 / Windows 10 | Windows Server 2019+ / Windows 11 |
-| PowerShell | 5.1 | 5.1 (kun) — PS 7.x understøttes ikke |
-| Rettigheder | Bruger (dashboard/logs) | Administrator (certifikater, IIS, Tasks) |
-| Netværk | Udgående HTTPS (port 443) til ACME-server og DNS-provider API | — |
-| Diskplads | < 5 MB | — |
+| Operating system | Windows Server 2016 / Windows 10 | Windows Server 2019+ / Windows 11 |
+| PowerShell | 5.1 | 5.1 (only) — PS 7.x is not supported |
+| Permissions | User (dashboard/logs) | Administrator (certificates, IIS, Tasks) |
+| Network | Outbound HTTPS (port 443) to ACME server and DNS provider API | — |
+| Disk space | < 5 MB | — |
 
-> **Windows Server Core:** Fuldt understøttet. TUI'en bruger udelukkende konsol-I/O.  
-> **PowerShell Remoting (WinRM/SSH):** Understøttet — ingen grafiske afhængigheder.
+> **Windows Server Core:** Fully supported. The TUI uses console I/O exclusively.  
+> **PowerShell Remoting (WinRM/SSH):** Supported — no graphical dependencies.
 
 ---
 
-## 2. Forudsætninger
+## 2. Prerequisites
 
-### 2.1 Installér Posh-ACME
+### 2.1 Install Posh-ACME
 
-TU-ACME er en TUI-wrapper til [Posh-ACME](https://github.com/rmbolger/Posh-ACME) og kræver at det er installeret.
+TU-ACME is a TUI wrapper for [Posh-ACME](https://github.com/rmbolger/Posh-ACME) and requires it to be installed.
 
 ```powershell
-# Kræver Administrator — installerer for alle brugere (inkl. SYSTEM-kontoen)
+# Requires Administrator — installs for all users (including the SYSTEM account)
 Install-Module -Name Posh-ACME -Scope AllUsers -Force
 ```
 
-Verificér installationen:
+Verify the installation:
 
 ```powershell
 Get-Module -ListAvailable Posh-ACME
-# Forventet output: Version 4.x.x eller nyere
+# Expected output: Version 4.x.x or newer
 ```
 
 ### 2.2 PowerShell Execution Policy
 
-Scripts skal have tilladelse til at køre:
+Scripts must have permission to run:
 
 ```powershell
-# Vis nuværende policy
+# Show current policy
 Get-ExecutionPolicy -List
 
-# Sæt policy til RemoteSigned (anbefalet minimum)
+# Set policy to RemoteSigned (recommended minimum)
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
 ```
 
-### 2.3 IIS (kun ved IIS-integration)
+### 2.3 IIS (only for IIS integration)
 
-Hvis IIS-funktionerne (UC-8.x) skal bruges, skal `WebAdministration`-modulet være tilgængeligt:
+If the IIS features (UC-8.x) are to be used, the `WebAdministration` module must be available:
 
 ```powershell
-# Kontrollér at WebAdministration er installeret
+# Verify that WebAdministration is installed
 Get-Module -ListAvailable WebAdministration
 
-# Installér IIS Management Tools hvis det mangler (Windows Server)
+# Install IIS Management Tools if missing (Windows Server)
 Install-WindowsFeature -Name Web-Mgmt-Tools
 ```
 
@@ -75,34 +75,34 @@ Install-WindowsFeature -Name Web-Mgmt-Tools
 
 ## 3. Installation
 
-### Trin 1: Download TU-ACME
+### Step 1: Download TU-ACME
 
-**Mulighed A — Git clone (anbefalet):**
+**Option A — Git clone (recommended):**
 
 ```powershell
 git clone https://github.com/renetoftsoerensen/tu-acme.git
 cd tu-acme
 ```
 
-**Mulighed B — Download ZIP:**
+**Option B — Download ZIP:**
 
-Download og udpak `tu-acme.zip` til en mappe på serveren.
+Download and extract `tu-acme.zip` to a folder on the server.
 
 ---
 
-### Trin 2: Kopiér modul til PowerShell-modulsti
+### Step 2: Copy module to PowerShell module path
 
 ```powershell
-# Kræver Administrator
+# Requires Administrator
 $moduleDest = "$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME"
 
 Copy-Item -Path ".\TU-ACME" -Destination $moduleDest -Recurse -Force
 
-# Verificér at modulet kan findes
+# Verify that the module can be found
 Get-Module -ListAvailable TU-ACME
 ```
 
-Forventet output:
+Expected output:
 
 ```
 ModuleType  Version  Name      ExportedCommands
@@ -112,32 +112,32 @@ Script      0.0.2    TU-ACME   Start-TUACME
 
 ---
 
-### Trin 3: Importér og start
+### Step 3: Import and start
 
 ```powershell
 Import-Module TU-ACME
 Start-TUACME
 ```
 
-> **Tip:** Kør altid PowerShell som Administrator for fuld adgang til alle funktioner.  
-> Starter du som almindelig bruger, er dashboard og logvisning tilgængeligt — administrative funktioner (IIS, Tasks) deaktiveres automatisk.
+> **Tip:** Always run PowerShell as Administrator for full access to all functions.  
+> If you start as a regular user, dashboard and log viewing are available — administrative functions (IIS, Tasks) are disabled automatically.
 
 ---
 
-## 4. Konfiguration af data-mapper
+## 4. Configuring data folders
 
-TU-ACME opretter automatisk disse mapper ved første opstart:
+TU-ACME automatically creates these folders on first startup:
 
-| Sti | Indhold |
+| Path | Contents |
 |---|---|
-| `$env:ProgramData\TU-ACME\` | Rodmappe for konfiguration og credentials |
-| `$env:ProgramData\TU-ACME\config.json` | Ikke-hemmelige indstillinger (SMTP, Task, Dashboard, DNS) |
-| `$env:ProgramData\TU-ACME\smtp-credentials.xml` | SMTP-credentials (DPAPI-krypteret) |
-| `$env:ProgramData\TU-ACME\acmedns-accounts\` | ACME-DNS konto-JSON filer (én pr. domæne) |
+| `$env:ProgramData\TU-ACME\` | Root folder for configuration and credentials |
+| `$env:ProgramData\TU-ACME\config.json` | Non-secret settings (SMTP, Task, Dashboard, DNS) |
+| `$env:ProgramData\TU-ACME\smtp-credentials.xml` | SMTP credentials (DPAPI-encrypted) |
+| `$env:ProgramData\TU-ACME\acmedns-accounts\` | ACME-DNS account JSON files (one per domain) |
 
-Mapperne oprettes med standard Windows-rettigheder — tilgængeligt for alle brugere og `SYSTEM`-kontoen.
+The folders are created with standard Windows permissions — accessible to all users and the `SYSTEM` account.
 
-### Opret manuelt (valgfrit)
+### Create manually (optional)
 
 ```powershell
 New-Item -ItemType Directory -Path "$env:ProgramData\TU-ACME" -Force
@@ -145,30 +145,30 @@ New-Item -ItemType Directory -Path "$env:ProgramData\TU-ACME" -Force
 
 ---
 
-## 5. Første opstart
+## 5. First run
 
-### 5.1 Start TUI'en
+### 5.1 Start the TUI
 
 ```powershell
-# Start som Administrator (anbefalet)
+# Start as Administrator (recommended)
 Start-TUACME
 ```
 
-### 5.2 Opret ACME-konto
+### 5.2 Create ACME account
 
-Vælg **1. Kontostyring → Opret ny konto** og angiv:
+Choose **1. Account Management -> Create new account** and enter:
 
-- **E-mail:** Administratorens e-mailadresse (bruges til ekspirationsadvarsler fra Let's Encrypt)
-- **Server:** Let's Encrypt Produktion (eller Staging til test)
+- **Email:** Administrator's email address (used for expiration warnings from Let's Encrypt)
+- **Server:** Let's Encrypt Production (or Staging for testing)
 
 ```
-Anbefaling: Test altid på Staging (F3) inden du bestiller produktionscertifikater.
-Let's Encrypt har rate limits på produktionsserveren.
+Recommendation: Always test on Staging (F3) before ordering production certificates.
+Let's Encrypt has rate limits on the production server.
 ```
 
-### 5.3 Registrér Windows Event Log-kilde
+### 5.3 Register Windows Event Log source
 
-Ved første kørsel som Administrator registreres `TU-ACME` automatisk som Event Log-kilde i `Application`-loggen. Verificér:
+On first run as Administrator, `TU-ACME` is registered automatically as an Event Log source in the `Application` log. Verify:
 
 ```powershell
 Get-EventLog -LogName Application -Source TU-ACME -Newest 5
@@ -176,42 +176,42 @@ Get-EventLog -LogName Application -Source TU-ACME -Newest 5
 
 ---
 
-## 6. Valgfri: IIS-integration
+## 6. Optional: IIS integration
 
-Hvis TU-ACME skal opdatere IIS HTTPS-bindings automatisk ved certifikatfornyelse:
+If TU-ACME should automatically update IIS HTTPS bindings on certificate renewal:
 
-### 6.1 Registrér post-renewal plugin
+### 6.1 Register post-renewal plugin
 
-I TUI'en: **6. IIS Integration → Opsæt automatisk IIS-opdatering**
+In the TUI: **6. IIS Integration -> Set up automatic IIS update**
 
-Eller manuelt:
+Or manually:
 
 ```powershell
 $scriptPath = "$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME\Scripts\Posh-ACME-IIS-Plugin.ps1"
 Set-PAConfig -PostScript $scriptPath
 ```
 
-### 6.2 Kobl eksisterende certifikater til IIS
+### 6.2 Bind existing certificates to IIS
 
-I TUI'en: **6. IIS Integration → Kobl certifikat til IIS-binding**
+In the TUI: **6. IIS Integration -> Bind certificate to IIS binding**
 
-Vælg certifikat → vælg bindings (mellemrum = toggle) → bekræft.
+Select certificate -> select bindings (spacebar = toggle) -> confirm.
 
 ---
 
-## 7. Valgfri: Automatisk fornyelse
+## 7. Optional: Automatic renewal
 
-### 7.1 Konfigurér SMTP (valgfrit — til fejladvisering)
+### 7.1 Configure SMTP (optional — for failure notifications)
 
-I TUI'en: **4. Automatisering → Konfigurer SMTP-fejladvisering**
+In the TUI: **4. Automation -> Configure SMTP failure notifications**
 
-Angiv SMTP-server, port, afsender og modtager. Test med "Send test-mail".
+Enter SMTP server, port, sender and recipient. Test with "Send test email".
 
-### 7.2 Opret Scheduled Task
+### 7.2 Create Scheduled Task
 
-I TUI'en: **4. Automatisering → Opret Scheduled Task**
+In the TUI: **4. Automation -> Create Scheduled Task**
 
-Eller manuelt:
+Or manually:
 
 ```powershell
 $scriptPath = "$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME\Scripts\Invoke-RenewalBackground.ps1"
@@ -226,95 +226,95 @@ Register-ScheduledTask -TaskName 'Posh-ACME-AutoRenewal' `
     -Action $action -Trigger $trigger -Settings $settings -Principal $principal
 ```
 
-### 7.3 Verificér Scheduled Task
+### 7.3 Verify Scheduled Task
 
 ```powershell
-# Vis task-status
+# Show task status
 Get-ScheduledTask -TaskName 'Posh-ACME-AutoRenewal'
 
-# Kør manuelt til test
+# Run manually to test
 Start-ScheduledTask -TaskName 'Posh-ACME-AutoRenewal'
 
-# Tjek Event Log for resultat
+# Check Event Log for result
 Get-EventLog -LogName Application -Source TU-ACME -Newest 10
 ```
 
 ---
 
-## 8. Afinstallation
+## 8. Uninstallation
 
 ```powershell
-# 1. Fjern Scheduled Task
+# 1. Remove Scheduled Task
 Unregister-ScheduledTask -TaskName 'Posh-ACME-AutoRenewal' -Confirm:$false
 
-# 2. Fjern Posh-ACME post-renewal plugin
+# 2. Remove Posh-ACME post-renewal plugin
 Set-PAConfig -PostScript $null
 
-# 3. Fjern TU-ACME modul
+# 3. Remove TU-ACME module
 Remove-Item -Path "$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME" -Recurse -Force
 
-# 4. Fjern konfigurationsdata (ADVARSEL: sletter credentials og indstillinger)
+# 4. Remove configuration data (WARNING: deletes credentials and settings)
 Remove-Item -Path "$env:ProgramData\TU-ACME" -Recurse -Force
 
-# 5. Fjern Event Log-kilde (valgfrit)
+# 5. Remove Event Log source (optional)
 Remove-EventLog -Source 'TU-ACME'
 ```
 
-> Posh-ACME og dets certifikat-data i `$env:LOCALAPPDATA\Posh-ACME\` berøres ikke.
+> Posh-ACME and its certificate data in `$env:LOCALAPPDATA\Posh-ACME\` are not affected.
 
 ---
 
-## 9. Fejlfinding
+## 9. Troubleshooting
 
-### TU-ACME starter ikke — "Posh-ACME modulet er ikke installeret"
+### TU-ACME does not start — "Posh-ACME module is not installed"
 
 ```powershell
-# Kontrollér at Posh-ACME er installeret for AllUsers
+# Verify that Posh-ACME is installed for AllUsers
 Get-Module -ListAvailable Posh-ACME
 
-# Geninstallér
+# Reinstall
 Install-Module -Name Posh-ACME -Scope AllUsers -Force
 ```
 
-### "Access Denied" ved oprettelse af config-mappe
+### "Access Denied" when creating config folder
 
 ```powershell
-# TU-ACME kræver skriverettigheder til ProgramData ved første opstart
-# Kør PowerShell som Administrator
+# TU-ACME requires write permissions to ProgramData on first startup
+# Run PowerShell as Administrator
 ```
 
-### Event Log-kilde kan ikke registreres
+### Event Log source cannot be registered
 
 ```powershell
-# Registrér manuelt som Administrator
+# Register manually as Administrator
 New-EventLog -LogName Application -Source 'TU-ACME'
 ```
 
-### Scheduled Task kører ikke som SYSTEM
+### Scheduled Task does not run as SYSTEM
 
 ```powershell
-# Verificér at Posh-ACME er installeret for AllUsers (ikke kun CurrentUser)
+# Verify that Posh-ACME is installed for AllUsers (not only CurrentUser)
 Get-Module -ListAvailable Posh-ACME
 
-# SYSTEM-kontoen kan kun se moduler installeret under AllUsers-stien:
+# The SYSTEM account can only see modules installed under the AllUsers path:
 # $env:ProgramFiles\WindowsPowerShell\Modules\
 ```
 
-### DPAPI-fejl ved indlæsning af SMTP-credentials
+### DPAPI error loading SMTP credentials
 
-SMTP-credentials er krypteret med DPAPI bundet til brugeren og maskinen der gemte dem. De kan ikke flyttes til en anden maskine eller bruger.
+SMTP credentials are encrypted with DPAPI bound to the user and machine that saved them. They cannot be moved to another machine or user.
 
 ```powershell
-# Genkonfigurér SMTP-credentials på den aktuelle maskine:
-# TUI: 4. Automatisering -> Konfigurer SMTP-fejladvisering
+# Reconfigure SMTP credentials on the current machine:
+# TUI: 4. Automation -> Configure SMTP failure notifications
 ```
 
-### DNS-validering timeout
+### DNS validation timeout
 
-Øg `DnsSleep` i TUI'en ved næste certifikatbestilling:  
-**2. Bestil nyt certifikat → DNS-01 Challenge-indstillinger → DNS-sleep: 300**
+Increase `DnsSleep` in the TUI on the next certificate order:  
+**2. Order new certificate -> DNS-01 Challenge settings -> DNS-sleep: 300**
 
-Eller opdatér standard i config:
+Or update the default in config:
 
 ```powershell
 $config = Get-Content "$env:ProgramData\TU-ACME\config.json" | ConvertFrom-Json

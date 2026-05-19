@@ -1,38 +1,38 @@
 ﻿function Invoke-IISMenu {
     if (-not $script:OnWindows) {
         Write-Host ''
-        Write-Host '  IIS Integration er kun tilgængeligt på Windows.' -ForegroundColor Yellow
+        Write-Host '  IIS Integration is only available on Windows.' -ForegroundColor Yellow
         Write-Host ''
-        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+        Write-Host '  Press any key...' -ForegroundColor DarkGray
         Invoke-ConsoleWaitKey
         return
     }
 
     if (-not $script:TUACMEIsAdmin) {
-        Show-StatusBar -AdminWarning 'IIS Integration kræver administratorrettigheder'
+        Show-StatusBar -AdminWarning 'IIS Integration requires administrator privileges'
         Start-Sleep -Seconds 2
         return
     }
 
-    # Tjek WebAdministration er tilgængeligt
+    # Check that WebAdministration is available
     try {
         Import-Module WebAdministration -ErrorAction Stop
     } catch {
         Write-Host ''
-        Write-Host '  [FEJL] WebAdministration-modulet er ikke tilgængeligt.' -ForegroundColor Red
-        Write-Host '  IIS er muligvis ikke installeret på dette system.' -ForegroundColor Yellow
+        Write-Host '  [ERROR] The WebAdministration module is not available.' -ForegroundColor Red
+        Write-Host '  IIS may not be installed on this system.' -ForegroundColor Yellow
         Write-Host ''
-        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+        Write-Host '  Press any key...' -ForegroundColor DarkGray
         Invoke-ConsoleWaitKey
         return
     }
 
     while ($true) {
         $options = @(
-            '1. Vis HTTPS-bindings',
-            '2. Kobl certifikat til IIS-binding',
-            '3. Opsæt automatisk IIS-opdatering ved fornyelse',
-            'B. Tilbage'
+            '1. Show HTTPS bindings',
+            '2. Bind certificate to IIS binding',
+            '3. Set up automatic IIS update on renewal',
+            'B. Back'
         )
         $sel = Show-Menu -Title 'IIS Integration' -Options $options
 
@@ -54,14 +54,14 @@ function _Show-IISBindings {
     $bindings = @(Get-WebBinding -Protocol 'https' -ErrorAction SilentlyContinue)
 
     if ($bindings.Count -eq 0) {
-        Write-Host '  Ingen HTTPS-bindings fundet.' -ForegroundColor Yellow
+        Write-Host '  No HTTPS bindings found.' -ForegroundColor Yellow
         Write-Host ''
-        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+        Write-Host '  Press any key...' -ForegroundColor DarkGray
         Invoke-ConsoleWaitKey
         return
     }
 
-    # Hent Posh-ACME certifikat thumbprints til sammenligning
+    # Fetch Posh-ACME certificate thumbprints for comparison
     $paCerts = @{}
     try {
         Get-PACertificate -List 2>$null | ForEach-Object {
@@ -71,7 +71,7 @@ function _Show-IISBindings {
 
     $rows = $bindings | ForEach-Object {
         $tp     = if ($_.certificateHash) { $_.certificateHash.ToUpper() } else { '' }
-        $match  = if ($paCerts.ContainsKey($tp)) { $paCerts[$tp] } else { '—' }
+        $match  = if ($paCerts.ContainsKey($tp)) { $paCerts[$tp] } else { '-' }
         [PSCustomObject]@{
             Site       = $_.ItemXPath -replace ".*\[@name='(.+?)'\].*", '$1'
             Binding    = $_.bindingInformation
@@ -82,7 +82,7 @@ function _Show-IISBindings {
 
     $colorRule = {
         param($row)
-        if ($row.PoshACME -ne '—') { 'Green' } else { 'White' }
+        if ($row.PoshACME -ne '-') { 'Green' } else { 'White' }
     }
 
     Show-Table -Data $rows `
@@ -92,34 +92,34 @@ function _Show-IISBindings {
         -ColorRule $colorRule
 
     Write-Host ''
-    Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+    Write-Host '  Press any key...' -ForegroundColor DarkGray
     Invoke-ConsoleWaitKey
 }
 
 function _Bind-CertToIIS {
-    # Vaelg certifikat fra Posh-ACME
+    # Select certificate from Posh-ACME
     $certs = @(Get-PACertificate -List 2>$null)
     if ($certs.Count -eq 0) {
-        Write-Host '  Ingen Posh-ACME certifikater fundet.' -ForegroundColor Yellow
+        Write-Host '  No Posh-ACME certificates found.' -ForegroundColor Yellow
         Start-Sleep -Seconds 1
         return
     }
 
     $certOptions = $certs | ForEach-Object { $_.MainDomain }
-    $certSel     = Show-Menu -Title 'Vaelg certifikat' -Options $certOptions
+    $certSel     = Show-Menu -Title 'Select certificate' -Options $certOptions
     if ($certSel -lt 0) { return }
     $cert = $certs[$certSel]
 
-    # Vaelg bindings (multi-select med mellemrum)
+    # Select bindings (multi-select with spacebar)
     $bindings = @(Get-WebBinding -Protocol 'https' -ErrorAction SilentlyContinue)
     if ($bindings.Count -eq 0) {
-        Write-Host '  Ingen HTTPS-bindings fundet.' -ForegroundColor Yellow
+        Write-Host '  No HTTPS bindings found.' -ForegroundColor Yellow
         Start-Sleep -Seconds 1
         return
     }
 
     Invoke-ConsoleClear
-    Write-Host '  === Vaelg bindings (Mellemrum = toggle, Enter = bekraeft) ===' -ForegroundColor Cyan
+    Write-Host '  === Select bindings (Spacebar = toggle, Enter = confirm) ===' -ForegroundColor Cyan
     Write-Host ''
 
     $selected = @($false) * $bindings.Count
@@ -159,36 +159,36 @@ function _Bind-CertToIIS {
 
     $toUpdate = 0..($bindings.Count - 1) | Where-Object { $selected[$_] }
     if ($toUpdate.Count -eq 0) {
-        Write-Host '  Ingen bindings valgt. Afbryder.' -ForegroundColor Yellow
+        Write-Host '  No bindings selected. Aborting.' -ForegroundColor Yellow
         Start-Sleep -Seconds 1
         return
     }
 
-    # Importer certifikat til Windows Store
+    # Import certificate to Windows Store
     try {
         Import-PfxCertificate -FilePath $cert.PfxFile `
             -CertStoreLocation 'Cert:\LocalMachine\My' -Exportable | Out-Null
     } catch {
-        Write-Host "  Advarsel: Kunne ikke importere til certifikatarkiv: $_" -ForegroundColor Yellow
+        Write-Host "  Warning: Could not import to certificate store: $_" -ForegroundColor Yellow
     }
 
-    # Opdater bindings
+    # Update bindings
     foreach ($i in $toUpdate) {
         $b    = $bindings[$i]
         $site = $b.ItemXPath -replace ".*\[@name='(.+?)'\].*", '$1'
         try {
             $b.certificateHash = $cert.Thumbprint
             $b | Set-WebBinding
-            Write-Host "  Opdateret: $site $($b.bindingInformation)" -ForegroundColor Green
-            Write-EventLogEntry -EventId 1002 -Message "IIS-binding opdateret: $site — nyt thumbprint: $($cert.Thumbprint)"
+            Write-Host "  Updated: $site $($b.bindingInformation)" -ForegroundColor Green
+            Write-EventLogEntry -EventId 1002 -Message "IIS binding updated: $site - new thumbprint: $($cert.Thumbprint)"
         } catch {
-            Write-Host "  Fejl ved opdatering af $site : $_" -ForegroundColor Red
-            Write-EventLogEntry -EventId 3002 -Message "IIS-binding fejl: $site — $_" -EntryType Error
+            Write-Host "  Error updating $site : $_" -ForegroundColor Red
+            Write-EventLogEntry -EventId 3002 -Message "IIS binding error: $site - $_" -EntryType Error
         }
     }
 
     Write-Host ''
-    Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+    Write-Host '  Press any key...' -ForegroundColor DarkGray
     Invoke-ConsoleWaitKey
 }
 
@@ -196,38 +196,38 @@ function _Register-PostRenewalPlugin {
     $scriptPath = Join-Path $env:ProgramFiles "WindowsPowerShell\Modules\TU-ACME\Scripts\Posh-ACME-IIS-Plugin.ps1"
 
     Invoke-ConsoleClear
-    Write-Host '  === Opsæt automatisk IIS-opdatering ===' -ForegroundColor Cyan
+    Write-Host '  === Set up automatic IIS update ===' -ForegroundColor Cyan
     Write-Host ''
 
     if (-not (Test-Path $scriptPath)) {
-        Write-Host "  Scriptfil ikke fundet: $scriptPath" -ForegroundColor Red
-        Write-Host '  Placer Posh-ACME-IIS-Plugin.ps1 i TU-ACME\Scripts\ og prøv igen.' -ForegroundColor Yellow
+        Write-Host "  Script file not found: $scriptPath" -ForegroundColor Red
+        Write-Host '  Place Posh-ACME-IIS-Plugin.ps1 in TU-ACME\Scripts\ and try again.' -ForegroundColor Yellow
         Write-Host ''
-        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+        Write-Host '  Press any key...' -ForegroundColor DarkGray
         Invoke-ConsoleWaitKey
         return
     }
 
     $current = (Get-PAServer 2>$null | Select-Object -ExpandProperty PostScript) 2>$null
     if ($current) {
-        Write-Host "  Nuværende PostScript: $current" -ForegroundColor DarkGray
+        Write-Host "  Current PostScript: $current" -ForegroundColor DarkGray
         Write-Host ''
     }
 
     Write-Host "  Script: $scriptPath"
     Write-Host ''
-    $confirm = Read-Host '  Registrer dette script som post-renewal plugin? (J/N)'
-    if ($confirm -notmatch '^[Jj]') { return }
+    $confirm = Read-Host '  Register this script as post-renewal plugin? (Y/N)'
+    if ($confirm -notmatch '^[Yy]') { return }
 
     try {
         Set-PAConfig -PostScript $scriptPath
-        Write-Host '  Post-renewal plugin registreret.' -ForegroundColor Green
-        Write-Host '  IIS-bindings opdateres automatisk ved næste certifikatfornyelse.' -ForegroundColor White
+        Write-Host '  Post-renewal plugin registered.' -ForegroundColor Green
+        Write-Host '  IIS bindings will be updated automatically on the next certificate renewal.' -ForegroundColor White
     } catch {
-        Write-Host "  Fejl: $_" -ForegroundColor Red
+        Write-Host "  Error: $_" -ForegroundColor Red
     }
 
     Write-Host ''
-    Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+    Write-Host '  Press any key...' -ForegroundColor DarkGray
     Invoke-ConsoleWaitKey
 }

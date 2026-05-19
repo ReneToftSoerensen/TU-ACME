@@ -38,7 +38,7 @@
             continue
         }
 
-        # Ignorer ikke-printbare tegn
+        # Ignore non-printable characters
         if ($key.KeyChar -eq [char]0) { continue }
 
         $chars.Add($key.KeyChar)

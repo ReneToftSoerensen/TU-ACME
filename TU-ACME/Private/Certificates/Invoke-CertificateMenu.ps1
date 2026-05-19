@@ -8,11 +8,11 @@
 
     while ($true) {
         $options = @(
-            '1. Certifikat-dashboard',
-            '2. Bestil nyt certifikat',
-            'B. Tilbage'
+            '1. Certificate Dashboard',
+            '2. Order new certificate',
+            'B. Back'
         )
-        $sel = Show-Menu -Title 'Certifikater' -Options $options
+        $sel = Show-Menu -Title 'Certificates' -Options $options
 
         switch ($sel) {
             -1 { return }

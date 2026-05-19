@@ -18,6 +18,6 @@
         Write-EventLog -LogName $logName -Source $source `
             -EventId $EventId -EntryType $EntryType -Message $Message
     } catch {
-        # Sil fejlen — Event Log er ikke kritisk for TUI-flow
+        # Swallow the error — Event Log is not critical for TUI flow
     }
 }

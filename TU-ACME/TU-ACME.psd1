@@ -4,7 +4,7 @@
     Author            = 'TU-ACME'
     CompanyName       = 'TU-ACME'
     Copyright         = '(c) TU-ACME. All rights reserved.'
-    Description       = 'Terminal UI til administration af Posh-ACME ACME/Let''s Encrypt certifikater pa Windows'
+    Description       = 'Terminal UI for managing Posh-ACME ACME/Let''s Encrypt certificates on Windows'
     PowerShellVersion = '5.1'
     RootModule        = 'TU-ACME.psm1'
     FunctionsToExport = @('Start-TUACME')

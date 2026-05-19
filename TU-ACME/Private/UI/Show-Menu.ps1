@@ -7,9 +7,9 @@
         [switch] $AllowSearch
     )
 
-    # Menuens indhold er ankret til venstre kant uafhaengigt af terminalbredde:
-    # Bredden capper ved 79 saa store terminaler ikke straekker linjerne ud
-    # mod hoejre, og markoeren placeres altid med X = 0.
+    # The menu content is anchored to the left edge regardless of terminal width:
+    # Width caps at 79 so wide terminals do not stretch lines toward the right,
+    # and the cursor is always placed with X = 0.
     $w           = [Math]::Min((Get-ConsoleWidth) - 1, 79)
     $index       = $InitialIndex
     $filter      = ''
@@ -38,20 +38,20 @@
             }
         }
 
-        # Ryd eventuelle resterende linjer
+        # Clear any remaining lines
         $clearFrom = $visibleOptions.Count + 2
         for ($i = $clearFrom; $i -lt $clearFrom + 3; $i++) {
             Set-ConsoleCursorPos -X 0 -Y $i
             Write-Host (' ' * $w) -NoNewline
         }
 
-        # Vis soegefelt hvis aktivt — altid forankret ved X = 0
+        # Show search field if active — always anchored at X = 0
         if ($AllowSearch) {
             Set-ConsoleCursorPos -X 0 -Y ($visibleOptions.Count + 3)
             if ($searching) {
-                Write-Host "  Soeg: ${filter}_" -ForegroundColor Yellow -NoNewline
+                Write-Host "  Search: ${filter}_" -ForegroundColor Yellow -NoNewline
             } else {
-                Write-Host '  [/] Soeg' -ForegroundColor DarkGray -NoNewline
+                Write-Host '  [/] Search' -ForegroundColor DarkGray -NoNewline
             }
         }
 
@@ -60,8 +60,8 @@
             Write-Host "  $StatusMessage" -ForegroundColor Yellow -NoNewline
         }
 
-        # Placer markoeren ved den venstre kant umiddelbart efter soegetekst
-        # naar bruger skriver, saa input synes ud fra venstre side.
+        # Place the cursor at the left edge immediately after the search text
+        # while the user types, so input appears from the left side.
         if ($AllowSearch -and $searching) {
             Set-ConsoleCursorPos -X (8 + $filter.Length) -Y ($visibleOptions.Count + 3)
             Set-ConsoleCursorVisible -Visible $true
@@ -108,7 +108,7 @@
                     $filter += $key.KeyChar
                 }
 
-                # Filtrer options
+                # Filter options
                 $filtered = @()
                 $fIdx     = @()
                 for ($i = 0; $i -lt $allOptions.Count; $i++) {
@@ -146,13 +146,13 @@
                         $filter    = ''
                         Render-Menu
                     } elseif ($key.KeyChar -ge '1' -and $key.KeyChar -le '9') {
-                        # Genvejstast: ciffer matcher optionens foerste ciffer
+                        # Hotkey: digit matches the option's leading digit
                         $digit = [int]::Parse($key.KeyChar.ToString()) - 1
                         if ($digit -ge 0 -and $digit -lt $visibleOptions.Count) {
                             return $visibleIndices[$digit]
                         }
                     } elseif ($key.KeyChar -eq 'q' -or $key.KeyChar -eq 'Q') {
-                        # Q som genvej til afslut-option (sidst i listen)
+                        # Q as shortcut for the exit option (last in the list)
                         return $visibleIndices[$visibleOptions.Count - 1]
                     }
                 }

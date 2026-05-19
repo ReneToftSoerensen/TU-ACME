@@ -5,29 +5,29 @@
         $certs = @(Get-PACertificate -List 2>$null)
         Invoke-ConsoleClear
 
-        Write-Host '  === Certifikat-dashboard ===' -ForegroundColor Cyan
-        Write-Host "  Advarsel ved under $warnDays dage til udloeb" -ForegroundColor DarkGray
+        Write-Host '  === Certificate Dashboard ===' -ForegroundColor Cyan
+        Write-Host "  Warning when less than $warnDays days until expiry" -ForegroundColor DarkGray
         Write-Host ''
 
         if ($certs.Count -eq 0) {
-            Write-Host '  Ingen certifikater fundet.' -ForegroundColor Yellow
-            Write-Host '  Brug "Bestil nyt certifikat" for at komme i gang.' -ForegroundColor DarkGray
+            Write-Host '  No certificates found.' -ForegroundColor Yellow
+            Write-Host '  Use "Order new certificate" to get started.' -ForegroundColor DarkGray
             Write-Host ''
-            Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+            Write-Host '  Press any key...' -ForegroundColor DarkGray
             Invoke-ConsoleWaitKey
             return
         }
 
-        # Tilfoej beregnet DaysLeft til hvert objekt
+        # Add a calculated DaysLeft to each object
         $rows = $certs | ForEach-Object {
             $days = if ($_.NotAfter) {
                 [int](($_.NotAfter - (Get-Date)).TotalDays)
             } else { -1 }
             [PSCustomObject]@{
                 Domain   = $_.MainDomain
-                Udlober  = if ($_.NotAfter) { $_.NotAfter.ToString('yyyy-MM-dd') } else { 'Ukendt' }
+                Expires  = if ($_.NotAfter) { $_.NotAfter.ToString('yyyy-MM-dd') } else { 'Unknown' }
                 DaysLeft = $days
-                Status   = if ($days -lt 0) { 'UDLOBET' } elseif ($days -le $warnDays) { 'Advarer' } else { 'OK' }
+                Status   = if ($days -lt 0) { 'EXPIRED' } elseif ($days -le $warnDays) { 'Warning' } else { 'OK' }
                 Thumbprint = if ($_.Thumbprint) { $_.Thumbprint.Substring(0, [Math]::Min(16, $_.Thumbprint.Length)) + '...' } else { '' }
             }
         }
@@ -40,15 +40,15 @@
         }
 
         $sel = Show-Table -Data $rows `
-            -Columns @('Domain', 'Udlober', 'DaysLeft', 'Status') `
-            -Headers @('Domæne', 'Udloeber', 'Dage', 'Status') `
+            -Columns @('Domain', 'Expires', 'DaysLeft', 'Status') `
+            -Headers @('Domain', 'Expires', 'Days', 'Status') `
             -Widths  @(30, 12, 6, 10) `
             -ColorRule $colorRule `
             -Interactive
 
         if ($sel -lt 0) { return }
 
-        # Vis detaljer for valgt certifikat
+        # Show details for the selected certificate
         _Show-CertDetail -Cert $certs[$sel] -DaysLeft $rows[$sel].DaysLeft
     }
 }
@@ -57,22 +57,22 @@ function _Show-CertDetail {
     param($Cert, [int] $DaysLeft)
 
     Invoke-ConsoleClear
-    Write-Host '  === Certifikat-detaljer ===' -ForegroundColor Cyan
+    Write-Host '  === Certificate Details ===' -ForegroundColor Cyan
     Write-Host ''
 
     $fields = [ordered]@{
-        'Domæne (CN)'     = $Cert.MainDomain
-        'SAN-domæner'     = ($Cert.SANs -join ', ')
-        'Udsteder'        = $Cert.Issuer
-        'Udstedes'        = if ($Cert.NotBefore) { $Cert.NotBefore.ToString('yyyy-MM-dd') } else { '' }
-        'Udlober'         = if ($Cert.NotAfter)  { $Cert.NotAfter.ToString('yyyy-MM-dd') }  else { '' }
-        'Dage tilbage'    = $DaysLeft
-        'Thumbprint'      = $Cert.Thumbprint
-        'Key Length'      = $Cert.KeyLength
-        'DNS-plugin'      = $Cert.Plugin
-        'Fornyelse'       = $Cert.RenewAfter
-        'Certifikat-fil'  = $Cert.CertFile
-        'Noegle-fil'      = $Cert.KeyFile
+        'Domain (CN)'      = $Cert.MainDomain
+        'SAN domains'      = ($Cert.SANs -join ', ')
+        'Issuer'           = $Cert.Issuer
+        'Issued'           = if ($Cert.NotBefore) { $Cert.NotBefore.ToString('yyyy-MM-dd') } else { '' }
+        'Expires'          = if ($Cert.NotAfter)  { $Cert.NotAfter.ToString('yyyy-MM-dd') }  else { '' }
+        'Days remaining'   = $DaysLeft
+        'Thumbprint'       = $Cert.Thumbprint
+        'Key Length'       = $Cert.KeyLength
+        'DNS plugin'       = $Cert.Plugin
+        'Renewal'          = $Cert.RenewAfter
+        'Certificate file' = $Cert.CertFile
+        'Key file'         = $Cert.KeyFile
     }
 
     foreach ($kv in $fields.GetEnumerator()) {
@@ -81,7 +81,7 @@ function _Show-CertDetail {
     }
 
     Write-Host ''
-    Write-Host '  [E] Eksporter  [R] Forny nu  [ESC] Tilbage' -ForegroundColor DarkGray
+    Write-Host '  [E] Export  [R] Renew now  [ESC] Back' -ForegroundColor DarkGray
 
     while ($true) {
         $key = Invoke-ConsoleReadKey
@@ -92,26 +92,26 @@ function _Show-CertDetail {
                     'e' { Invoke-ExportMenu -Cert $Cert; return }
                     'E' { Invoke-ExportMenu -Cert $Cert; return }
                     'r' {
-                        Write-Host '  Fornyelse starter...' -ForegroundColor Cyan
+                        Write-Host '  Renewal starting...' -ForegroundColor Cyan
                         try {
                             Submit-Renewal -MainDomain $Cert.MainDomain -Force | Out-Null
-                            Write-Host '  Fornyelse gennemfoert.' -ForegroundColor Green
+                            Write-Host '  Renewal completed.' -ForegroundColor Green
                         } catch {
-                            Write-Host "  Fejl: $_" -ForegroundColor Red
+                            Write-Host "  Error: $_" -ForegroundColor Red
                         }
-                        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+                        Write-Host '  Press any key...' -ForegroundColor DarkGray
                         Invoke-ConsoleWaitKey
                         return
                     }
                     'R' {
-                        Write-Host '  Fornyelse starter...' -ForegroundColor Cyan
+                        Write-Host '  Renewal starting...' -ForegroundColor Cyan
                         try {
                             Submit-Renewal -MainDomain $Cert.MainDomain -Force | Out-Null
-                            Write-Host '  Fornyelse gennemfoert.' -ForegroundColor Green
+                            Write-Host '  Renewal completed.' -ForegroundColor Green
                         } catch {
-                            Write-Host "  Fejl: $_" -ForegroundColor Red
+                            Write-Host "  Error: $_" -ForegroundColor Red
                         }
-                        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+                        Write-Host '  Press any key...' -ForegroundColor DarkGray
                         Invoke-ConsoleWaitKey
                         return
                     }
