@@ -19,9 +19,7 @@ Describe 'Write-EventLogEntry' -Tag Unit, Helpers {
                 Mock -CommandName 'New-EventLog' -MockWith {}
                 # Simulate SourceExists = false
                 Mock -CommandName 'Write-EventLogEntry' -MockWith {
-                    if (-not [System.Diagnostics.EventLog]::SourceExists('TU-ACME-FAKE')) {
-                        New-EventLog -LogName Application -Source 'TU-ACME-FAKE'
-                    }
+                    New-EventLog -LogName Application -Source 'TU-ACME-FAKE'
                     Write-EventLog -LogName Application -Source 'TU-ACME-FAKE' -EventId 1001 -EntryType Information -Message 'test'
                 }
             }

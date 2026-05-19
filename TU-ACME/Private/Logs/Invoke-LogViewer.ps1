@@ -106,6 +106,7 @@ function _Export-Log {
     $timestamp  = Get-Date -Format 'yyyyMMdd-HHmmss'
     $baseName   = [System.IO.Path]::GetFileNameWithoutExtension($LogFile)
     $desktop    = [System.Environment]::GetFolderPath('Desktop')
+    if (-not $desktop) { $desktop = [System.IO.Path]::GetTempPath() }
     $default    = Join-Path $desktop "${baseName}_${timestamp}.log"
 
     Write-Host ''

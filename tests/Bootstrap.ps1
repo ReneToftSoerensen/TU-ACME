@@ -1,6 +1,20 @@
 ﻿# Shared bootstrap for all TU-ACME test files.
 # Dot-source this at the top of every Describe block's BeforeAll.
 
+# Ensure Windows-specific env vars exist (absent on Linux/macOS).
+if (-not $env:ProgramData) {
+    $env:ProgramData = Join-Path ([System.IO.Path]::GetTempPath()) 'TU-ACME-TestProgramData'
+    New-Item -ItemType Directory -Path $env:ProgramData -Force | Out-Null
+}
+if (-not $env:ProgramFiles) {
+    $env:ProgramFiles = Join-Path ([System.IO.Path]::GetTempPath()) 'TU-ACME-TestProgramFiles'
+    New-Item -ItemType Directory -Path $env:ProgramFiles -Force | Out-Null
+}
+if (-not $env:LOCALAPPDATA) {
+    $env:LOCALAPPDATA = Join-Path ([System.IO.Path]::GetTempPath()) 'TU-ACME-TestLocalAppData'
+    New-Item -ItemType Directory -Path $env:LOCALAPPDATA -Force | Out-Null
+}
+
 $script:ModuleRoot = (Resolve-Path "$PSScriptRoot\..\TU-ACME").Path
 $script:ModulePsd1 = Join-Path $script:ModuleRoot 'TU-ACME.psd1'
 
@@ -73,6 +87,10 @@ function global:Submit-Renewal    { param([string]$MainDomain, [switch]$AllAccou
 function global:Get-WebBinding        { param([string]$Protocol) }
 function global:Set-WebBinding        { param([string]$Name, [string]$PropertyName, [string]$Value) }
 function global:Import-PfxCertificate { param([string]$FilePath, [string]$CertStoreLocation, [switch]$Exportable) }
+
+# Windows Event Log stubs — not available on Linux/macOS.
+function global:New-EventLog   { param([string]$LogName, [string]$Source) }
+function global:Write-EventLog { param([string]$LogName, [string]$Source, [string]$Message, [int]$EventId, [string]$EntryType) }
 
 # ScheduledTask cmdlet stubs — allow mocking when ScheduledTasks module is not loaded.
 function global:Get-ScheduledTask          { param([string]$TaskName) }
