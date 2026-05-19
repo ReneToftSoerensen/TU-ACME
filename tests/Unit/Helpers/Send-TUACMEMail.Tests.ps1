@@ -2,6 +2,8 @@
 . "$PSScriptRoot\..\..\Bootstrap.ps1"
 . "$PSScriptRoot\..\..\Fixtures\FakeObjects.ps1"
 
+BeforeDiscovery { Import-TUACMEModule }
+
 Describe 'Send-TUACMEMail' -Tag Unit, Helpers {
 
     BeforeAll { Import-TUACMEModule }

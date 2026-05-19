@@ -5,8 +5,11 @@ $script:ModuleRoot = (Resolve-Path "$PSScriptRoot\..\TU-ACME").Path
 $script:ModulePsd1 = Join-Path $script:ModuleRoot 'TU-ACME.psd1'
 
 function Import-TUACMEModule {
+    $bootstrapFile = $MyInvocation.MyCommand.ScriptBlock.File
+    $repoRoot = Split-Path -Parent (Split-Path -Parent $bootstrapFile)
+    $psd1 = Join-Path $repoRoot 'TU-ACME\TU-ACME.psd1'
     Remove-Module TU-ACME -ErrorAction SilentlyContinue -Force
-    Import-Module $script:ModulePsd1 -Force -ErrorAction Stop
+    Import-Module $psd1 -Force -ErrorAction Stop
 }
 
 function Remove-TUACMEModule {
@@ -53,6 +56,3 @@ function New-FakeCharKey {
     return New-Object System.ConsoleKeyInfo($Char, $key, $false, $false, $false)
 }
 
-# Pre-load the module at file scope so InModuleScope works during Pester 5 discovery.
-# Test files that call Import-TUACMEModule in BeforeAll will simply re-import it.
-Import-TUACMEModule

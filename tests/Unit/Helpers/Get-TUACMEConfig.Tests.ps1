@@ -2,6 +2,8 @@
 . "$PSScriptRoot\..\..\Bootstrap.ps1"
 . "$PSScriptRoot\..\..\Fixtures\FakeObjects.ps1"
 
+BeforeDiscovery { Import-TUACMEModule }
+
 Describe 'Get-TUACMEConfig' -Tag Unit, Helpers {
 
     BeforeAll { Import-TUACMEModule }
