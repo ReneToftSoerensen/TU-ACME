@@ -25,7 +25,7 @@ function Invoke-AcmeDnsSetup {
     if ($accountJson -eq $null) { return $null }
 
     # Trin 3: Vis CNAME-instruktion og vent på bekræftelse
-    if (-not _Show-CnameInstruction -Domains $Domains -AccountData $accountJson) { return $null }
+    if (-not (_Show-CnameInstruction -Domains $Domains -AccountData $accountJson)) { return $null }
 
     # Trin 4: Gem credentials krypteret
     $jsonPath = _Save-AcmeDnsAccount -AccountData $accountJson -Domains $Domains
