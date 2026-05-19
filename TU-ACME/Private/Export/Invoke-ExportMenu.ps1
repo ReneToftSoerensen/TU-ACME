@@ -37,7 +37,7 @@
 function _Export-PFX {
     param($Cert)
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === Eksporter PFX ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -58,7 +58,7 @@ function _Export-PFX {
     if ($p1 -ne $p2) {
         Write-Host '  Adgangskoderne er ikke ens. Prøv igen.' -ForegroundColor Red
         Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-        [Console]::ReadKey($true) | Out-Null
+        Invoke-ConsoleWaitKey
         return
     }
 
@@ -83,13 +83,13 @@ function _Export-PFX {
 
     Write-Host ''
     Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-    [Console]::ReadKey($true) | Out-Null
+    Invoke-ConsoleWaitKey
 }
 
 function _Export-PEM {
     param($Cert)
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === Eksporter PEM/CRT/KEY ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -130,7 +130,7 @@ function _Export-PEM {
 
     Write-Host ''
     Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-    [Console]::ReadKey($true) | Out-Null
+    Invoke-ConsoleWaitKey
 }
 
 function _Import-WinStore {
@@ -142,7 +142,7 @@ function _Import-WinStore {
         return
     }
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === Importer til Windows Certificate Store ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -166,5 +166,5 @@ function _Import-WinStore {
 
     Write-Host ''
     Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-    [Console]::ReadKey($true) | Out-Null
+    Invoke-ConsoleWaitKey
 }

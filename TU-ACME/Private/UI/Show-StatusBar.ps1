@@ -14,7 +14,7 @@
 
     try { [Console]::CursorVisible = $false } catch {}
 
-    [Console]::SetCursorPosition(0, $row)
+    Set-ConsoleCursorPos -X 0 -Y $row
 
     if ($AdminWarning -ne '') {
         $warning = " ADVARSEL: $AdminWarning "
@@ -33,6 +33,6 @@
         Write-Host $bar.Substring(0, $w) -ForegroundColor Black -BackgroundColor Gray -NoNewline
     }
 
-    [Console]::SetCursorPosition($savedLeft, $savedTop)
+    Set-ConsoleCursorPos -X $savedLeft -Y $savedTop
     try { [Console]::CursorVisible = $true } catch {}
 }

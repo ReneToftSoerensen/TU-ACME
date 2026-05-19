@@ -11,7 +11,7 @@
 
     while ($true) {
         $accounts = @(Get-PAAccount -List 2>$null)
-        [Console]::Clear()
+        Invoke-ConsoleClear
 
         Write-Host '  === Kontostyring ===' -ForegroundColor Cyan
         Write-Host ''
@@ -51,7 +51,7 @@
 }
 
 function _New-ACMEAccount {
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === Opret ny ACME-konto ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -93,7 +93,7 @@ function _New-ACMEAccount {
 
     Write-Host ''
     Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-    [Console]::ReadKey($true) | Out-Null
+    Invoke-ConsoleWaitKey
 }
 
 function _Set-ActiveAccount {
@@ -121,7 +121,7 @@ function _Set-ActiveAccount {
 }
 
 function _Toggle-StagingAccount {
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === Staging-toggle ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -138,5 +138,5 @@ function _Toggle-StagingAccount {
 
     Write-Host ''
     Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-    [Console]::ReadKey($true) | Out-Null
+    Invoke-ConsoleWaitKey
 }

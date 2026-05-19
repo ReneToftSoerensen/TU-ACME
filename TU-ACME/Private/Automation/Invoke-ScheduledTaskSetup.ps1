@@ -5,7 +5,7 @@
         return
     }
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === Opret Scheduled Task til automatisk fornyelse ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -77,5 +77,5 @@
 
     Write-Host ''
     Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-    [Console]::ReadKey($true) | Out-Null
+    Invoke-ConsoleWaitKey
 }

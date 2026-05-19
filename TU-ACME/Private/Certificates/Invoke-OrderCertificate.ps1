@@ -1,5 +1,5 @@
 ﻿function Invoke-OrderCertificate {
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === Bestil nyt certifikat ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -49,7 +49,7 @@
     if ($dnsConfig -eq $null) { return }
 
     # Opsummeringsvisning
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === Opsummering ===' -ForegroundColor Cyan
     Write-Host ''
     Write-Host "  Domæne:          $mainDomain" -ForegroundColor White
@@ -102,7 +102,7 @@
         }
         Write-Host ''
         Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-        [Console]::ReadKey($true) | Out-Null
+        Invoke-ConsoleWaitKey
         return
     }
 
@@ -123,7 +123,7 @@
 
     Write-Host ''
     Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-    [Console]::ReadKey($true) | Out-Null
+    Invoke-ConsoleWaitKey
 }
 
 function _Configure-DNS01Challenge {
@@ -136,7 +136,7 @@ function _Configure-DNS01Challenge {
     $defaultTimeout = if ($dnsDefaults -and $dnsDefaults.DefaultValidationTimeout) { $dnsDefaults.DefaultValidationTimeout } else { 60 }
     $defaultPersist = if ($dnsDefaults -and $dnsDefaults.PersistentRecords)         { $dnsDefaults.PersistentRecords }         else { $false }
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === DNS-01 Challenge-indstillinger ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -270,7 +270,7 @@ function _Collect-AcmeDnsArgs {
     $existingPath   = Get-AcmeDnsAccountPath -Domain $primaryDomain
 
     if ($existingPath) {
-        [Console]::Clear()
+        Invoke-ConsoleClear
         Write-Host '  === ACME-DNS ===' -ForegroundColor Cyan
         Write-Host ''
         Write-Host "  Gemt konto fundet: $existingPath" -ForegroundColor Green

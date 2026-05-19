@@ -70,7 +70,7 @@
         return -1
     }
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Render-Table -CurrentIndex $index
 
     try { [Console]::CursorVisible = $false } catch {}
@@ -81,12 +81,12 @@
         switch ($key.Key) {
             ([ConsoleKey]::UpArrow) {
                 if ($index -gt 0) { $index-- }
-                [Console]::Clear()
+                Invoke-ConsoleClear
                 Render-Table -CurrentIndex $index
             }
             ([ConsoleKey]::DownArrow) {
                 if ($index -lt $Data.Count - 1) { $index++ }
-                [Console]::Clear()
+                Invoke-ConsoleClear
                 Render-Table -CurrentIndex $index
             }
             ([ConsoleKey]::Enter) {

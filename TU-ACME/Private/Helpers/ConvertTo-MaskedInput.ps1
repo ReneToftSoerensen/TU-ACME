@@ -31,9 +31,9 @@
                 if ($AsSecureString) {
                     $secure.RemoveAt($secure.Length - 1)
                 }
-                [Console]::SetCursorPosition($col, $row)
+                Set-ConsoleCursorPos -X $col -Y $row
                 Write-Host ($MaskChar.ToString() * $chars.Count + ' ') -NoNewline
-                [Console]::SetCursorPosition($col + $chars.Count, $row)
+                Set-ConsoleCursorPos -X $col + $chars.Count -Y $row
             }
             continue
         }

@@ -9,7 +9,7 @@
         [string[]] $Domains
     )
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === ACME-DNS Opsætning ===' -ForegroundColor Cyan
     Write-Host ''
     Write-Host '  ACME-DNS er en dedikeret DNS-server til ACME-challenges.' -ForegroundColor Gray
@@ -162,7 +162,7 @@ function _Load-ExistingAccount {
 function _Show-CnameInstruction {
     param($Domains, $AccountData)
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === HANDLING PAAKRAEVET ===' -ForegroundColor Yellow
     Write-Host ''
     Write-Host '  Opret foelgende CNAME-record(s) hos din DNS-provider.' -ForegroundColor White

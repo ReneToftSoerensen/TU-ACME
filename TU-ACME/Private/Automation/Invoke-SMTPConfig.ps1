@@ -1,5 +1,5 @@
 ﻿function Invoke-SMTPConfig {
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === Konfigurer SMTP-fejladvisering ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -79,5 +79,5 @@ Version:     1.0
 
     Write-Host ''
     Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-    [Console]::ReadKey($true) | Out-Null
+    Invoke-ConsoleWaitKey
 }

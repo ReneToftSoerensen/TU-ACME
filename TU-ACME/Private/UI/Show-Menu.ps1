@@ -19,7 +19,7 @@
     function Render-Menu {
         $saveLeft = [Console]::CursorLeft
         $saveTop  = [Console]::CursorTop
-        [Console]::SetCursorPosition(0, 0)
+        Set-ConsoleCursorPos -X 0 -Y 0
         try { [Console]::CursorVisible = $false } catch {}
 
         $border = '=' * [Math]::Min($w - 1, 79)
@@ -27,7 +27,7 @@
         Write-Host "  $border" -ForegroundColor DarkCyan
 
         for ($i = 0; $i -lt $visibleOptions.Count; $i++) {
-            [Console]::SetCursorPosition(0, $i + 2)
+            Set-ConsoleCursorPos -X 0 -Y $i + 2
             $line = '  ' + $visibleOptions[$i]
             $line = $line.PadRight([Math]::Min($w - 1, 79))
             if ($i -eq $index) {
@@ -40,13 +40,13 @@
         # Ryd eventuelle resterende linjer
         $clearFrom = $visibleOptions.Count + 2
         for ($i = $clearFrom; $i -lt $clearFrom + 3; $i++) {
-            [Console]::SetCursorPosition(0, $i)
+            Set-ConsoleCursorPos -X 0 -Y $i
             Write-Host (' ' * [Math]::Min($w - 1, 79)) -NoNewline
         }
 
         # Vis soegefelt hvis aktivt
         if ($AllowSearch) {
-            [Console]::SetCursorPosition(0, $visibleOptions.Count + 3)
+            Set-ConsoleCursorPos -X 0 -Y $visibleOptions.Count + 3
             if ($searching) {
                 Write-Host "  Soeg: $filter_" -ForegroundColor Yellow -NoNewline
             } else {
@@ -55,14 +55,14 @@
         }
 
         if ($StatusMessage -ne '') {
-            [Console]::SetCursorPosition(0, $visibleOptions.Count + 4)
+            Set-ConsoleCursorPos -X 0 -Y $visibleOptions.Count + 4
             Write-Host "  $StatusMessage" -ForegroundColor Yellow -NoNewline
         }
 
         try { [Console]::CursorVisible = $true } catch {}
     }
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Render-Menu
 
     while ($true) {
@@ -81,13 +81,13 @@
                 $visibleOptions = $allOptions
                 $visibleIndices = 0..($allOptions.Count - 1)
                 $index = 0
-                [Console]::Clear()
+                Invoke-ConsoleClear
                 Render-Menu
                 continue
             }
             if ($key.Key -eq [ConsoleKey]::Enter) {
                 $searching = $false
-                [Console]::Clear()
+                Invoke-ConsoleClear
                 Render-Menu
                 continue
             }
@@ -111,7 +111,7 @@
             $visibleOptions = $filtered
             $visibleIndices = $fIdx
             $index = 0
-            [Console]::Clear()
+            Invoke-ConsoleClear
             Render-Menu
             continue
         }

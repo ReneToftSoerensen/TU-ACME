@@ -32,7 +32,7 @@
 
     # Siden PS 5.1 ikke har nem async, kør scriptblock synkront
     # men vis spinner foer og efter hvert naturligt pause-punkt
-    [Console]::SetCursorPosition(0, $spinRow)
+    Set-ConsoleCursorPos -X 0 -Y $spinRow
     Write-Host "  [ $($frames[0]) ] $($script:_spinnerMessage)" -NoNewline -ForegroundColor Cyan
 
     try {
@@ -40,9 +40,9 @@
     } catch {
         $exception = $_
     } finally {
-        [Console]::SetCursorPosition(0, $spinRow)
+        Set-ConsoleCursorPos -X 0 -Y $spinRow
         Write-Host (' ' * [Math]::Max([Console]::WindowWidth - 1, 79)) -NoNewline
-        [Console]::SetCursorPosition(0, $spinRow)
+        Set-ConsoleCursorPos -X 0 -Y $spinRow
         try { [Console]::CursorVisible = $true } catch {}
     }
 

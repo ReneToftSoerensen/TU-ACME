@@ -3,7 +3,7 @@
 
     while ($true) {
         $certs = @(Get-PACertificate -List 2>$null)
-        [Console]::Clear()
+        Invoke-ConsoleClear
 
         Write-Host '  === Certifikat-dashboard ===' -ForegroundColor Cyan
         Write-Host "  Advarsel ved under $warnDays dage til udloeb" -ForegroundColor DarkGray
@@ -14,7 +14,7 @@
             Write-Host '  Brug "Bestil nyt certifikat" for at komme i gang.' -ForegroundColor DarkGray
             Write-Host ''
             Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-            [Console]::ReadKey($true) | Out-Null
+            Invoke-ConsoleWaitKey
             return
         }
 
@@ -56,7 +56,7 @@
 function _Show-CertDetail {
     param($Cert, [int] $DaysLeft)
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host '  === Certifikat-detaljer ===' -ForegroundColor Cyan
     Write-Host ''
 
@@ -84,7 +84,7 @@ function _Show-CertDetail {
     Write-Host '  [E] Eksporter  [R] Forny nu  [ESC] Tilbage' -ForegroundColor DarkGray
 
     while ($true) {
-        $key = [Console]::ReadKey($true)
+        $key = Invoke-ConsoleReadKey
         switch ($key.Key) {
             ([ConsoleKey]::Escape) { return }
             default {
@@ -100,7 +100,7 @@ function _Show-CertDetail {
                             Write-Host "  Fejl: $_" -ForegroundColor Red
                         }
                         Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-                        [Console]::ReadKey($true) | Out-Null
+                        Invoke-ConsoleWaitKey
                         return
                     }
                     'R' {
@@ -112,7 +112,7 @@ function _Show-CertDetail {
                             Write-Host "  Fejl: $_" -ForegroundColor Red
                         }
                         Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-                        [Console]::ReadKey($true) | Out-Null
+                        Invoke-ConsoleWaitKey
                         return
                     }
                 }

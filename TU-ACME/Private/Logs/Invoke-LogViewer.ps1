@@ -14,7 +14,7 @@
         Write-Host '  Søgte i: ' -NoNewline; Write-Host $logDir -ForegroundColor DarkGray
         Write-Host ''
         Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
-        [Console]::ReadKey($true) | Out-Null
+        Invoke-ConsoleWaitKey
         return
     }
 
@@ -48,7 +48,7 @@ function _Show-LogPager {
     $maxOffset  = [Math]::Max($lines.Count - $h, 0)
 
     function Render-Page {
-        [Console]::Clear()
+        Invoke-ConsoleClear
         Write-Host "  === Log: $(Split-Path $LogFile -Leaf) ===" -ForegroundColor Cyan
         Write-Host "  Linje $($offset + 1)-$([Math]::Min($offset + $h, $lines.Count)) af $($lines.Count)" -ForegroundColor DarkGray
 
@@ -72,7 +72,7 @@ function _Show-LogPager {
     Render-Page
 
     while ($true) {
-        $key = [Console]::ReadKey($true)
+        $key = Invoke-ConsoleReadKey
 
         switch ($key.Key) {
             ([ConsoleKey]::Escape)   { return }
