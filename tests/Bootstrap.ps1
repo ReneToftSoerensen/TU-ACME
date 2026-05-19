@@ -52,3 +52,7 @@ function New-FakeCharKey {
     }
     return New-Object System.ConsoleKeyInfo($Char, $key, $false, $false, $false)
 }
+
+# Pre-load the module at file scope so InModuleScope works during Pester 5 discovery.
+# Test files that call Import-TUACMEModule in BeforeAll will simply re-import it.
+Import-TUACMEModule
