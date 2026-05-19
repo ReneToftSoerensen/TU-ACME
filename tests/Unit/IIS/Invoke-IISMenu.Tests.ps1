@@ -2,9 +2,25 @@
 . "$PSScriptRoot\..\..\Bootstrap.ps1"
 . "$PSScriptRoot\..\..\Fixtures\FakeObjects.ps1"
 
-BeforeDiscovery { Import-TUACMEModule }
+BeforeDiscovery {
+    Import-TUACMEModule
 
-Describe 'Invoke-IISMenu' -Tag Unit, IIS {
+    # $IsWindows is defined in PS 6+; PS 5.1 is always Windows, so default to $true
+    $onWindows = if (Test-Path variable:IsWindows) { $IsWindows } else { $true }
+
+    $script:SkipIIS = $true
+    if ($onWindows) {
+        try {
+            $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
+            $isAdmin   = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+            $script:SkipIIS = -not $isAdmin
+        } catch {
+            $script:SkipIIS = $true
+        }
+    }
+}
+
+Describe 'Invoke-IISMenu' -Tag Unit, IIS -Skip:$script:SkipIIS {
 
     BeforeAll { Import-TUACMEModule }
     AfterAll  { Remove-TUACMEModule }
