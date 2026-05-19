@@ -25,7 +25,8 @@
     if ($accountJson -eq $null) { return $null }
 
     # Trin 3: Vis CNAME-instruktion og vent på bekræftelse
-    if (-not _Show-CnameInstruction -Domains $Domains -AccountData $accountJson) { return $null }
+    $cnameOk = _Show-CnameInstruction -Domains $Domains -AccountData $accountJson
+    if (-not $cnameOk) { return $null }
 
     # Trin 4: Gem credentials krypteret
     $jsonPath = _Save-AcmeDnsAccount -AccountData $accountJson -Domains $Domains
@@ -218,8 +219,9 @@ function _Save-AcmeDnsAccount {
 
         # DPAPI-krypteret backup via Export-Clixml
         $xmlPath = $jsonPath -replace '\.json$', '.xml'
+        $serverProp = $AccountData.PSObject.Properties['server']
         [PSCustomObject]@{
-            Server     = $AccountData.PSObject.Properties['server']?.Value
+            Server     = if ($serverProp -ne $null) { $serverProp.Value } else { $null }
             Username   = $AccountData.username
             Password   = $AccountData.password
             Subdomain  = $AccountData.subdomain
