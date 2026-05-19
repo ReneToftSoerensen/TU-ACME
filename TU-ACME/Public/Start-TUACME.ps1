@@ -32,7 +32,7 @@
     # Hovedmenu-loop
     $running = $true
     while ($running) {
-        [Console]::Clear()
+        Invoke-ConsoleClear
         Show-StatusBar
 
         $menuOptions = @(
@@ -86,6 +86,6 @@
         }
     }
 
-    [Console]::Clear()
+    Invoke-ConsoleClear
     Write-Host 'TU-ACME afsluttet.' -ForegroundColor Cyan
 }

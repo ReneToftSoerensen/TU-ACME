@@ -42,8 +42,8 @@ function _Show-LogPager {
         return
     }
 
-    $h          = [Math]::Max([Console]::WindowHeight - 4, 5)
-    $w          = [Math]::Max([Console]::WindowWidth, 80)
+    $h          = [Math]::Max((Get-ConsoleHeight) - 4, 5)
+    $w          = Get-ConsoleWidth
     $offset     = 0
     $maxOffset  = [Math]::Max($lines.Count - $h, 0)
 

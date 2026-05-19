@@ -9,8 +9,8 @@
 
     $chars     = New-Object System.Collections.Generic.List[char]
     $secure    = New-Object System.Security.SecureString
-    $col       = [Console]::CursorLeft
-    $row       = [Console]::CursorTop
+    $col       = Get-ConsoleCursorLeft
+    $row       = Get-ConsoleCursorTop
 
     while ($true) {
         $key = Invoke-ConsoleReadKey

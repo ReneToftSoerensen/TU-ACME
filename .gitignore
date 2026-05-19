@@ -2,3 +2,4 @@
 *.rpm
 *.msi
 *.exe
+TestResults/

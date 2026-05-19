@@ -7,10 +7,10 @@
 
     $frames        = @('/', '-', '\', '|')
     $frameIndex    = 0
-    $spinRow       = if ($Row -ge 0) { $Row } else { [Console]::CursorTop }
+    $spinRow       = if ($Row -ge 0) { $Row } else { Get-ConsoleCursorTop }
     $script:_spinnerMessage = $Message
 
-    try { [Console]::CursorVisible = $false } catch {}
+    Set-ConsoleCursorVisible -Visible $false
 
     $result    = $null
     $exception = $null
@@ -41,9 +41,9 @@
         $exception = $_
     } finally {
         Set-ConsoleCursorPos -X 0 -Y $spinRow
-        Write-Host (' ' * [Math]::Max([Console]::WindowWidth - 1, 79)) -NoNewline
+        Write-Host (' ' * [Math]::Max((Get-ConsoleWidth) - 1, 79)) -NoNewline
         Set-ConsoleCursorPos -X 0 -Y $spinRow
-        try { [Console]::CursorVisible = $true } catch {}
+        Set-ConsoleCursorVisible -Visible $true
     }
 
     if ($exception -ne $null) {
