@@ -92,8 +92,16 @@ Download and extract `tu-acme.zip` to a folder on the server.
 
 ### Step 2: Copy module to PowerShell module path
 
+The repo ships a `deploy.ps1` that handles unload + wipe + copy + verify:
+
 ```powershell
-# Requires Administrator
+# Requires Administrator. Run from the repo root.
+.\deploy.ps1
+```
+
+Manual equivalent if you prefer to inline it:
+
+```powershell
 $moduleDest = "$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME"
 
 # Unload from current session and remove the old install (if any).
