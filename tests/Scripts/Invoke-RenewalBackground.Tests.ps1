@@ -60,15 +60,22 @@ Describe 'Invoke-RenewalBackground.ps1' -Tag Unit, Scripts {
         }
     }
 
-    Context 'Write-Log function in script' {
+    Context 'Reuses module helpers (no inline duplication)' {
         BeforeAll {
             $script:content = Get-Content -Path $script:ScriptPath -Raw
         }
-        It 'defines a Write-Log helper' {
-            $script:content | Should -Match 'function Write-Log'
+        It 'dot-sources Write-EventLogEntry from Private/Helpers' {
+            $script:content | Should -Match 'Write-EventLogEntry\.ps1'
         }
-        It 'Write-Log swallows exceptions (try/catch)' {
-            $script:content | Should -Match 'try'
+        It 'calls Write-EventLogEntry instead of defining its own Write-Log' {
+            $script:content | Should -Match 'Write-EventLogEntry'
+            $script:content | Should -Not -Match 'function Write-Log'
+        }
+        It 'uses Get-TUACMEConfig (not inline config.json read)' {
+            $script:content | Should -Match 'Get-TUACMEConfig'
+        }
+        It 'uses Send-TUACMEMail for the actual SMTP send' {
+            $script:content | Should -Match 'Send-TUACMEMail'
         }
     }
 
@@ -79,11 +86,8 @@ Describe 'Invoke-RenewalBackground.ps1' -Tag Unit, Scripts {
         It 'defines Send-ErrorMail' {
             $script:content | Should -Match 'function Send-ErrorMail'
         }
-        It 'loads SMTP config from config.json' {
-            $script:content | Should -Match 'config\.json'
-        }
-        It 'loads credentials from smtp-credentials.xml' {
-            $script:content | Should -Match 'smtp-credentials\.xml'
+        It 'guards on missing SMTP config before sending' {
+            $script:content | Should -Match 'SmtpServer'
         }
     }
 

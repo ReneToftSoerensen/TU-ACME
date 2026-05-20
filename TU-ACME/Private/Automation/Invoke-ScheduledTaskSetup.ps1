@@ -41,7 +41,7 @@ function Invoke-ScheduledTaskSetup {
     # Check if task already exists
     $existing = Get-ScheduledTask -TaskName $taskCfg.TaskName -ErrorAction SilentlyContinue
     if ($existing -ne $null) {
-        if (-not (Confirm-YesNo "  Task '$($taskCfg.TaskName)' already exists. Overwrite? (Y/N)")) { return }
+        if (-not (Confirm-YesNo "  Task '$($taskCfg.TaskName)' already exists. Overwrite? (y/N)" -Default $false)) { return }
         Unregister-ScheduledTask -TaskName $taskCfg.TaskName -Confirm:$false
     }
 

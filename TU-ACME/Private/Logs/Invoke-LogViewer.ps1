@@ -114,7 +114,7 @@ function _Export-Log {
     if ($dest -eq '') { $dest = $default }
 
     if ((Test-Path $dest)) {
-        if (-not (Confirm-YesNo "  '$dest' exists. Overwrite? (Y/N)")) { return }
+        if (-not (Confirm-YesNo "  '$dest' exists. Overwrite? (y/N)" -Default $false)) { return }
     }
 
     try {

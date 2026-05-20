@@ -17,38 +17,21 @@ if (-not $onWindows) {
 if (-not $env:ProgramData)  { $env:ProgramData  = '/tmp/TU-ACME' }
 if (-not $env:COMPUTERNAME) { $env:COMPUTERNAME = [System.Net.Dns]::GetHostName() }
 
-$configDir  = Join-Path $env:ProgramData 'TU-ACME'
-$logSource  = 'TU-ACME'
-$logName    = 'Application'
-
-function Write-Log {
-    param([int] $EventId, [string] $Message, [string] $EntryType = 'Information')
-    try {
-        if (-not [System.Diagnostics.EventLog]::SourceExists($logSource)) {
-            New-EventLog -LogName $logName -Source $logSource
-        }
-        Write-EventLog -LogName $logName -Source $logSource `
-            -EventId $EventId -EntryType $EntryType -Message $Message
-    } catch {}
-}
-
-function Get-Config {
-    $configPath = Join-Path $configDir 'config.json'
-    if (Test-Path $configPath) {
-        return Get-Content -Path $configPath -Raw | ConvertFrom-Json
-    }
-    return $null
-}
+# Reuse the module's helpers instead of duplicating them.
+# The script lives in TU-ACME/Scripts/ next to TU-ACME/Private/Helpers/.
+$script:OnWindows = $true
+$helpersDir = Join-Path $PSScriptRoot '..\Private\Helpers'
+. (Join-Path $helpersDir 'Get-TUACMEConfig.ps1')
+. (Join-Path $helpersDir 'Write-EventLogEntry.ps1')
+. (Join-Path $helpersDir 'Send-TUACMEMail.ps1')
 
 function Send-ErrorMail {
     param([string] $Domain, [string] $ErrorMessage)
 
-    $config = Get-Config
+    $config = Get-TUACMEConfig
     if (-not $config -or -not $config.Email.SmtpServer) { return }
 
-    $credPath = Join-Path $configDir 'smtp-credentials.xml'
-    $subject  = "[TU-ACME] ERROR during certificate renewal - $Domain"
-    $body     = @"
+    $body = @"
 Timestamp:    $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 Server:       $env:COMPUTERNAME
 Domain:       $Domain
@@ -62,50 +45,27 @@ Check certificate status in TU-ACME or run:
 -- Sent automatically by TU-ACME --
 "@
 
-    $mailParams = @{
-        SmtpServer = $config.Email.SmtpServer
-        Port       = $config.Email.SmtpPort
-        From       = $config.Email.SenderAddress
-        To         = $config.Email.RecipientAddress
-        Subject    = $subject
-        Body       = $body
-        UseSsl     = $config.Email.UseSsl
-    }
-
-    if ($config.Email.UseAuth -and (Test-Path $credPath)) {
-        try {
-            $stored = Import-Clixml -Path $credPath
-            $cred   = New-Object System.Management.Automation.PSCredential(
-                $stored.Username, $stored.Password
-            )
-            $mailParams['Credential'] = $cred
-        } catch {}
-    }
-
-    try {
-        Send-MailMessage @mailParams
-    } catch {}
+    Send-TUACMEMail -Subject "[TU-ACME] ERROR during certificate renewal - $Domain" -Body $body | Out-Null
 }
 
-# Import Posh-ACME
 try {
     Import-Module Posh-ACME -ErrorAction Stop
 } catch {
-    Write-Log -EventId 3001 -Message "TU-ACME: Posh-ACME not available. $_" -EntryType Error
+    Write-EventLogEntry -EventId 3001 -EntryType Error `
+        -Message "TU-ACME: Posh-ACME not available. $_"
     exit 1
 }
 
-# Run renewal
 try {
     $results = Submit-Renewal -AllAccounts
 
     if ($results) {
         foreach ($r in $results) {
-            $msg = "Certificate renewed: $($r.MainDomain). New thumbprint: $($r.Thumbprint)"
-            Write-Log -EventId 1001 -Message $msg
+            Write-EventLogEntry -EventId 1001 `
+                -Message "Certificate renewed: $($r.MainDomain). New thumbprint: $($r.Thumbprint)"
         }
     } else {
-        Write-Log -EventId 1001 -Message 'TU-ACME: No certificates required renewal.'
+        Write-EventLogEntry -EventId 1001 -Message 'TU-ACME: No certificates required renewal.'
     }
 } catch {
     $errMsg = "$_"
@@ -115,7 +75,8 @@ try {
         $domain = (Get-PACertificate -List | Where-Object { $_.status -eq 'pending' } | Select-Object -First 1).MainDomain
     } catch {}
 
-    Write-Log -EventId 3001 -Message "TU-ACME: Certificate renewal failed for $domain. $_" -EntryType Error
+    Write-EventLogEntry -EventId 3001 -EntryType Error `
+        -Message "TU-ACME: Certificate renewal failed for $domain. $_"
     Send-ErrorMail -Domain $domain -ErrorMessage $errMsg
     exit 1
 }

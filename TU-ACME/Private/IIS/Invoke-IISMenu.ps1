@@ -64,7 +64,11 @@ function _Show-IISBindings {
         Get-PACertificate -List 2>$null | ForEach-Object {
             if ($_.Thumbprint) { $paCerts[$_.Thumbprint.ToUpper()] = $_.MainDomain }
         }
-    } catch {}
+    } catch {
+        Write-Host "  Warning: Could not enumerate Posh-ACME certificates: $_" -ForegroundColor Yellow
+        Write-EventLogEntry -EventId 2003 -EntryType Warning `
+            -Message "TU-ACME: Get-PACertificate failed in IIS binding view: $_"
+    }
 
     $rows = $bindings | ForEach-Object {
         $tp     = if ($_.certificateHash) { $_.certificateHash.ToUpper() } else { '' }
@@ -210,7 +214,7 @@ function _Register-PostRenewalPlugin {
 
     Write-Host "  Script: $scriptPath"
     Write-Host ''
-    if (-not (Confirm-YesNo '  Register this script as post-renewal plugin? (Y/N)')) { return }
+    if (-not (Confirm-YesNo '  Register this script as post-renewal plugin? (y/N)' -Default $false)) { return }
 
     try {
         Set-PAConfig -PostScript $scriptPath

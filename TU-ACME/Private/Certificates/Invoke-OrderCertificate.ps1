@@ -64,7 +64,7 @@
     Write-Host "  Persistent DNS:  $persistTxt" -ForegroundColor $(if ($dnsConfig.PersistentRecords) { 'Yellow' } else { 'White' })
     Write-Host ''
 
-    if (-not (Confirm-YesNo '  Confirm order? (Y/N)')) { return }
+    if (-not (Confirm-YesNo '  Confirm order? (y/N)' -Default $false)) { return }
 
     # UC-2.2: Order certificate with DNS-01 step
     $result = $null
@@ -212,7 +212,11 @@ function _Select-DNSPlugin {
     $plugins = @()
     try {
         $plugins = @(Get-PAPlugin 2>$null | Select-Object -ExpandProperty Plugin)
-    } catch {}
+    } catch {
+        Write-Host "  Warning: Could not enumerate DNS plugins: $_" -ForegroundColor Yellow
+        Write-EventLogEntry -EventId 2001 -EntryType Warning `
+            -Message "TU-ACME: Get-PAPlugin failed: $_"
+    }
 
     if ($plugins.Count -eq 0) {
         Write-Host '  No DNS plugins found. Using Manual validation.' -ForegroundColor Yellow
@@ -273,7 +277,11 @@ function _Collect-AcmeDnsArgs {
         try {
             $data = Get-Content -Path $existingPath -Raw | ConvertFrom-Json
             Write-Host "  FullDomain: $($data.fulldomain)" -ForegroundColor White
-        } catch {}
+        } catch {
+            Write-Host "  Warning: Could not parse $existingPath - $_" -ForegroundColor Yellow
+            Write-EventLogEntry -EventId 2002 -EntryType Warning `
+                -Message "TU-ACME: ACME-DNS account JSON unreadable at $existingPath - $_"
+        }
         Write-Host ''
 
         if (Confirm-YesNo '  Reuse existing account? (Y/N)') {

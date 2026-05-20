@@ -28,30 +28,21 @@ if (-not $onWindows) {
     exit 0
 }
 
-$logSource = 'TU-ACME'
-$logName   = 'Application'
-
-function Write-IISLog {
-    param([int] $EventId, [string] $Message, [string] $EntryType = 'Information')
-    try {
-        if (-not [System.Diagnostics.EventLog]::SourceExists($logSource)) {
-            New-EventLog -LogName $logName -Source $logSource
-        }
-        Write-EventLog -LogName $logName -Source $logSource `
-            -EventId $EventId -EntryType $EntryType -Message $Message
-    } catch {}
-}
+# Reuse the module's event-log helper instead of duplicating it.
+$script:OnWindows = $true
+. (Join-Path $PSScriptRoot '..\Private\Helpers\Write-EventLogEntry.ps1')
 
 # No old thumbprint — nothing to update
 if (-not $OldThumbprint) {
-    Write-IISLog -EventId 1002 -Message 'TU-ACME IIS plugin: No old thumbprint. Skipping.'
+    Write-EventLogEntry -EventId 1002 -Message 'TU-ACME IIS plugin: No old thumbprint. Skipping.'
     exit 0
 }
 
 try {
     Import-Module WebAdministration -ErrorAction Stop
 } catch {
-    Write-IISLog -EventId 3002 -Message "TU-ACME IIS plugin: WebAdministration not available. $_" -EntryType Error
+    Write-EventLogEntry -EventId 3002 -EntryType Error `
+        -Message "TU-ACME IIS plugin: WebAdministration not available. $_"
     exit 1
 }
 
@@ -61,8 +52,8 @@ if ($CertFile -and (Test-Path $CertFile)) {
         Import-PfxCertificate -FilePath $CertFile `
             -CertStoreLocation 'Cert:\LocalMachine\My' -Exportable | Out-Null
     } catch {
-        Write-IISLog -EventId 3002 `
-            -Message "TU-ACME IIS plugin: Error importing certificate: $_" -EntryType Error
+        Write-EventLogEntry -EventId 3002 -EntryType Error `
+            -Message "TU-ACME IIS plugin: Error importing certificate: $_"
     }
 }
 
@@ -71,7 +62,7 @@ $bindings = @(Get-WebBinding -Protocol 'https' |
     Where-Object { $_.certificateHash -eq $OldThumbprint })
 
 if ($bindings.Count -eq 0) {
-    Write-IISLog -EventId 1002 `
+    Write-EventLogEntry -EventId 1002 `
         -Message "TU-ACME IIS plugin: No bindings matched thumbprint $OldThumbprint."
     exit 0
 }
@@ -81,11 +72,10 @@ foreach ($binding in $bindings) {
     try {
         $binding.certificateHash = $Thumbprint
         $binding | Set-WebBinding
-        $msg = "IIS binding updated: $site — old thumbprint: $OldThumbprint — new: $Thumbprint"
-        Write-IISLog -EventId 1002 -Message $msg
+        Write-EventLogEntry -EventId 1002 `
+            -Message "IIS binding updated: $site - old thumbprint: $OldThumbprint - new: $Thumbprint"
     } catch {
-        $errMsg = "IIS binding error: $site — $_"
-        Write-IISLog -EventId 3002 -Message $errMsg -EntryType Error
-        # Continue with the next binding even if one fails
+        Write-EventLogEntry -EventId 3002 -EntryType Error `
+            -Message "IIS binding error: $site - $_"
     }
 }
