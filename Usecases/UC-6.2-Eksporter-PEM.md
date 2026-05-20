@@ -1,42 +1,42 @@
-# UC-6.2: Eksportér certifikat til PEM/Key/Cert filer
+# UC-6.2: Export certificate to PEM/Key/Cert files
 
-**Kategori:** Eksport og Import  
-**Prioritet:** Medium
+**Category:** Export and Import  
+**Priority:** Medium
 
-## Mål
-At eksportere rå certifikatfiler til Linux-baserede systemer, NGINX, Apache, firewalls eller andre systemer, der ikke bruger PFX-format.
+## Goal
+Export raw certificate files for Linux-based systems, NGINX, Apache, firewalls, or other systems that do not use the PFX format.
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- Certifikatet er bestilt og administreres af Posh-ACME (UC-2.2).
+## Preconditions
+- The certificate has been ordered and is managed by Posh-ACME (UC-2.2).
 
-## Hovedforløb
-1. Brugeren vælger et certifikat i oversigten (UC-4.1 eller UC-4.3).
-2. Brugeren vælger "Eksportér" → "Eksportér til PEM".
-3. TUI'en prompter for en destinations-mappe:  
-   `Gem filer i mappen: C:\Certs\eksempel\`
-4. Systemet eksporterer og gemmer tre filer:
-   - `cert.crt` — Selve certifikatet (PEM-format)
-   - `cert.key` — Den private nøgle (PEM-format)
-   - `chain.crt` — CA-certifikatkæden (PEM-format)
-5. Succes-besked vises:
+## Main flow
+1. The user selects a certificate from the overview (UC-4.1 or UC-4.3).
+2. The user selects "Export" -> "Export to PEM".
+3. The TUI prompts for a destination folder:  
+   `Save files in folder: C:\Certs\example\`
+4. The system exports and saves three files:
+   - `cert.crt` - The certificate itself (PEM format)
+   - `cert.key` - The private key (PEM format)
+   - `chain.crt` - The CA certificate chain (PEM format)
+5. Success message is shown:
    ```
-   [OK] Filer gemt i: C:\Certs\eksempel\
+   [OK] Files saved in: C:\Certs\example\
      - cert.crt
      - cert.key
      - chain.crt
    ```
 
-## Postkonditioner
-- Tre PEM-filer er gemt i den angivne mappe, klar til overførsel til målsystem.
+## Postconditions
+- Three PEM files are saved in the specified folder, ready for transfer to the target system.
 
-## Alternative forløb
-- **3a:** Mappen eksisterer ikke → TUI spørger om den skal oprettes.
-- **4a:** Skrive-rettigheder mangler → Fejlbesked med vejledning.
+## Alternative flows
+- **3a:** The folder does not exist -> The TUI asks whether it should be created.
+- **4a:** Missing write permissions -> Error message with guidance.
 
-## Tekniske noter
-- Posh-ACME gemmer allerede certifikatfiler i PEM-format i sin profil-mappe.
-- Filer kan kopieres direkte fra: `$env:LOCALAPPDATA\Posh-ACME\<server>\<account>\<domain>\`
-- Filnavne i Posh-ACME: `cert.cer`, `cert.key`, `chain.cer`, `fullchain.cer`
+## Technical notes
+- Posh-ACME already saves certificate files in PEM format in its profile folder.
+- Files can be copied directly from: `$env:LOCALAPPDATA\Posh-ACME\<server>\<account>\<domain>\`
+- File names in Posh-ACME: `cert.cer`, `cert.key`, `chain.cer`, `fullchain.cer`

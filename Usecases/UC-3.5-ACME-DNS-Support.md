@@ -1,187 +1,188 @@
-# UC-3.5: ACME-DNS Support
+# UC-3.5: ACME-DNS support
 
-**Kategori:** DNS-Plugins og Credentials  
-**Prioritet:** Høj  
-**Afhænger af:** UC-3.1 (Vis DNS-Plugins), UC-3.4 (DNS-01 Challenge-konfiguration)
-
----
-
-## Mål
-
-Understøtte [acme-dns](https://github.com/joohoi/acme-dns) som DNS-01 challenge-metode.  
-ACME-DNS er en minimal dedikeret DNS-server med REST API der udelukkende håndterer ACME TXT-records — uden at kræve adgang til hele DNS-zonen.
+**Category:** DNS plugins and credentials  
+**Priority:** High  
+**Depends on:** UC-3.1 (Show DNS plugins), UC-3.4 (DNS-01 challenge configuration)
 
 ---
 
-## Baggrund: Hvad er ACME-DNS?
+## Goal
+
+Support [acme-dns](https://github.com/joohoi/acme-dns) as a DNS-01 challenge method.  
+ACME-DNS is a minimal, dedicated DNS server with a REST API that exclusively handles ACME TXT records - without requiring access to the entire DNS zone.
+
+---
+
+## Background: what is ACME-DNS?
 
 ```
-Traditionel DNS-01:
-  Certifikat-klient → direkte adgang til DNS-provider API
+Traditional DNS-01:
+  Certificate client -> direct access to DNS provider API
 
 ACME-DNS:
-  Certifikat-klient → ACME-DNS server (REST API)
-                           ↓
-             _acme-challenge.<dit-domæne>
-             CNAME → <subdomain>.acme-dns-server.dk
+  Certificate client -> ACME-DNS server (REST API)
+                           |
+                           v
+             _acme-challenge.<your-domain>
+             CNAME -> <subdomain>.acme-dns-server.com
 
-Fordele:
-  ✓ Begrænset DNS-adgang — API-nøgler giver kun adgang til ACME-subdomænet
-  ✓ Virker med DNS-providers uden API (kun CNAME-record kræves manuelt én gang)
-  ✓ Wildcard-certifikater uden fuld DNS-API adgang
-  ✓ Velegnet til produktionsmiljøer med strenge sikkerhedskrav
+Advantages:
+  - Restricted DNS access - API keys grant access only to the ACME subdomain
+  - Works with DNS providers that have no API (only a CNAME record is required, once, manually)
+  - Wildcard certificates without full DNS-API access
+  - Well suited to production environments with strict security requirements
 ```
 
 ---
 
-## Aktører
+## Actors
 
-- Systemadministrator
-
----
-
-## Prækonditioner
-
-- ACME-DNS server er tilgængelig (enten selvhostet eller offentlig, f.eks. `https://auth.acme-dns.io`)
-- Posh-ACME er installeret med AcmeDns-plugin
+- System administrator
 
 ---
 
-## Opsætningsforløb (første gang)
+## Preconditions
 
-### Trin 1: Vælg ACME-DNS plugin
+- An ACME-DNS server is available (either self-hosted or public, e.g. `https://auth.acme-dns.io`)
+- Posh-ACME is installed with the AcmeDns plugin
 
-I plugin-listen vises `AcmeDns` som en valgmulighed. Når det vælges, starter TUI'en en guidet opsætning i stedet for den generiske plugin-args-dialog.
+---
 
-### Trin 2: Angiv ACME-DNS server
+## Setup flow (first time)
+
+### Step 1: Select the ACME-DNS plugin
+
+In the plugin list, `AcmeDns` is shown as an option. When it is selected, the TUI starts a guided setup instead of the generic plugin-args dialog.
+
+### Step 2: Specify the ACME-DNS server
 
 ```
-  === ACME-DNS Opsætning ===
+  === ACME-DNS setup ===
 
   ACME-DNS server URL:
-  Eksempler:
-    https://auth.acme-dns.io       (offentlig testserver)
-    https://acmedns.eksempel.dk    (selvhostet)
+  Examples:
+    https://auth.acme-dns.io       (public test server)
+    https://acmedns.example.com    (self-hosted)
 
-  ➤ Server URL: _
+  > Server URL: _
 ```
 
-### Trin 3: Registrér ny konto (eller indlæs eksisterende)
+### Step 3: Register a new account (or load an existing one)
 
 ```
-  Har du allerede en ACME-DNS konto til dette domæne? (J/N)
+  Do you already have an ACME-DNS account for this domain? (Y/N)
 
-  J → Angiv eksisterende konto-JSON
-  N → Registrér ny konto automatisk
+  Y -> Specify the existing account JSON
+  N -> Register a new account automatically
 ```
 
-**Ny registrering:**
+**New registration:**
 
 ```
-  Registrerer konto på auth.acme-dns.io...
+  Registering an account on auth.acme-dns.io...
 
-  Konto oprettet!
-  ┌─────────────────────────────────────────────────────┐
-  │ Username:   a0b1c2d3-xxxx-xxxx-xxxx-xxxxxxxxxxxx   │
-  │ Password:   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │
-  │ Subdomain:  a0b1c2d3-xxxx-xxxx-xxxx-xxxxxxxxxxxx   │
-  │ FullDomain: a0b1c2d3-xxxx.auth.acme-dns.io         │
-  └─────────────────────────────────────────────────────┘
+  Account created!
+  +---------------------------------------------------------+
+  | Username:   a0b1c2d3-xxxx-xxxx-xxxx-xxxxxxxxxxxx       |
+  | Password:   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    |
+  | Subdomain:  a0b1c2d3-xxxx-xxxx-xxxx-xxxxxxxxxxxx       |
+  | FullDomain: a0b1c2d3-xxxx.auth.acme-dns.io             |
+  +---------------------------------------------------------+
 ```
 
-### Trin 4: CNAME-instruktion
+### Step 4: CNAME instruction
 
-TUI'en viser den CNAME-record der skal oprettes manuelt i DNS-zonen (gøres kun én gang):
-
-```
-  ┌─────────────────────────────────────────────────────────────────────┐
-  │  HANDLING PÅKRÆVET — Opret følgende CNAME-record hos din DNS-       │
-  │  provider FØR du fortsætter:                                        │
-  │                                                                     │
-  │  Navn:   _acme-challenge.eksempel.dk                                │
-  │  Type:   CNAME                                                      │
-  │  Værdi:  a0b1c2d3-xxxx.auth.acme-dns.io.                           │
-  │  TTL:    300 (eller lavest muligt)                                  │
-  │                                                                     │
-  │  Denne record oprettes KUN ÉN GANG og er permanent.                 │
-  └─────────────────────────────────────────────────────────────────────┘
-
-  Tryk [Enter] når CNAME-recorden er oprettet og propageret...
-```
-
-### Trin 5: Gem credentials
-
-Konto-JSON gemmes krypteret:
+The TUI displays the CNAME record that must be created manually in the DNS zone (this is done only once):
 
 ```
-  $env:ProgramData\TU-ACME\acmedns-<domæne>.json  ← DPAPI-krypteret via Export-Clixml
+  +---------------------------------------------------------------------+
+  |  ACTION REQUIRED - Create the following CNAME record at your DNS   |
+  |  provider BEFORE you continue:                                      |
+  |                                                                     |
+  |  Name:   _acme-challenge.example.com                                |
+  |  Type:   CNAME                                                      |
+  |  Value:  a0b1c2d3-xxxx.auth.acme-dns.io.                            |
+  |  TTL:    300 (or as low as possible)                                |
+  |                                                                     |
+  |  This record is created ONLY ONCE and is permanent.                 |
+  +---------------------------------------------------------------------+
+
+  Press [Enter] when the CNAME record has been created and propagated...
 ```
 
-Alternativt gemmes credentials i Posh-ACME's egen `PluginArgs`-mekanisme (UC-3.3).
+### Step 5: Store credentials
+
+The account JSON is stored encrypted:
+
+```
+  $env:ProgramData\TU-ACME\acmedns-<domain>.json  <- DPAPI-encrypted via Export-Clixml
+```
+
+Alternatively, credentials are stored in Posh-ACME's own `PluginArgs` mechanism (UC-3.3).
 
 ---
 
-## Fornyelsesforløb (efterfølgende kørsler)
+## Renewal flow (subsequent runs)
 
-Ved automatisk fornyelse (UC-5.4) genbruges de gemte credentials uden brugerinteraktion:
+During automatic renewal (UC-5.4), the stored credentials are reused without user interaction:
 
 ```powershell
 $pArgs = @{
     ACMEDnsServer      = 'https://auth.acme-dns.io'
-    ACMEDnsAccountJson = $encryptedJsonPath   # sti til krypteret fil
+    ACMEDnsAccountJson = $encryptedJsonPath   # path to encrypted file
 }
-New-PACertificate -Domain 'eksempel.dk' -Plugin AcmeDns -PluginArgs $pArgs
+New-PACertificate -Domain 'example.com' -Plugin AcmeDns -PluginArgs $pArgs
 ```
 
 ---
 
-## Alternative forløb
+## Alternative flows
 
-### ACME-DNS server ikke tilgængelig
-
-```
-  [FEJL] Kan ikke forbinde til ACME-DNS server:
-  https://auth.acme-dns.io — Connection refused
-
-  Kontrollér at serveren er tilgængelig og URL er korrekt.
-  Prøv igen med [Enter] eller afbryd med [ESC].
-```
-
-### Eksisterende konto-JSON indlæsning
-
-Brugeren kan angive stien til en eksisterende konto-JSON (f.eks. genereret uden for TUI'en):
+### ACME-DNS server not available
 
 ```
-  ➤ Sti til konto-JSON: C:\PoshACME\acmedns-account.json
-  Indlæser... OK
+  [ERROR] Cannot connect to the ACME-DNS server:
+  https://auth.acme-dns.io - Connection refused
+
+  Verify that the server is reachable and that the URL is correct.
+  Try again with [Enter] or abort with [ESC].
+```
+
+### Loading an existing account JSON
+
+The user can specify the path to an existing account JSON (e.g. generated outside the TUI):
+
+```
+  > Path to account JSON: C:\PoshACME\acmedns-account.json
+  Loading... OK
   Username:  a0b1c2d3-xxxx...
   Subdomain: a0b1c2d3-xxxx...
 ```
 
-### SAN / wildcard med samme ACME-DNS konto
+### SAN / wildcard using the same ACME-DNS account
 
-Samme ACME-DNS konto kan bruges til wildcard og base-domæne:
+The same ACME-DNS account can be used for both wildcard and base domain:
 
 ```
-  Domæner der deles med denne ACME-DNS konto:
-    eksempel.dk
-    *.eksempel.dk
+  Domains shared with this ACME-DNS account:
+    example.com
+    *.example.com
 
-  → Begge peger på samme CNAME: _acme-challenge.eksempel.dk
+  -> Both point to the same CNAME: _acme-challenge.example.com
 ```
 
 ---
 
-## Tekniske noter
+## Technical notes
 
-### Posh-ACME AcmeDns plugin-parametre
+### Posh-ACME AcmeDns plugin parameters
 
-| Parameter | Type | Beskrivelse |
+| Parameter | Type | Description |
 |---|---|---|
-| `ACMEDnsServer` | String | URL til ACME-DNS server |
-| `ACMEDnsAccountJson` | String | Sti til JSON-fil med credentials |
+| `ACMEDnsServer` | String | URL of the ACME-DNS server |
+| `ACMEDnsAccountJson` | String | Path to the JSON file with credentials |
 
-### Konto-JSON struktur (fra acme-dns server)
+### Account JSON structure (from the acme-dns server)
 
 ```json
 {
@@ -193,34 +194,34 @@ Samme ACME-DNS konto kan bruges til wildcard og base-domæne:
 }
 ```
 
-### Registrering via REST API
+### Registration via REST API
 
 ```powershell
-# Registrer ny ACME-DNS konto
+# Register a new ACME-DNS account
 $response = Invoke-RestMethod -Uri "$server/register" -Method Post `
     -ContentType 'application/json' -Body '{}'
-# Returnerer: username, password, subdomain, fulldomain
+# Returns: username, password, subdomain, fulldomain
 
-# Gem JSON til krypteret fil
+# Save the JSON to an encrypted file
 $response | ConvertTo-Json | Set-Content -Path $jsonPath -Encoding UTF8
 ```
 
-### Gemme-sti konvention
+### Storage path convention
 
 ```
 $env:ProgramData\TU-ACME\acmedns-accounts\<sanitized-domain>.json
 ```
 
-Filnavnet saniteres: `eksempel.dk` → `eksempel_dk.json`
+The filename is sanitized: `example.com` -> `example_com.json`
 
 ---
 
-## Acceptkriterier
+## Acceptance criteria
 
-- [ ] `AcmeDns` vises i plugin-listen og udløser guidet ACME-DNS opsætning
-- [ ] Ny konto kan registreres automatisk via REST API med visuel feedback
-- [ ] Eksisterende konto-JSON kan indlæses fra fil
-- [ ] CNAME-instruktion vises klart med korrekte værdier inden brugeren fortsætter
-- [ ] Credentials gemmes krypteret under `$env:ProgramData\TU-ACME\acmedns-accounts\`
-- [ ] Ved fornyelse genbruges gemte credentials uden interaktion
-- [ ] Wildcard-domæner (`*.eksempel.dk`) understøttes med samme ACME-DNS konto
+- [ ] `AcmeDns` appears in the plugin list and triggers a guided ACME-DNS setup
+- [ ] A new account can be registered automatically via the REST API with visual feedback
+- [ ] An existing account JSON can be loaded from a file
+- [ ] The CNAME instruction is shown clearly with the correct values before the user continues
+- [ ] Credentials are stored encrypted under `$env:ProgramData\TU-ACME\acmedns-accounts\`
+- [ ] During renewal, the stored credentials are reused without interaction
+- [ ] Wildcard domains (`*.example.com`) are supported with the same ACME-DNS account

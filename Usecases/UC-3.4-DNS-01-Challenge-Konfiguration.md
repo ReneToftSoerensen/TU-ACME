@@ -1,158 +1,163 @@
-# UC-3.4: DNS-01 Challenge-konfiguration
+# UC-3.4: DNS-01 challenge configuration
 
-**Kategori:** DNS-Plugins og Credentials  
-**Prioritet:** Høj  
-**Afhænger af:** UC-3.1 (Vis DNS-Plugins), UC-3.2 (Maskeret Credentials), UC-2.2 (Bestil Certifikat)
-
----
-
-## Mål
-
-Give administratoren kontrol over DNS-01 challenge-parametre: propagationsvente-tid (`DnsSleep`), valideringstimeout og valg om DNS TXT-records skal slettes efter vellykket challenge (persistent mode).
+**Category:** DNS plugins and credentials  
+**Priority:** High  
+**Depends on:** UC-3.1 (Show DNS plugins), UC-3.2 (Masked credentials), UC-2.2 (Order certificate)
 
 ---
 
-## Aktører
+## Goal
 
-- Systemadministrator
-
----
-
-## Prækonditioner
-
-- DNS-plugin er valgt (UC-3.1) og credentials er indlæst (UC-3.2)
-- Posh-ACME er installeret og konfigureret med aktiv ACME-konto
+Give the administrator control over the DNS-01 challenge parameters: propagation wait time (`DnsSleep`), validation timeout, and the option to keep DNS TXT records after a successful challenge (persistent mode).
 
 ---
 
-## Baggrund: DNS-01 challenge-forløbet
+## Actors
+
+- System administrator
+
+---
+
+## Preconditions
+
+- A DNS plugin has been selected (UC-3.1) and credentials have been loaded (UC-3.2)
+- Posh-ACME is installed and configured with an active ACME account
+
+---
+
+## Background: the DNS-01 challenge flow
 
 ```
-Bruger bestiller certifikat
-    ↓
-Posh-ACME opretter DNS TXT-record:
-    _acme-challenge.<domæne> = "<token>"
-    ↓
-Venter DnsSleep sekunder (standard: 120 sek)
-    — DNS propagation —
-    ↓
-ACME-server validerer TXT-record
-    ↓
-Certifikat udstedes
-    ↓
-TXT-record slettes (med mindre persistent mode er aktivt)
+User orders a certificate
+    |
+    v
+Posh-ACME creates a DNS TXT record:
+    _acme-challenge.<domain> = "<token>"
+    |
+    v
+Waits DnsSleep seconds (default: 120 sec)
+    -- DNS propagation --
+    |
+    v
+ACME server validates the TXT record
+    |
+    v
+Certificate is issued
+    |
+    v
+TXT record is deleted (unless persistent mode is active)
 ```
 
 ---
 
-## Hovedforløb
+## Main flow
 
-1. Efter plugin og credentials er valgt (UC-3.1/3.2) vises DNS-01 challenge-konfiguration:
+1. After the plugin and credentials have been selected (UC-3.1/3.2), the DNS-01 challenge configuration is shown:
 
 ```
-  === DNS-01 Challenge-indstillinger ===
+  === DNS-01 challenge settings ===
 
-  DNS-propagation ventetid (DnsSleep):
-  Standard: 120 sekunder
-  ➤ Angiv sekunder (blank = standard): _
+  DNS propagation wait time (DnsSleep):
+  Default: 120 seconds
+  > Specify seconds (blank = default): _
 
-  Valideringstimeout:
-  Standard: 60 sekunder
-  ➤ Angiv sekunder (blank = standard): _
+  Validation timeout:
+  Default: 60 seconds
+  > Specify seconds (blank = default): _
 
-  Persistent DNS-records:
-  [ ] Behold TXT-records efter validering (persistent mode)
+  Persistent DNS records:
+  [ ] Keep TXT records after validation (persistent mode)
 
-  [Enter] Fortsæt  [ESC] Afbryd
+  [Enter] Continue  [ESC] Abort
 ```
 
-2. Brugeren angiver DnsSleep (blank = behold standard 120 sek).
-3. Brugeren angiver valideringstimeout (blank = behold standard 60 sek).
-4. Brugeren vælger om DNS TXT-records skal slettes efter validering:
-   - **Standard (ikke persistent):** Records slettes automatisk af plugin'et efter validering
-   - **Persistent mode:** Records efterlades i DNS — nyttigt ved langsomme DNS-providers eller ved genvalidering uden ny credential-opsætning
+2. The user specifies DnsSleep (blank = keep default 120 sec).
+3. The user specifies the validation timeout (blank = keep default 60 sec).
+4. The user chooses whether DNS TXT records should be deleted after validation:
+   - **Default (not persistent):** Records are deleted automatically by the plugin after validation
+   - **Persistent mode:** Records are left in DNS - useful with slow DNS providers or for re-validation without setting up new credentials
 
-5. Opsummering opdateres med DNS-01-parametre:
+5. The summary is updated with the DNS-01 parameters:
 ```
-  === Opsummering ===
+  === Summary ===
 
-  Domæne:          eksempel.dk
+  Domain:          example.com
   Plugin:          Cloudflare
   Challenge:       DNS-01
-  DNS-sleep:       120 sek
-  Timeout:         60 sek
-  Persistent DNS:  Nej
+  DNS sleep:       120 sec
+  Timeout:         60 sec
+  Persistent DNS:  No
 
-  [J] Bekræft  [N] Afbryd
+  [Y] Confirm  [N] Abort
 ```
 
 ---
 
-## Postkonditioner
+## Postconditions
 
-- `New-PACertificate` kaldes med `-DnsSleep` og `-ValidationTimeout`
-- Spinner viser propagationsfasen:
+- `New-PACertificate` is called with `-DnsSleep` and `-ValidationTimeout`
+- The spinner shows the propagation phase:
   ```
-  [ / ] Opretter DNS TXT-record...
-  [ - ] Venter på DNS-propagation (120 sek)...
-  [ \ ] Validerer challenge med ACME-server...
-  [ | ] Modtager certifikat...
+  [ / ] Creating DNS TXT record...
+  [ - ] Waiting for DNS propagation (120 sec)...
+  [ \ ] Validating challenge with ACME server...
+  [ | ] Receiving certificate...
   ```
 
 ---
 
-## Alternative forløb
+## Alternative flows
 
-### DNS-propagation fejler (timeout)
+### DNS propagation fails (timeout)
 
 ```
-  [FEJL] DNS-validering mislykkedes:
-  ACME-serveren kunne ikke bekræfte TXT-recorden inden timeout.
+  [ERROR] DNS validation failed:
+  The ACME server could not verify the TXT record before timeout.
 
-  Mulige årsager:
-  - DNS-propagation er ikke fuldendt endnu
-  - DnsSleep er for lav for din DNS-provider
+  Possible causes:
+  - DNS propagation is not yet complete
+  - DnsSleep is too low for your DNS provider
 
-  Anbefalinger:
-  ✓ Forøg DnsSleep til 300+ sekunder og prøv igen
-  ✓ Kontrollér at TXT-recorden er oprettet korrekt hos din DNS-provider
-  ✓ Brug Staging til test: [F3] Staging-toggle
+  Recommendations:
+  - Increase DnsSleep to 300+ seconds and try again
+  - Verify that the TXT record was created correctly at your DNS provider
+  - Use Staging for testing: [F3] Staging toggle
 ```
 
-### Persistent mode aktiveret
+### Persistent mode enabled
 
-Når `Persistent mode` er valgt, kalder Posh-ACME **ikke** plugin'ets `Remove-DnsTxt`-funktion. TXT-recorden forbliver i DNS:
+When `Persistent mode` is selected, Posh-ACME does **not** call the plugin's `Remove-DnsTxt` function. The TXT record remains in DNS:
 
 ```powershell
-# Persistent mode — brug -NoSavePfxPass er ikke relevant her,
-# Posh-ACME haandterer cleanup via plugin-aftalen
+# Persistent mode - using -NoSavePfxPass is not relevant here,
+# Posh-ACME handles cleanup via the plugin contract
 New-PACertificate -Domain $domains -Plugin $plugin -PluginArgs $pArgs `
     -DnsSleep $dnsSleep -ValidationTimeout $timeout
-# Records efterlades naar plugin ikke modtager cleanup-kald
+# Records are left behind when the plugin does not receive a cleanup call
 ```
 
-> **Bemærk:** Persistent DNS-records kan udgøre en minimal sikkerhedsrisiko da ACME-tokens er synlige i DNS. Records bør fjernes manuelt når de ikke længere er nødvendige.
+> **Note:** Persistent DNS records can represent a minimal security risk because ACME tokens are visible in DNS. Records should be removed manually when they are no longer needed.
 
-### Plugin understøtter ikke cleanup
+### Plugin does not support cleanup
 
-Visse plugins (f.eks. `Manual`) understøtter aldrig automatisk cleanup — DNS er altid persistent i disse tilfælde. TUI viser:
+Certain plugins (e.g. `Manual`) never support automatic cleanup - DNS is always persistent in those cases. The TUI displays:
 
 ```
-  Bemærk: Pluginet 'Manual' kræver manuel oprettelse og sletning
-  af DNS TXT-records. Records fjernes ikke automatisk.
+  Note: The 'Manual' plugin requires manual creation and deletion
+  of DNS TXT records. Records are not removed automatically.
 ```
 
 ---
 
-## Tekniske noter
+## Technical notes
 
-### Posh-ACME parametre
+### Posh-ACME parameters
 
-| Parameter | Standard | Beskrivelse |
+| Parameter | Default | Description |
 |---|---|---|
-| `-DnsSleep` | 120 | Sekunder at vente efter TXT-record er oprettet |
-| `-ValidationTimeout` | 60 | Sekunder ACME-serveren har til at validere |
-| `-NoSkipManualEdit` | `$false` | Pause til manuel DNS-redigering (Manual plugin) |
+| `-DnsSleep` | 120 | Seconds to wait after the TXT record has been created |
+| `-ValidationTimeout` | 60 | Seconds that the ACME server has to validate |
+| `-NoSkipManualEdit` | `$false` | Pause for manual DNS editing (Manual plugin) |
 
 ```powershell
 New-PACertificate -Domain $domains `
@@ -163,9 +168,9 @@ New-PACertificate -Domain $domains `
     -AcceptTOS
 ```
 
-### Gem DNS-indstillinger i config.json
+### Storing DNS settings in config.json
 
-DNS-01-indstillinger gemmes i `$env:ProgramData\TU-ACME\config.json` under en ny sektion:
+DNS-01 settings are stored in `$env:ProgramData\TU-ACME\config.json` under a new section:
 
 ```json
 {
@@ -177,14 +182,14 @@ DNS-01-indstillinger gemmes i `$env:ProgramData\TU-ACME\config.json` under en ny
 }
 ```
 
-Dette sikrer at indstillingerne genbruges ved fornyelse via Scheduled Task (UC-5.4).
+This ensures that the settings are reused during renewal via the Scheduled Task (UC-5.4).
 
 ---
 
-## Acceptkriterier
+## Acceptance criteria
 
-- [ ] DnsSleep og ValidationTimeout kan konfigureres i UI'en med blankt = standard
-- [ ] Persistent mode kan aktiveres med eksplicit advarsel om sikkerhedsimplikationer
-- [ ] Spinner viser klar status under hvert trin af DNS-01-forløbet
-- [ ] Indstillingerne gemmes i config.json og genbruges ved automatisk fornyelse
-- [ ] Fejlbeskeder ved DNS-timeout indeholder konkrete løsningsforslag
+- [ ] DnsSleep and ValidationTimeout can be configured in the UI with blank = default
+- [ ] Persistent mode can be enabled with an explicit warning about the security implications
+- [ ] The spinner shows a clear status during each step of the DNS-01 flow
+- [ ] The settings are saved in config.json and reused during automatic renewal
+- [ ] Error messages on DNS timeout include concrete suggested solutions

@@ -1,37 +1,37 @@
-# UC-5.3: Test SMTP-forbindelse og send test-mail fra TUI
+# UC-5.3: Test SMTP connection and send a test email from the TUI
 
-**Kategori:** Automatisering  
-**Prioritet:** Medium
+**Category:** Automation  
+**Priority:** Medium
 
-## Mål
-Give administratoren mulighed for med det samme at bekræfte, at SMTP-indstillingerne fungerer korrekt.
+## Goal
+Allow the administrator to immediately confirm that the SMTP settings work correctly.
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- SMTP-indstillinger er konfigureret og gemt (UC-5.2).
+## Preconditions
+- SMTP settings are configured and saved (UC-5.2).
 
-## Hovedforløb
-1. Efter at have gemt SMTP-indstillingerne (UC-5.2), vælger brugeren "Send Test-mail".
-2. TUI'en viser: `Sender test-mail til admin@eksempel.dk...`
-3. Systemet indlæser de krypterede SMTP-indstillinger.
-4. Systemet forsøger at sende en test-e-mail med emnet:  
-   `[TU-ACME] Test-mail - SMTP konfigurationen virker`
-5. Hvis afsendelse lykkes:
+## Main flow
+1. After saving the SMTP settings (UC-5.2), the user selects "Send test email".
+2. The TUI shows: `Sending test email to admin@example.com...`
+3. The system loads the encrypted SMTP settings.
+4. The system attempts to send a test email with the subject:  
+   `[TU-ACME] Test email - SMTP configuration is working`
+5. If the send succeeds:
    ```
-   [OK] Test-mail sendt med succes til admin@eksempel.dk
+   [OK] Test email sent successfully to admin@example.com
    ```
-6. Brugeren kan herefter bekræfte modtagelsen i sin indbakke.
+6. The user can then confirm receipt in their inbox.
 
-## Postkonditioner
-- SMTP-konfigurationen er verificeret og klar til brug.
+## Postconditions
+- The SMTP configuration is verified and ready for use.
 
-## Alternative forløb
-- **4a:** Forbindelsesfejl → Rød fejlbesked med den præcise .NET/SMTP-fejlbesked, f.eks.:  
-  `[FEJL] System.Net.Mail.SmtpException: Unable to connect to the remote server`
-- **4b:** Autentificeringsfejl → Besked om forkert brugernavn/adgangskode.
+## Alternative flows
+- **4a:** Connection error -> Red error message with the precise .NET/SMTP error text, e.g.:  
+  `[ERROR] System.Net.Mail.SmtpException: Unable to connect to the remote server`
+- **4b:** Authentication error -> Message about incorrect username/password.
 
-## Tekniske noter
-- Test-mail indeholder tidsstempel og TUI-version for sporbarhed.
-- Bruger samme afsendelseslogik som baggrundsscriptet (UC-5.4).
+## Technical notes
+- The test email contains a timestamp and the TUI version for traceability.
+- Uses the same send logic as the background script (UC-5.4).

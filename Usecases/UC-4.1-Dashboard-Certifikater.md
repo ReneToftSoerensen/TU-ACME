@@ -1,41 +1,41 @@
-# UC-4.1: Vis interaktiv tabel over certifikater (Farvekodet)
+# UC-4.1: Show interactive table of certificates (color-coded)
 
-**Kategori:** Dashboard  
-**Prioritet:** Høj
+**Category:** Dashboard  
+**Priority:** High
 
-## Mål
-Give et hurtigt og farvekodet overblik over alle certifikater administreret af Posh-ACME.
+## Goal
+Provide a quick, color-coded overview of all certificates managed by Posh-ACME.
 
-## Aktører
-- Systemadministrator (Admin)
-- Overvåger/Tekniker (ReadOnly)
+## Actors
+- System administrator (Admin)
+- Monitor/Technician (ReadOnly)
 
-## Prækonditioner
-- Posh-ACME er installeret. Nul eller flere certifikater kan eksistere.
+## Preconditions
+- Posh-ACME is installed. Zero or more certificates may exist.
 
-## Hovedforløb
-1. TUI'en indlæser certifikater via `Get-PACertificate`.
-2. Certifikaterne præsenteres i en tabel med kolonner:
+## Main flow
+1. The TUI loads certificates via `Get-PACertificate`.
+2. The certificates are presented in a table with columns:
    ```
-   Domæne              Udloebsdato    Dage tilbage    Status
+   Domain              Expiry date    Days left      Status
    ----------------------------------------------------------------
-   eksempel.dk         2026-08-18     92              [OK]
-   test.dk             2026-06-02     15              [UDLOEBER SNART]
-   gammel.dk           2026-05-10     -8              [UDLOEBET]
+   example.com         2026-08-18     92             [OK]
+   test.com            2026-06-02     15             [EXPIRES SOON]
+   old.com             2026-05-10     -8             [EXPIRED]
    ```
-3. Farvekodning baseret på dage tilbage:
-   - **> 30 dage:** Grøn tekst
-   - **≤ 30 dage:** Gul tekst
-   - **Udløbet (< 0 dage):** Rød tekst (evt. blinkende)
-4. Tabellen opdateres ved hvert besøg til dashboardet.
+3. Color coding based on days remaining:
+   - **> 30 days:** Green text
+   - **<= 30 days:** Yellow text
+   - **Expired (< 0 days):** Red text (optionally blinking)
+4. The table is refreshed on every visit to the dashboard.
 
-## Postkonditioner
-- Brugeren har overblik over alle certifikaters status.
+## Postconditions
+- The user has an overview of the status of all certificates.
 
-## Alternative forløb
-- **1a:** Ingen certifikater fundet → Besked: `Ingen certifikater. Bestil dit første certifikat (UC-2.1).`
+## Alternative flows
+- **1a:** No certificates found -> message: `No certificates. Order your first certificate (UC-2.1).`
 
-## Tekniske noter
-- PowerShell-kommando: `Get-PACertificate -List`
-- Farver sættes med `Write-Host -ForegroundColor Green/Yellow/Red`
-- Dage beregnes: `($cert.NotAfter - (Get-Date)).Days`
+## Technical notes
+- PowerShell command: `Get-PACertificate -List`
+- Colors are set with `Write-Host -ForegroundColor Green/Yellow/Red`
+- Days are calculated as: `($cert.NotAfter - (Get-Date)).Days`

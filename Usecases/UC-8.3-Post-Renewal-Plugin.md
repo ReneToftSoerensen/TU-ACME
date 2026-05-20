@@ -1,41 +1,41 @@
-# UC-8.3: Registrer Post-Renewal Plugin (IIS Update) i Posh-ACME
+# UC-8.3: Register Post-Renewal Plugin (IIS Update) in Posh-ACME
 
-**Kategori:** IIS Integration  
-**Prioritet:** Høj
+**Category:** IIS Integration  
+**Priority:** High
 
-## Mål
-At konfigurere Posh-ACME til automatisk at køre IIS-opdateringsscriptet, hver gang et certifikat fornyes i baggrunden.
+## Goal
+Configure Posh-ACME to automatically run the IIS update script every time a certificate is renewed in the background.
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- TUI kører med administratorrettigheder (UC-0.1).
-- Posh-ACME er installeret.
-- Post-renewal scriptet `Posh-ACME-IIS-Plugin.ps1` er inkluderet i TUI-installationen.
+## Preconditions
+- TUI is running with administrator privileges (UC-0.1).
+- Posh-ACME is installed.
+- The post-renewal script `Posh-ACME-IIS-Plugin.ps1` is included in the TUI installation.
 
-## Hovedforløb
-1. Brugeren vælger "IIS-integration" → "Opsæt Auto-opdatering af bindings".
-2. TUI'en identificerer den fulde sti til det medfølgende plugin-script:  
+## Main flow
+1. The user selects "IIS integration" -> "Set up auto-update of bindings".
+2. The TUI identifies the full path to the bundled plugin script:  
    `C:\Program Files\TU-ACME\Scripts\Posh-ACME-IIS-Plugin.ps1`
-3. TUI'en viser stien og beder om bekræftelse:  
-   `Registrer IIS-plugin: [sti]? [J/N]`
-4. Brugeren bekræfter med **J**.
-5. Appen kalder:
+3. The TUI shows the path and asks for confirmation:  
+   `Register IIS plugin: [path]? [Y/N]`
+4. The user confirms with **Y**.
+5. The app calls:
    ```powershell
    Set-PAConfig -PostScript "C:\...\Posh-ACME-IIS-Plugin.ps1"
    ```
-6. Succes-besked: `IIS Auto-opdatering aktiveret. Post-renewal plugin er registreret.`
+6. Success message: `IIS auto-update enabled. Post-renewal plugin is registered.`
 
-## Postkonditioner
-- Posh-ACME er konfigureret til at kalde IIS-opdateringsscriptet efter hver succesfuld fornyelse.
-- Automatisk IIS-opdatering (UC-8.4) er nu aktiv.
+## Postconditions
+- Posh-ACME is configured to call the IIS update script after each successful renewal.
+- Automatic IIS update (UC-8.4) is now active.
 
-## Alternative forløb
-- **2a:** Plugin-scriptet ikke fundet → Fejlbesked med vejledning til manuel placering af scriptet.
-- **4a:** Brugeren svarer N → Afbrydes uden ændringer.
+## Alternative flows
+- **2a:** Plugin script not found -> Error message with guidance for manually placing the script.
+- **4a:** The user answers N -> Aborted with no changes.
 
-## Tekniske noter
-- PowerShell-kommando: `Set-PAConfig -PostScript "<sti>"`
-- Scriptet modtager certifikatoplysninger som parametre fra Posh-ACME ved fornyelse.
-- Eksisterende post-script konfiguration vises, inden der overskrives.
+## Technical notes
+- PowerShell command: `Set-PAConfig -PostScript "<path>"`
+- The script receives certificate details as parameters from Posh-ACME on renewal.
+- Any existing post-script configuration is shown before it is overwritten.

@@ -1,37 +1,37 @@
-# UC-4.2: Sortering og filtrering af certifikatlisten
+# UC-4.2: Sorting and filtering of the certificate list
 
-**Kategori:** Dashboard  
-**Prioritet:** Medium
+**Category:** Dashboard  
+**Priority:** Medium
 
-## Mål
-Gøre det nemt at finde specifikke certifikater på maskiner med mange domæner.
+## Goal
+Make it easy to find specific certificates on machines with many domains.
 
-## Aktører
-- Systemadministrator (Admin)
-- Overvåger/Tekniker (ReadOnly)
+## Actors
+- System administrator (Admin)
+- Monitor/Technician (ReadOnly)
 
-## Prækonditioner
-- Dashboard med certifikatliste er vist (UC-4.1).
-- Mindst ét certifikat eksisterer.
+## Preconditions
+- The dashboard with the certificate list is displayed (UC-4.1).
+- At least one certificate exists.
 
-## Hovedforløb
-1. Brugeren er i dashboard-tabellen (UC-4.1).
-2. **Søgning:** Brugeren trykker `/` for at aktivere søgefeltet.
-   - En input-linje vises i bunden: `Sog: _`
-   - Tabellen filtreres øjeblikkeligt ved hvert tastetryk.
-   - Tryk ESC for at rydde søgningen og vende tilbage til fuld liste.
-3. **Sortering:** Brugeren trykker `S` for at cykle mellem sorteringsmuligheder:
-   - Sortér efter udløbsdato (stigende) ← standard
-   - Sortér efter udløbsdato (faldende)
-   - Sortér alfabetisk (A-Å)
-4. Den aktive sorteringsmetode vises i tabelens header.
+## Main flow
+1. The user is in the dashboard table (UC-4.1).
+2. **Search:** The user presses `/` to activate the search field.
+   - An input line appears at the bottom: `Search: _`
+   - The table is filtered instantly on every keystroke.
+   - Press ESC to clear the search and return to the full list.
+3. **Sorting:** The user presses `S` to cycle through the sorting options:
+   - Sort by expiry date (ascending) <- default
+   - Sort by expiry date (descending)
+   - Sort alphabetically (A-Z)
+4. The active sorting method is shown in the table header.
 
-## Postkonditioner
-- Tabellen viser den filtrerede og/eller sorterede liste.
+## Postconditions
+- The table shows the filtered and/or sorted list.
 
-## Alternative forløb
-- **2a:** Ingen søgeresultater → Besked: `Ingen certifikater matcher søgningen.`
+## Alternative flows
+- **2a:** No search results -> message: `No certificates match the search.`
 
-## Tekniske noter
-- Filtrering sker på `Domain`-kolonnen (case-insensitiv).
-- Sortering implementeres med PowerShell `Sort-Object`.
+## Technical notes
+- Filtering is done on the `Domain` column (case-insensitive).
+- Sorting is implemented with PowerShell `Sort-Object`.

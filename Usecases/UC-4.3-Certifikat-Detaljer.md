@@ -1,46 +1,46 @@
-# UC-4.3: Vis detaljerede oplysninger om et valgt certifikat
+# UC-4.3: Show detailed information about a selected certificate
 
-**Kategori:** Dashboard  
-**Prioritet:** Medium
+**Category:** Dashboard  
+**Priority:** Medium
 
-## Mål
-At se udvidede detaljer om ét specifikt certifikat uden at forlade TUI'en.
+## Goal
+View extended details for a specific certificate without leaving the TUI.
 
-## Aktører
-- Systemadministrator (Admin)
-- Overvåger/Tekniker (ReadOnly)
+## Actors
+- System administrator (Admin)
+- Monitor/Technician (ReadOnly)
 
-## Prækonditioner
-- Dashboard med certifikatliste er vist (UC-4.1).
+## Preconditions
+- The dashboard with the certificate list is displayed (UC-4.1).
 
-## Hovedforløb
-1. Brugeren navigerer op/ned i tabellen med piletasterne.
-2. Det markerede certifikat fremhæves (f.eks. inverteret farve).
-3. Brugeren trykker **Enter**.
-4. En detalje-boks åbnes i TUI'en og viser:
+## Main flow
+1. The user navigates up/down in the table with the arrow keys.
+2. The highlighted certificate is emphasized (e.g. inverted color).
+3. The user presses **Enter**.
+4. A detail box opens in the TUI and shows:
    ```
-   ===== Certifikatdetaljer =====
-   Domæne:          eksempel.dk
-   SAN:             www.eksempel.dk, mail.eksempel.dk
-   Udsteder:        Let's Encrypt
-   Udstedt:         2026-05-18
-   Udloeber:        2026-08-18
-   Thumbprint:      A1B2C3D4E5F6...
-   Sti (certifikat): C:\...\cert.cer
-   Sti (noegle):    C:\...\cert.key
-   ACME-konto:      admin@eksempel.dk
-   Seneste fornyelse: 2026-05-18 03:01:42
+   ===== Certificate details =====
+   Domain:           example.com
+   SAN:              www.example.com, mail.example.com
+   Issuer:           Let's Encrypt
+   Issued:           2026-05-18
+   Expires:          2026-08-18
+   Thumbprint:       A1B2C3D4E5F6...
+   Path (certificate): C:\...\cert.cer
+   Path (key):       C:\...\cert.key
+   ACME account:     admin@example.com
+   Latest renewal:   2026-05-18 03:01:42
    ==============================
-   [E] Eksporter  [I] Importer til Store  [ESC] Tilbage
+   [E] Export  [I] Import to Store  [ESC] Back
    ```
-5. Brugeren trykker ESC eller Q for at vende tilbage til listen.
+5. The user presses ESC or Q to return to the list.
 
-## Postkonditioner
-- Brugeren har set detaljerede oplysninger for det valgte certifikat.
+## Postconditions
+- The user has viewed detailed information for the selected certificate.
 
-## Alternative forløb
-- Fra detaljevisningen kan brugeren starte UC-6.1, UC-6.2 eller UC-6.3 direkte.
+## Alternative flows
+- From the detail view the user can start UC-6.1, UC-6.2, or UC-6.3 directly.
 
-## Tekniske noter
-- PowerShell-kommando: `Get-PACertificate -MainDomain "eksempel.dk"`
-- Thumbprint hentes via: `(Get-Item "Cert:\LocalMachine\My\<thumbprint>").Thumbprint`
+## Technical notes
+- PowerShell command: `Get-PACertificate -MainDomain "example.com"`
+- The thumbprint is retrieved via: `(Get-Item "Cert:\LocalMachine\My\<thumbprint>").Thumbprint`

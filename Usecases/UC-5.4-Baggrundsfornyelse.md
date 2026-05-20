@@ -1,47 +1,47 @@
-# UC-5.4: Kør lydløs baggrundsfornyelse med fejlopsamling
+# UC-5.4: Run silent background renewal with error capture
 
-**Kategori:** Automatisering  
-**Prioritet:** Høj
+**Category:** Automation  
+**Priority:** High
 
-## Mål
-Det script, der kører i Task Scheduler, skal forny certifikater og sende e-mail til administratoren, hvis det fejler.
+## Goal
+The script run by Task Scheduler must renew certificates and send an email to the administrator if it fails.
 
-## Aktører
-- Windows Task Scheduler (automatisk trigger)
-- Systemadministrator (Admin) — modtager e-mail ved fejl
+## Actors
+- Windows Task Scheduler (automatic trigger)
+- System administrator (Admin) - receives email on failure
 
-## Prækonditioner
-- Scheduled Task er oprettet (UC-5.1).
-- SMTP-indstillinger er konfigureret (UC-5.2).
-- Mindst ét certifikat administreres af Posh-ACME.
+## Preconditions
+- The Scheduled Task has been created (UC-5.1).
+- SMTP settings are configured (UC-5.2).
+- At least one certificate is managed by Posh-ACME.
 
-## Hovedforløb
-1. Scheduled Task trigger det headless script `Invoke-RenewalBackground.ps1` på det konfigurerede tidspunkt.
-2. Scriptet indlæser Posh-ACME-modulet.
-3. Scriptet kalder `Submit-Renewal` inde i en `try/catch`-blok.
-4. Posh-ACME fornyer alle certifikater, der udløber inden for 30 dage.
-5. Hvis fornyelsen lykkes: Scriptet logger succes i Windows Event Log og afslutter lydløst.
+## Main flow
+1. The Scheduled Task triggers the headless script `Invoke-RenewalBackground.ps1` at the configured time.
+2. The script loads the Posh-ACME module.
+3. The script calls `Submit-Renewal` inside a `try/catch` block.
+4. Posh-ACME renews all certificates that expire within 30 days.
+5. If the renewal succeeds: the script logs success in the Windows Event Log and exits silently.
 
-## Fejlhåndtering (alternativt forløb ved fejl)
-6. Hvis en undtagelse kastes, eller Posh-ACME rapporterer fejlstatus:
-   a. Scriptet indlæser de krypterede SMTP-indstillinger (UC-5.2/UC-3.3).
-   b. Scriptet genererer en fejlrapport:
+## Error handling (alternative flow on failure)
+6. If an exception is thrown, or Posh-ACME reports a failure status:
+   a. The script loads the encrypted SMTP settings (UC-5.2/UC-3.3).
+   b. The script generates an error report:
       ```
-      Tidsstempel:  2026-05-18 03:01:55
-      Domæne:       eksempel.dk
-      Fejlbesked:   [Posh-ACME fejlbesked her]
-      Logfil:       C:\...\posh-acme.log
+      Timestamp:    2026-05-18 03:01:55
+      Domain:       example.com
+      Error:        [Posh-ACME error message here]
+      Log file:     C:\...\posh-acme.log
       ```
-   c. Scriptet sender fejl-mailen til den konfigurerede modtager.
-   d. Scriptet logger en fejl i Windows Event Log (kilde: `TU-ACME`).
-7. Post-renewal scriptet til IIS-opdatering (UC-8.4) trigges automatisk af Posh-ACME.
+   c. The script sends the error email to the configured recipient.
+   d. The script logs an error in the Windows Event Log (source: `TU-ACME`).
+7. The post-renewal script for IIS update (UC-8.4) is triggered automatically by Posh-ACME.
 
-## Postkonditioner
-- Certifikater er fornyet (ved succes).
-- Administrator er adviseret pr. e-mail (ved fejl).
-- Hændelse er logget i Windows Event Log.
+## Postconditions
+- Certificates have been renewed (on success).
+- Administrator has been notified by email (on failure).
+- The event is logged in the Windows Event Log.
 
-## Tekniske noter
-- PowerShell-kommando: `Submit-Renewal`
+## Technical notes
+- PowerShell command: `Submit-Renewal`
 - Windows Event Log: `New-EventLog -Source "TU-ACME" -LogName Application`
-- Scriptet køres med `-NonInteractive -WindowStyle Hidden` for headless-drift.
+- The script is run with `-NonInteractive -WindowStyle Hidden` for headless operation.

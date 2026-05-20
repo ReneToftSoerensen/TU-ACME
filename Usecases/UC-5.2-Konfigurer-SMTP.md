@@ -1,36 +1,36 @@
-# UC-5.2: Konfigurer og gem SMTP-indstillinger til e-mail
+# UC-5.2: Configure and save SMTP settings for email
 
-**Kategori:** Automatisering  
-**Prioritet:** Høj
+**Category:** Automation  
+**Priority:** High
 
-## Mål
-Konfigurere de SMTP-oplysninger, der skal bruges til at sende advarselsmails, hvis den automatiske fornyelse fejler.
+## Goal
+Configure the SMTP details to be used for sending warning emails if the automatic renewal fails.
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- TUI kører med administratorrettigheder (UC-0.1).
+## Preconditions
+- TUI is running with administrator privileges (UC-0.1).
 
-## Hovedforløb
-1. Brugeren vælger "Konfigurer fejladvisering".
-2. TUI'en prompter for følgende parametre:
-   - **SMTP-Server** (f.eks. `smtp.office365.com`)
-   - **Port** (standard: `587`)
-   - **Afsender-e-mail** (f.eks. `noreply@eksempel.dk`)
-   - **Modtager-e-mail** (administrator)
-   - **Kræver SSL/TLS?** [J/N]
-   - **Kræver login?** [J/N]
-3. Hvis login kræves: Promptes for brugernavn og adgangskode (adgangskoden maskeres, UC-3.2).
-4. Alle indstillinger gemmes krypteret i en central JSON-konfigurationsfil (adgangskoden gemmes som krypteret `SecureString`, UC-3.3).
-5. Besked vises: `SMTP-konfiguration gemt.`
+## Main flow
+1. The user selects "Configure failure notification".
+2. The TUI prompts for the following parameters:
+   - **SMTP server** (e.g. `smtp.office365.com`)
+   - **Port** (default: `587`)
+   - **Sender email** (e.g. `noreply@example.com`)
+   - **Recipient email** (administrator)
+   - **Requires SSL/TLS?** [Y/N]
+   - **Requires login?** [Y/N]
+3. If login is required: prompted for username and password (the password is masked, UC-3.2).
+4. All settings are saved encrypted in a central JSON configuration file (the password is stored as an encrypted `SecureString`, UC-3.3).
+5. Message shown: `SMTP configuration saved.`
 
-## Postkonditioner
-- SMTP-indstillinger er gemt krypteret og klar til brug i baggrundsscriptet (UC-5.4).
+## Postconditions
+- SMTP settings are saved encrypted and ready for use in the background script (UC-5.4).
 
-## Alternative forløb
-- **3a:** Login ikke krævet → Spring over brugernavn/adgangskode-prompt.
+## Alternative flows
+- **3a:** Login not required -> Skip the username/password prompt.
 
-## Tekniske noter
-- Konfigurationsfil gemmes som: `$env:ProgramData\TU-ACME\smtp-config.xml` (krypteret med Export-Clixml).
-- `Send-MailMessage` eller .NET `System.Net.Mail.SmtpClient` bruges til afsendelse.
+## Technical notes
+- Configuration file is saved as: `$env:ProgramData\TU-ACME\smtp-config.xml` (encrypted with Export-Clixml).
+- `Send-MailMessage` or .NET `System.Net.Mail.SmtpClient` is used for sending.

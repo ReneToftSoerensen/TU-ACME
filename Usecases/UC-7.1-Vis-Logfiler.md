@@ -1,36 +1,36 @@
-# UC-7.1: Gennemse seneste logfiler direkte i TUI (Pager)
+# UC-7.1: Browse the most recent log files directly in the TUI (Pager)
 
-**Kategori:** Fejlsøgning  
-**Prioritet:** Medium
+**Category:** Troubleshooting  
+**Priority:** Medium
 
-## Mål
-Læse Posh-ACMEs logfiler uden at skulle forlade TUI-applikationen eller åbne Notepad.
+## Goal
+Read Posh-ACME's log files without having to leave the TUI application or open Notepad.
 
-## Aktører
-- Systemadministrator (Admin)
-- Overvåger/Tekniker (ReadOnly)
+## Actors
+- System administrator (Admin)
+- Monitor/Technician (ReadOnly)
 
-## Prækonditioner
-- Posh-ACME er installeret og har logfiler.
+## Preconditions
+- Posh-ACME is installed and has log files.
 
-## Hovedforløb
-1. Brugeren vælger "Vis Logs" i menuen.
-2. TUI'en indlæser den seneste logfil fra Posh-ACME logmappen.
-3. Logfilens indhold vises i et rullebart tekstfelt i terminalen.
-4. Navigation i loggen:
-   - **↑ / ↓** Pilene ruller én linje ad gangen
-   - **PageUp / PageDown** Ruller én side ad gangen
-   - **Home / End** Springer til toppen / bunden
-5. Brugeren trykker **ESC** eller **Q** for at vende tilbage til menuen.
+## Main flow
+1. The user selects "View Logs" in the menu.
+2. The TUI loads the most recent log file from the Posh-ACME log folder.
+3. The contents of the log file are displayed in a scrollable text view in the terminal.
+4. Navigation in the log:
+   - **Up / Down** Arrow keys scroll one line at a time
+   - **PageUp / PageDown** Scroll one page at a time
+   - **Home / End** Jump to the top / bottom
+5. The user presses **ESC** or **Q** to return to the menu.
 
-## Postkonditioner
-- Brugeren har kunnet læse logfilen og er returneret til menuen.
+## Postconditions
+- The user has been able to read the log file and has returned to the menu.
 
-## Alternative forløb
-- **2a:** Ingen logfil fundet → Besked: `Ingen logfil fundet i Posh-ACME logmappen.`
-- **2b:** Flere logfiler → TUI viser en liste over de seneste logfiler og brugeren vælger hvilken.
+## Alternative flows
+- **2a:** No log file found -> Message: `No log file found in the Posh-ACME log folder.`
+- **2b:** Multiple log files -> The TUI shows a list of the most recent log files and the user picks one.
 
-## Tekniske noter
-- Logfil-sti: Typisk `$env:LOCALAPPDATA\Posh-ACME\*.log` eller Posh-ACMEs konfigurationsmappe.
-- Pager implementeres med `[Console]::SetCursorPosition` og manuel scroll-logik.
-- Fra logvisningen kan brugeren starte UC-7.2 (eksport).
+## Technical notes
+- Log file path: typically `$env:LOCALAPPDATA\Posh-ACME\*.log` or Posh-ACME's configuration folder.
+- The pager is implemented with `[Console]::SetCursorPosition` and manual scroll logic.
+- From the log view the user can start UC-7.2 (export).

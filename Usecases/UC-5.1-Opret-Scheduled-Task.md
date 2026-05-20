@@ -1,40 +1,40 @@
-# UC-5.1: Opret Windows Scheduled Task til natlig kørsel
+# UC-5.1: Create Windows Scheduled Task for nightly run
 
-**Kategori:** Automatisering  
-**Prioritet:** Høj
+**Category:** Automation  
+**Priority:** High
 
-## Mål
-Oprette den Windows Scheduled Task, der skal afvikle den automatiske fornyelse i baggrunden.
+## Goal
+Create the Windows Scheduled Task that will run the automatic renewal in the background.
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- TUI kører med administratorrettigheder (UC-0.1).
-- Posh-ACME er installeret og mindst ét certifikat administreres.
+## Preconditions
+- TUI is running with administrator privileges (UC-0.1).
+- Posh-ACME is installed and at least one certificate is being managed.
 
-## Hovedforløb
-1. Brugeren vælger "Automatisering" → "Opret Scheduled Task".
-2. TUI'en prompter for konfigurationsparametre:
-   - **Kørselstidspunkt** (standard: `03:00`)
-   - **Brugerkonto** til at køre opgaven: `SYSTEM` / `Specifik bruger`
-3. TUI'en viser en opsummering og beder om bekræftelse.
-4. Systemet genererer en Scheduled Task med:
-   - Navn: `Posh-ACME-AutoRenewal`
-   - Trigger: Daglig kl. valgt tidspunkt
-   - Handling: `powershell.exe -NonInteractive -File "C:\...\Invoke-RenewalBackground.ps1"`
-   - Kørselskonto: Den valgte konto
-5. Task'en oprettes via `Register-ScheduledTask` og bekræftes over for brugeren.
+## Main flow
+1. The user selects "Automation" -> "Create Scheduled Task".
+2. The TUI prompts for configuration parameters:
+   - **Run time** (default: `03:00`)
+   - **User account** to run the task: `SYSTEM` / `Specific user`
+3. The TUI shows a summary and asks for confirmation.
+4. The system generates a Scheduled Task with:
+   - Name: `Posh-ACME-AutoRenewal`
+   - Trigger: Daily at the selected time
+   - Action: `powershell.exe -NonInteractive -File "C:\...\Invoke-RenewalBackground.ps1"`
+   - Run account: The selected account
+5. The task is created via `Register-ScheduledTask` and confirmed to the user.
 
-## Postkonditioner
-- Windows Scheduled Task er oprettet og aktiv.
-- Automatisk fornyelse vil køre nat efter nat.
+## Postconditions
+- The Windows Scheduled Task is created and active.
+- Automatic renewal will run night after night.
 
-## Alternative forløb
-- **2a:** Brugeren vælger "Specifik bruger" → Promptes for brugernavn og adgangskode.
-- **5a:** Task eksisterer allerede → TUI spørger om den skal overskrives.
-- **5b:** Fejl ved oprettelse → Præcis fejlbesked vises.
+## Alternative flows
+- **2a:** The user selects "Specific user" -> Prompted for username and password.
+- **5a:** Task already exists -> The TUI asks whether it should be overwritten.
+- **5b:** Error during creation -> A precise error message is shown.
 
-## Tekniske noter
-- PowerShell-kommando: `Register-ScheduledTask -TaskName "Posh-ACME-AutoRenewal" -Action $action -Trigger $trigger -RunLevel Highest`
-- Task skal køre med "Run whether user is logged on or not" for headless-drift.
+## Technical notes
+- PowerShell command: `Register-ScheduledTask -TaskName "Posh-ACME-AutoRenewal" -Action $action -Trigger $trigger -RunLevel Highest`
+- The task must run with "Run whether user is logged on or not" for headless operation.

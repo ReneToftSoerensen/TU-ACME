@@ -1,35 +1,35 @@
-# UC-6.1: Eksportér certifikat til PFX-fil
+# UC-6.1: Export certificate to a PFX file
 
-**Kategori:** Eksport og Import  
-**Prioritet:** Medium
+**Category:** Export and Import  
+**Priority:** Medium
 
-## Mål
-At gemme certifikatet som en passwordbeskyttet PFX-fil til brug på andre systemer (f.eks. andre Windows-servere, load balancers, firewalls).
+## Goal
+Save the certificate as a password-protected PFX file for use on other systems (e.g. other Windows servers, load balancers, firewalls).
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- Certifikatet er bestilt og administreres af Posh-ACME (UC-2.2).
+## Preconditions
+- The certificate has been ordered and is managed by Posh-ACME (UC-2.2).
 
-## Hovedforløb
-1. Brugeren vælger et certifikat i oversigten (UC-4.1 eller UC-4.3).
-2. Brugeren vælger "Eksportér" → "Eksportér til PFX".
-3. TUI'en prompter for destinations-sti:  
-   `Gem PFX som (fuld sti): C:\Certs\eksempel.pfx`
-4. TUI'en prompter for adgangskode til PFX (inputtet maskeres, UC-3.2):  
-   `PFX-adgangskode: ****`  
-   `Bekræft adgangskode: ****`
-5. Systemet genererer PFX-filen via Posh-ACME.
-6. Succes-besked: `PFX gemt: C:\Certs\eksempel.pfx`
+## Main flow
+1. The user selects a certificate from the overview (UC-4.1 or UC-4.3).
+2. The user selects "Export" -> "Export to PFX".
+3. The TUI prompts for a destination path:  
+   `Save PFX as (full path): C:\Certs\example.pfx`
+4. The TUI prompts for a password for the PFX (input is masked, UC-3.2):  
+   `PFX password: ****`  
+   `Confirm password: ****`
+5. The system generates the PFX file via Posh-ACME.
+6. Success message: `PFX saved: C:\Certs\example.pfx`
 
-## Postkonditioner
-- En passwordbeskyttet PFX-fil er gemt på den angivne sti.
+## Postconditions
+- A password-protected PFX file is saved to the specified path.
 
-## Alternative forløb
-- **4a:** Adgangskoderne matcher ikke → Fejlbesked og brugeren bedes prøve igen.
-- **5a:** Skrive-rettigheder mangler til destinationsmappen → Fejlbesked med vejledning.
+## Alternative flows
+- **4a:** Passwords do not match -> Error message and the user is asked to try again.
+- **5a:** Missing write permissions to the destination folder -> Error message with guidance.
 
-## Tekniske noter
-- Posh-ACME gemmer PFX-filen via `Export-PfxCertificate` eller `openssl` afhængig af certifikattypen.
-- Alternativt: `[System.Security.Cryptography.X509Certificates.X509Certificate2]::Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $password)`
+## Technical notes
+- Posh-ACME saves the PFX file via `Export-PfxCertificate` or `openssl` depending on the certificate type.
+- Alternatively: `[System.Security.Cryptography.X509Certificates.X509Certificate2]::Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $password)`

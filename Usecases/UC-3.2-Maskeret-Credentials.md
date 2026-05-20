@@ -1,37 +1,37 @@
-# UC-3.2: Indtast og maskér API-credentials i prompt
+# UC-3.2: Enter and mask API credentials in prompt
 
-**Kategori:** DNS-Plugins og Credentials  
-**Prioritet:** Høj
+**Category:** DNS plugins and credentials  
+**Priority:** High
 
-## Mål
-Sikre, at adgangskoder og API-nøgler ikke kan aflæses på skærmen under indtastning.
+## Goal
+Ensure that passwords and API keys cannot be read on the screen while they are being typed.
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- Et DNS-plugin er valgt (UC-3.1).
-- TUI'en kender de påkrævede parametre for det valgte plugin.
+## Preconditions
+- A DNS plugin has been selected (UC-3.1).
+- The TUI knows the required parameters for the selected plugin.
 
-## Hovedforløb
-1. TUI'en viser en liste over de påkrævede parametre for det valgte plugin, f.eks. for Cloudflare:
+## Main flow
+1. The TUI displays a list of the required parameters for the selected plugin, e.g. for Cloudflare:
    ```
-   Cloudflare konfiguration:
-   API Token (hemmelig): _
+   Cloudflare configuration:
+   API Token (secret): _
    ```
-2. For hvert parameter markeret som hemmeligt:
-   - Når brugeren taster, vises kun `*` for hvert tegn (eller inputtet skjules helt).
-   - Backspace fungerer korrekt og sletter det seneste skjulte tegn.
-3. For ikke-hemmelige parametre (f.eks. zone-ID) vises inputtet normalt.
-4. Brugeren bekræfter alle parametre.
+2. For each parameter marked as secret:
+   - When the user types, only `*` is shown for each character (or the input is hidden entirely).
+   - Backspace works correctly and removes the most recently hidden character.
+3. For non-secret parameters (e.g. zone ID), the input is shown normally.
+4. The user confirms all parameters.
 
-## Postkonditioner
-- API-credentials er opsamlet som `SecureString` i hukommelsen.
-- Credentials sendes videre til UC-3.3 til krypteret lagring.
+## Postconditions
+- API credentials have been collected as a `SecureString` in memory.
+- Credentials are passed on to UC-3.3 for encrypted storage.
 
-## Alternative forløb
-- **2a:** Brugeren trykker ESC → Afbryder uden at gemme.
+## Alternative flows
+- **2a:** The user presses ESC -> aborts without saving.
 
-## Tekniske noter
-- Brug `Read-Host -AsSecureString` til maskeret input i PowerShell.
-- Plugin-parametre og deres type (hemmeligt/offentligt) er dokumenteret i Posh-ACMEs plugin-hjælpefiler.
+## Technical notes
+- Use `Read-Host -AsSecureString` for masked input in PowerShell.
+- Plugin parameters and their type (secret/public) are documented in Posh-ACME's plugin help files.

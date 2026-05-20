@@ -1,42 +1,42 @@
-# UC-8.1: Scan lokale IIS-sites og HTTPS-bindings
+# UC-8.1: Scan local IIS sites and HTTPS bindings
 
-**Kategori:** IIS Integration  
-**Prioritet:** Høj
+**Category:** IIS Integration  
+**Priority:** High
 
-## Mål
-Identificere hvilke websteder på maskinen, der i øjeblikket kører med HTTPS, og hvilke certifikater de bruger.
+## Goal
+Identify which websites on the machine are currently running with HTTPS, and which certificates they use.
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- TUI kører med administratorrettigheder (UC-0.1).
-- IIS (Internet Information Services) er installeret på maskinen.
-- PowerShell-modulet `WebAdministration` er tilgængeligt.
+## Preconditions
+- TUI is running with administrator privileges (UC-0.1).
+- IIS (Internet Information Services) is installed on the machine.
+- The PowerShell module `WebAdministration` is available.
 
-## Hovedforløb
-1. Brugeren vælger "IIS-integration" → "Vis bindings".
-2. Systemet importerer `WebAdministration`-modulet.
-3. Systemet scanner alle IIS-websteder for HTTPS-bindings (port 443 og andre SSL-porte).
-4. En tabel vises med:
+## Main flow
+1. The user selects "IIS integration" -> "Show bindings".
+2. The system imports the `WebAdministration` module.
+3. The system scans all IIS websites for HTTPS bindings (port 443 and other SSL ports).
+4. A table is shown with:
    ```
-   Site-navn         Binding              Thumbprint (nuværende)    Match i Posh-ACME?
+   Site name         Binding              Thumbprint (current)      Match in Posh-ACME?
    ---------------------------------------------------------------------------------
-   Eksempel-site     https *:443:         A1B2C3D4E5F6...           Ja (eksempel.dk)
-   Test-site         https *:8443:test    AABBCC112233...           Nej
+   Example-site      https *:443:         A1B2C3D4E5F6...           Yes (example.com)
+   Test-site         https *:8443:test    AABBCC112233...           No
    ```
 
-## Postkonditioner
-- Administratoren har overblik over alle IIS HTTPS-bindings og deres certifikatstatus.
+## Postconditions
+- The administrator has an overview of all IIS HTTPS bindings and their certificate status.
 
-## Alternative forløb
-- **2a:** `WebAdministration`-modulet ikke fundet → Fejlbesked: `IIS er ikke installeret eller WebAdministration-modulet mangler.`
-- **3a:** Ingen HTTPS-bindings fundet → Besked: `Ingen HTTPS-bindings fundet i IIS.`
+## Alternative flows
+- **2a:** `WebAdministration` module not found -> Error message: `IIS is not installed or the WebAdministration module is missing.`
+- **3a:** No HTTPS bindings found -> Message: `No HTTPS bindings found in IIS.`
 
-## Tekniske noter
-- PowerShell-kommandoer:
+## Technical notes
+- PowerShell commands:
   ```powershell
   Import-Module WebAdministration
   Get-WebBinding -Protocol "https" | Select-Object bindingInformation, certificateHash
   ```
-- Matching med Posh-ACME: sammenlign `certificateHash` (thumbprint) med `(Get-PACertificate -List).Thumbprint`
+- Matching with Posh-ACME: compare `certificateHash` (thumbprint) with `(Get-PACertificate -List).Thumbprint`

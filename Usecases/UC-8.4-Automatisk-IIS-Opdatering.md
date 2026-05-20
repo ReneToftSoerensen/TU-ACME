@@ -1,51 +1,51 @@
-# UC-8.4: Automatisk IIS-opdatering via Post-Renewal script
+# UC-8.4: Automatic IIS update via Post-Renewal script
 
-**Kategori:** IIS Integration  
-**Prioritet:** Høj
+**Category:** IIS Integration  
+**Priority:** High
 
-## Mål
-Den automatiske baggrundsproces, der sikrer, at IIS-bindings altid har det nyeste certifikat, uden at administratoren skal røre en finger.
+## Goal
+The automatic background process that ensures IIS bindings always have the latest certificate, without the administrator having to lift a finger.
 
-## Aktører
-- Posh-ACME (automatisk trigger efter fornyelse)
-- Windows Task Scheduler (indirekte via UC-5.4)
+## Actors
+- Posh-ACME (automatic trigger after renewal)
+- Windows Task Scheduler (indirectly via UC-5.4)
 
-## Prækonditioner
-- Scheduled Task er oprettet og kører `Submit-Renewal` (UC-5.1 / UC-5.4).
-- Post-renewal plugin er registreret i Posh-ACME (UC-8.3).
-- Certifikatet er tidligere tilknyttet IIS-bindings (UC-8.2).
+## Preconditions
+- The Scheduled Task is created and runs `Submit-Renewal` (UC-5.1 / UC-5.4).
+- The post-renewal plugin is registered in Posh-ACME (UC-8.3).
+- The certificate has previously been bound to IIS bindings (UC-8.2).
 
-## Hovedforløb
-1. Posh-ACME (afviklet af Task Scheduler, UC-5.4) gennemfører en succesfuld fornyelse af certifikatet.
-2. Posh-ACME trigger automatisk det registrerede post-script (`Posh-ACME-IIS-Plugin.ps1`) og sender følgende parametre:
-   - Det **nye** certifikat (sti og thumbprint)
-   - Det **gamle** certifikat (thumbprint)
-3. Post-scriptet importerer automatisk det nye certifikat til Windows Certificate Store (`LocalMachine\My`).
-4. Post-scriptet scanner alle IIS-bindings for det gamle thumbprint.
-5. For hver binding der matcher det gamle thumbprint:
-   - Binding opdateres med det nye thumbprint.
-6. Hændelsen logges i Windows Event Log:
+## Main flow
+1. Posh-ACME (run by Task Scheduler, UC-5.4) performs a successful renewal of the certificate.
+2. Posh-ACME automatically triggers the registered post-script (`Posh-ACME-IIS-Plugin.ps1`) and passes the following parameters:
+   - The **new** certificate (path and thumbprint)
+   - The **old** certificate (thumbprint)
+3. The post-script automatically imports the new certificate into the Windows Certificate Store (`LocalMachine\My`).
+4. The post-script scans all IIS bindings for the old thumbprint.
+5. For each binding that matches the old thumbprint:
+   - The binding is updated with the new thumbprint.
+6. The event is logged in the Windows Event Log:
    ```
    Source:  TU-ACME
-   Message: IIS-binding for eksempel.dk (*:443:) opdateret.
-            Gammelt thumbprint: A1B2C3...
-            Nyt thumbprint:     D4E5F6...
+   Message: IIS binding for example.com (*:443:) updated.
+            Old thumbprint: A1B2C3...
+            New thumbprint: D4E5F6...
    ```
 
-## Postkonditioner
-- Alle IIS-bindings er opdateret med det nyeste certifikat.
-- IIS behøver ikke genudsendelse (IIS binder automatisk det nye certifikat).
-- Hændelsen er logget i Windows Event Log.
+## Postconditions
+- All IIS bindings are updated with the latest certificate.
+- IIS does not need a restart (IIS automatically picks up the new certificate).
+- The event is logged in the Windows Event Log.
 
-## Alternative forløb
-- **4a:** Ingen IIS-bindings bruger det gamle thumbprint → Scriptet afslutter lydløst uden ændringer.
-- **5a:** Fejl ved opdatering af en specifik binding → Fejlen logges i Windows Event Log; øvrige bindings opdateres stadig.
+## Alternative flows
+- **4a:** No IIS bindings use the old thumbprint -> The script exits silently with no changes.
+- **5a:** Error updating a specific binding -> The error is logged in the Windows Event Log; the remaining bindings are still updated.
 
-## Tekniske noter
-- Post-scriptet modtager parametre: `$OldCertThumbprint`, `$NewCertPath`, `$NewCertThumbprint`
-- PowerShell-kommandoer:
+## Technical notes
+- The post-script receives parameters: `$OldCertThumbprint`, `$NewCertPath`, `$NewCertThumbprint`
+- PowerShell commands:
   ```powershell
   Import-Module WebAdministration
   Get-WebBinding -Protocol "https" | Where-Object { $_.certificateHash -eq $OldCertThumbprint }
   ```
-- Scriptet kører med de samme rettigheder som Task Scheduler-opgaven (typisk SYSTEM).
+- The script runs with the same privileges as the Task Scheduler job (typically SYSTEM).
