@@ -20,7 +20,7 @@ Describe 'Show-StatusBar' -Tag Unit, UI {
             { Show-StatusBar -ActiveAccount 'admin@test.dk | Production' } | Should -Not -Throw
         }
         It 'does not throw with AdminWarning' {
-            { Show-StatusBar -AdminWarning 'Kræver admin-rettigheder' } | Should -Not -Throw
+            { Show-StatusBar -AdminWarning 'Requires admin privileges' } | Should -Not -Throw
         }
         It 'calls Write-Host at least once' {
             Show-StatusBar -ActiveAccount 'test'
@@ -29,7 +29,7 @@ Describe 'Show-StatusBar' -Tag Unit, UI {
         It 'uses red background for AdminWarning' {
             $script:bgUsed = $null
             Mock -CommandName 'Write-Host' -MockWith { $script:bgUsed = $BackgroundColor }
-            Show-StatusBar -AdminWarning 'Advarsel'
+            Show-StatusBar -AdminWarning 'Warning'
             $script:bgUsed | Should -Be 'Red'
         }
         It 'uses gray background for normal bar' {

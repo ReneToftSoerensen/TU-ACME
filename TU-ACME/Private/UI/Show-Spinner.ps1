@@ -24,14 +24,14 @@
         $script:_spinnerDone = $true
     })
 
-    # Fallback: PS 5.1 har ikke Task.Run, brug synkron kørsel med inline animation
-    # Kør scriptblock i forgrunden og animer i perioder
+    # Fallback: PS 5.1 does not have Task.Run, use synchronous execution with inline animation
+    # Run the scriptblock in the foreground and animate at intervals
     $script:_spinnerDone      = $false
     $script:_spinnerResult    = $null
     $script:_spinnerException = $null
 
-    # Siden PS 5.1 ikke har nem async, kør scriptblock synkront
-    # men vis spinner foer og efter hvert naturligt pause-punkt
+    # Since PS 5.1 does not have easy async, run the scriptblock synchronously
+    # but show the spinner before and after each natural pause point
     Set-ConsoleCursorPos -X 0 -Y $spinRow
     Write-Host "  [ $($frames[0]) ] $($script:_spinnerMessage)" -NoNewline -ForegroundColor Cyan
 

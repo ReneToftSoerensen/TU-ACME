@@ -11,10 +11,10 @@
 
     $w = Get-ConsoleWidth
 
-    # Brug Columns som Headers hvis ikke angivet
+    # Use Columns as Headers if not specified
     if ($Headers.Count -eq 0) { $Headers = $Columns }
 
-    # Beregn kolonnebredder hvis ikke angivet
+    # Calculate column widths if not specified
     if ($Widths.Count -eq 0) {
         $colW = [Math]::Max(([int](($w - 4) / $Columns.Count)), 10)
         $Widths = $Columns | ForEach-Object { $colW }
@@ -63,10 +63,10 @@
         return
     }
 
-    # Interaktiv tilstand — piletaster, Enter returnerer index
+    # Interactive mode — arrow keys, Enter returns the index
     $index = if ($SelectedIndex -ge 0) { $SelectedIndex } else { 0 }
     if ($Data.Count -eq 0) {
-        Write-Host '  (Ingen data)' -ForegroundColor DarkGray
+        Write-Host '  (No data)' -ForegroundColor DarkGray
         return -1
     }
 

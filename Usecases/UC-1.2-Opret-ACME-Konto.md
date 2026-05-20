@@ -1,40 +1,40 @@
-# UC-1.2: Opret ny ACME-konto
+# UC-1.2: Create new ACME account
 
-**Kategori:** Kontostyring  
-**Prioritet:** Høj
+**Category:** Account management  
+**Priority:** High
 
-## Mål
-At registrere en ny konto hos en ACME-udbyder (Let's Encrypt, ZeroSSL eller custom).
+## Goal
+Register a new account with an ACME provider (Let's Encrypt, ZeroSSL, or custom).
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- Brugeren kører TUI som Administrator.
-- Internetadgang er tilgængelig til ACME-udbyderens endpoint.
+## Preconditions
+- The user is running the TUI as Administrator.
+- Internet access is available to the ACME provider's endpoint.
 
-## Hovedforløb
-1. Brugeren vælger "Opret ny konto" i Kontostyring-menuen.
-2. TUI'en prompter for en e-mailadresse (kontaktadresse til ACME-udbyderen).
-3. TUI'en viser en liste over kendte ACME-servere:
+## Main flow
+1. The user selects "Create new account" in the Account management menu.
+2. The TUI prompts for an email address (contact address for the ACME provider).
+3. The TUI displays a list of known ACME servers:
    - Let's Encrypt (Production)
    - Let's Encrypt (Staging)
    - ZeroSSL
-   - Custom (brugerdefineret URL)
-4. Brugeren vælger server.
-5. TUI'en viser Terms of Service og prompter: `Accepterer du vilkårene? [J/N]`.
-6. Brugeren bekræfter med `J`.
-7. Appen kalder `New-PACAccount` og opretter kontoen.
-8. Succes-besked vises med den nye kontos ID og e-mailadresse.
+   - Custom (user-defined URL)
+4. The user selects a server.
+5. The TUI shows the Terms of Service and prompts: `Do you accept the terms? [Y/N]`.
+6. The user confirms with `Y`.
+7. The application calls `New-PACAccount` and creates the account.
+8. A success message is shown with the new account's ID and email address.
 
-## Postkonditioner
-- En ny ACME-konto er registreret og sat som aktiv konto.
+## Postconditions
+- A new ACME account is registered and set as the active account.
 
-## Alternative forløb
-- **4a:** Custom server valgt → Brugeren promptes for server-URL.
-- **6a:** Brugeren svarer `N` → Afbrydes, ingen konto oprettes.
-- **7a:** Netværksfejl → Fejlbesked vises med præcis fejlmeddelelse.
+## Alternative flows
+- **4a:** Custom server selected -> The user is prompted for the server URL.
+- **6a:** The user answers `N` -> Cancelled, no account is created.
+- **7a:** Network error -> An error message is shown with the exact error text.
 
-## Tekniske noter
-- PowerShell-kommando: `New-PACAccount -AcceptTOS -Contact "mail@eksempel.dk"`
-- For custom server: `New-PAServer -DirectoryUrl "https://custom.acme/dir"`
+## Technical notes
+- PowerShell command: `New-PACAccount -AcceptTOS -Contact "mail@example.com"`
+- For a custom server: `New-PAServer -DirectoryUrl "https://custom.acme/dir"`

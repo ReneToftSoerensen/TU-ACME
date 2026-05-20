@@ -1,32 +1,32 @@
-# UC-0.1: Kontrol af administrator-rettigheder ved opstart
+# UC-0.1: Administrator privilege check on startup
 
-**Kategori:** System  
-**Prioritet:** Høj
+**Category:** System  
+**Priority:** High
 
-## Mål
-At sikre, at administrative funktioner (såsom IIS-ændringer og Scheduled Tasks) kun er tilgængelige, hvis TUI'en kører med forhøjede rettigheder.
+## Goal
+Ensure that administrative functions (such as IIS changes and Scheduled Tasks) are only available when the TUI is running with elevated privileges.
 
-## Aktører
-- Systemadministrator (Admin)
-- Overvåger/Tekniker (ReadOnly)
+## Actors
+- System administrator (Admin)
+- Monitor/Technician (ReadOnly)
 
-## Prækonditioner
-- TUI-applikationen er installeret og klar til opstart.
+## Preconditions
+- The TUI application is installed and ready to start.
 
-## Hovedforløb
-1. TUI startes op.
-2. Systemet undersøger, om den nuværende PowerShell-proces kører som Administrator.
-3. Hvis **ikke** administrator:
-   - Systemet viser en **rød advarselsbjælke** øverst i TUI'en:  
-     `KØRER IKKE SOM ADMINISTRATOR - Administrative funktioner er deaktiveret`
-   - Menuer tilhørende UC-5 (Automatisering) og UC-8 (IIS Integration) deaktiveres eller skjules.
-4. Hvis administrator: TUI startes med fuld adgang til alle menuer og funktioner.
+## Main flow
+1. The TUI starts up.
+2. The system checks whether the current PowerShell process is running as Administrator.
+3. If **not** an administrator:
+   - The system displays a **red warning bar** at the top of the TUI:  
+     `NOT RUNNING AS ADMINISTRATOR - Administrative functions are disabled`
+   - Menus belonging to UC-5 (Automation) and UC-8 (IIS Integration) are disabled or hidden.
+4. If administrator: the TUI starts with full access to all menus and functions.
 
-## Postkonditioner
-- TUI'en er startet med korrekt adgangsniveau for den aktuelle bruger.
+## Postconditions
+- The TUI has started with the correct access level for the current user.
 
-## Alternative forløb
-- **3a:** Brugeren genstarter TUI som administrator → Fuld adgang gives.
+## Alternative flows
+- **3a:** The user restarts the TUI as administrator -> Full access is granted.
 
-## Tekniske noter
-- Brug `[Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)` til at tjekke rettigheder.
+## Technical notes
+- Use `[Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)` to check privileges.

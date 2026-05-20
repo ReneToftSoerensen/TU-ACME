@@ -219,11 +219,11 @@ function _Select-DNSPlugin {
     } catch {}
 
     if ($plugins.Count -eq 0) {
-        Write-Host '  Ingen DNS-plugins fundet. Bruger Manuel validering.' -ForegroundColor Yellow
+        Write-Host '  No DNS plugins found. Using Manual validation.' -ForegroundColor Yellow
         return 'Manual'
     }
 
-    $sel = Show-Menu -Title 'Vaelg DNS-plugin (DNS-01 challenge)' -Options $plugins -AllowSearch
+    $sel = Show-Menu -Title 'Select DNS plugin (DNS-01 challenge)' -Options $plugins -AllowSearch
     if ($sel -lt 0) { return $null }
     return $plugins[$sel]
 }
@@ -244,7 +244,7 @@ function _Collect-PluginArgs {
     if (-not $guide) { return $pArgs }
 
     Write-Host ''
-    Write-Host "  Angiv parametre for plugin: $Plugin" -ForegroundColor Cyan
+    Write-Host "  Enter parameters for plugin: $Plugin" -ForegroundColor Cyan
 
     foreach ($param in $guide.PSObject.Properties) {
         $name     = $param.Name
@@ -265,7 +265,7 @@ function _Collect-PluginArgs {
 function _Collect-AcmeDnsArgs {
     param([string[]] $Domains)
 
-    # Tjek om der allerede er gemt en konto for det primære domæne
+    # Check whether an account is already stored for the primary domain
     $primaryDomain  = $Domains[0] -replace '^\*\.', ''
     $existingPath   = Get-AcmeDnsAccountPath -Domain $primaryDomain
 
@@ -273,16 +273,16 @@ function _Collect-AcmeDnsArgs {
         Invoke-ConsoleClear
         Write-Host '  === ACME-DNS ===' -ForegroundColor Cyan
         Write-Host ''
-        Write-Host "  Gemt konto fundet: $existingPath" -ForegroundColor Green
+        Write-Host "  Saved account found: $existingPath" -ForegroundColor Green
         try {
             $data = Get-Content -Path $existingPath -Raw | ConvertFrom-Json
             Write-Host "  FullDomain: $($data.fulldomain)" -ForegroundColor White
         } catch {}
         Write-Host ''
 
-        $reuse = Read-Host '  Genbrug eksisterende konto? (J/N)'
-        if ($reuse -match '^[Jj]') {
-            # Hent server-URL fra config
+        $reuse = Read-Host '  Reuse existing account? (Y/N)'
+        if ($reuse -match '^[Yy]') {
+            # Retrieve server URL from config
             $config = Get-TUACMEConfig
             $server = if ($config.DNS -and $config.DNS.AcmeDnsServer) {
                 $config.DNS.AcmeDnsServer
@@ -296,11 +296,11 @@ function _Collect-AcmeDnsArgs {
         }
     }
 
-    # Guidet opsætning (UC-3.5)
+    # Guided setup (UC-3.5)
     $result = Invoke-AcmeDnsSetup -Domains $Domains
     if ($result -eq $null) { return $null }
 
-    # Gem server-URL i config til genbrugVed fornyelse
+    # Save the server URL in config for reuse during renewal
     $config = Get-TUACMEConfig
     if (-not $config.DNS) {
         $config.DNS = [PSCustomObject]@{

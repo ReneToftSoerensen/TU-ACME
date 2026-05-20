@@ -1,29 +1,29 @@
-# UC-1.1: Vis liste over eksisterende ACME-konti
+# UC-1.1: Show list of existing ACME accounts
 
-**Kategori:** Kontostyring  
-**Prioritet:** Høj
+**Category:** Account management  
+**Priority:** High
 
-## Mål
-Give administratoren overblik over konfigurerede Let's Encrypt / ACME-konti.
+## Goal
+Give the administrator an overview of configured Let's Encrypt / ACME accounts.
 
-## Aktører
-- Systemadministrator (Admin)
-- Overvåger/Tekniker (ReadOnly)
+## Actors
+- System administrator (Admin)
+- Monitor/Technician (ReadOnly)
 
-## Prækonditioner
-- Posh-ACME er installeret og konfigureret med mindst én konto.
+## Preconditions
+- Posh-ACME is installed and configured with at least one account.
 
-## Hovedforløb
-1. Brugeren vælger "Kontostyring" i hovedmenuen.
-2. TUI'en indlæser konti fra Posh-ACMEs profil-sti via `Get-PAAccount`.
-3. En liste over registrerede e-mailadresser og deres tilhørende ACME-servere (Production/Staging) vises på skærmen.
+## Main flow
+1. The user selects "Account management" in the main menu.
+2. The TUI loads accounts from the Posh-ACME profile path via `Get-PAAccount`.
+3. A list of registered email addresses and their associated ACME servers (Production/Staging) is displayed on the screen.
 
-## Postkonditioner
-- Brugeren har overblik over alle registrerede ACME-konti.
+## Postconditions
+- The user has an overview of all registered ACME accounts.
 
-## Alternative forløb
-- **2a:** Ingen konti fundet → TUI'en viser besked: `Ingen ACME-konti fundet. Opret en ny konto (UC-1.2).`
+## Alternative flows
+- **2a:** No accounts found -> The TUI shows the message: `No ACME accounts found. Create a new account (UC-1.2).`
 
-## Tekniske noter
-- PowerShell-kommando: `Get-PAAccount -List`
-- Profil-sti typisk: `$env:LOCALAPPDATA\Posh-ACME`
+## Technical notes
+- PowerShell command: `Get-PAAccount -List`
+- Profile path typically: `$env:LOCALAPPDATA\Posh-ACME`

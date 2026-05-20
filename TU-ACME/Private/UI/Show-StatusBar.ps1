@@ -2,7 +2,7 @@
     param(
         [string] $ActiveAccount = '',
         [string] $AdminWarning  = '',
-        [string] $LeftHint      = '[Pil op/ned] Naviger  [Enter] Vaelg  [F3] Staging  [ESC] Tilbage',
+        [string] $LeftHint      = '[Up/Down] Navigate  [Enter] Select  [F3] Staging  [ESC] Back',
         [string] $RightHint     = ''
     )
 
@@ -17,7 +17,7 @@
     Set-ConsoleCursorPos -X 0 -Y $row
 
     if ($AdminWarning -ne '') {
-        $warning = " ADVARSEL: $AdminWarning "
+        $warning = " WARNING: $AdminWarning "
         $padded  = $warning.PadRight($w)
         Write-Host $padded.Substring(0, $w) -ForegroundColor White -BackgroundColor Red -NoNewline
     } else {

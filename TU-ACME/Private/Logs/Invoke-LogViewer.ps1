@@ -1,28 +1,28 @@
 ﻿function Invoke-LogViewer {
-    # Find Posh-ACME log-filer
+    # Find Posh-ACME log files
     $logDir   = Join-Path $env:LOCALAPPDATA 'Posh-ACME'
     $logFiles = @(Get-ChildItem -Path $logDir -Filter '*.log' -ErrorAction SilentlyContinue)
 
     if ($logFiles.Count -eq 0) {
-        # Prøv ProgramData
+        # Try ProgramData
         $logDir2   = Join-Path $env:ProgramData 'TU-ACME'
         $logFiles  = @(Get-ChildItem -Path $logDir2 -Filter '*.log' -ErrorAction SilentlyContinue)
     }
 
     if ($logFiles.Count -eq 0) {
-        Write-Host '  Ingen logfiler fundet.' -ForegroundColor Yellow
-        Write-Host '  Søgte i: ' -NoNewline; Write-Host $logDir -ForegroundColor DarkGray
+        Write-Host '  No log files found.' -ForegroundColor Yellow
+        Write-Host '  Searched in: ' -NoNewline; Write-Host $logDir -ForegroundColor DarkGray
         Write-Host ''
-        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+        Write-Host '  Press any key...' -ForegroundColor DarkGray
         Invoke-ConsoleWaitKey
         return
     }
 
-    # Vaelg logfil hvis der er flere
+    # Select log file if there are several
     $logFile = $logFiles[0]
     if ($logFiles.Count -gt 1) {
         $options = $logFiles | ForEach-Object { $_.Name }
-        $sel     = Show-Menu -Title 'Vaelg logfil' -Options $options
+        $sel     = Show-Menu -Title 'Select log file' -Options $options
         if ($sel -lt 0) { return }
         $logFile = $logFiles[$sel]
     }
@@ -37,7 +37,7 @@ function _Show-LogPager {
     try {
         $lines = @(Get-Content -Path $LogFile -Encoding UTF8 -ErrorAction Stop)
     } catch {
-        Write-Host "  Fejl ved læsning af log: $_" -ForegroundColor Red
+        Write-Host "  Error reading log: $_" -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
@@ -50,7 +50,7 @@ function _Show-LogPager {
     function Render-Page {
         Invoke-ConsoleClear
         Write-Host "  === Log: $(Split-Path $LogFile -Leaf) ===" -ForegroundColor Cyan
-        Write-Host "  Linje $($offset + 1)-$([Math]::Min($offset + $h, $lines.Count)) af $($lines.Count)" -ForegroundColor DarkGray
+        Write-Host "  Line $($offset + 1)-$([Math]::Min($offset + $h, $lines.Count)) of $($lines.Count)" -ForegroundColor DarkGray
 
         $end = [Math]::Min($offset + $h, $lines.Count)
         for ($i = $offset; $i -lt $end; $i++) {
@@ -58,15 +58,15 @@ function _Show-LogPager {
             if ($line.Length -gt $w - 3) { $line = $line.Substring(0, $w - 3) }
 
             $color = 'White'
-            if ($line -match 'ERROR|FEJL|error')   { $color = 'Red' }
-            elseif ($line -match 'WARN|Advars')     { $color = 'Yellow' }
-            elseif ($line -match 'INFO|Succes|OK')  { $color = 'Green' }
+            if ($line -match 'ERROR|error')         { $color = 'Red' }
+            elseif ($line -match 'WARN|Warning')    { $color = 'Yellow' }
+            elseif ($line -match 'INFO|Success|OK') { $color = 'Green' }
 
             Write-Host "  $line" -ForegroundColor $color
         }
 
         Write-Host ''
-        Write-Host '  [Pil op/ned] 1 linje  [PgUp/PgDn] Side  [Home/End] Top/Bund  [E] Eksporter  [ESC] Tilbage' -ForegroundColor DarkGray
+        Write-Host '  [Up/Down] 1 line  [PgUp/PgDn] Page  [Home/End] Top/Bottom  [E] Export  [ESC] Back' -ForegroundColor DarkGray
     }
 
     Render-Page
@@ -110,20 +110,20 @@ function _Export-Log {
     $default    = Join-Path $desktop "${baseName}_${timestamp}.log"
 
     Write-Host ''
-    Write-Host "  Destinationssti (standard: $default):" -ForegroundColor Gray
-    $dest = Read-Host '  Sti'
+    Write-Host "  Destination path (default: $default):" -ForegroundColor Gray
+    $dest = Read-Host '  Path'
     if ($dest -eq '') { $dest = $default }
 
     if ((Test-Path $dest)) {
-        $overwrite = Read-Host "  '$dest' eksisterer. Overskriv? (J/N)"
-        if ($overwrite -notmatch '^[Jj]') { return }
+        $overwrite = Read-Host "  '$dest' exists. Overwrite? (Y/N)"
+        if ($overwrite -notmatch '^[Yy]') { return }
     }
 
     try {
         Copy-Item -Path $LogFile -Destination $dest -Force
-        Write-Host "  Log eksporteret: $dest" -ForegroundColor Green
+        Write-Host "  Log exported: $dest" -ForegroundColor Green
     } catch {
-        Write-Host "  Fejl ved eksport: $_" -ForegroundColor Red
+        Write-Host "  Export error: $_" -ForegroundColor Red
     }
 
     Start-Sleep -Seconds 1

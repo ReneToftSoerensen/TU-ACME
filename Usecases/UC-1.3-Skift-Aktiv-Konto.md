@@ -1,29 +1,29 @@
-# UC-1.3: Skift aktiv ACME-konto
+# UC-1.3: Switch active ACME account
 
-**Kategori:** Kontostyring  
-**Prioritet:** Høj
+**Category:** Account management  
+**Priority:** High
 
-## Mål
-At vælge, hvilken af de registrerede konti der skal være den aktive i den nuværende Posh-ACME-konfiguration.
+## Goal
+Select which of the registered accounts should be the active one in the current Posh-ACME configuration.
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- Mindst to ACME-konti er registreret (UC-1.1).
+## Preconditions
+- At least two ACME accounts are registered (UC-1.1).
 
-## Hovedforløb
-1. Brugeren navigerer til listen over eksisterende konti (UC-1.1).
-2. Brugeren markerer den ønskede konto med piletasterne.
-3. Brugeren vælger "Sæt som aktiv" (Enter eller dedikeret tast).
-4. Appen kalder `Set-PAAccount` med den valgte kontos ID.
-5. Statusbaren i bunden af TUI'en opdateres med den nye aktive konto.
+## Main flow
+1. The user navigates to the list of existing accounts (UC-1.1).
+2. The user highlights the desired account using the arrow keys.
+3. The user selects "Set as active" (Enter or a dedicated key).
+4. The application calls `Set-PAAccount` with the ID of the selected account.
+5. The status bar at the bottom of the TUI is updated with the new active account.
 
-## Postkonditioner
-- Den valgte konto er nu aktiv og bruges ved alle efterfølgende certifikat-operationer.
+## Postconditions
+- The selected account is now active and will be used for all subsequent certificate operations.
 
-## Alternative forløb
-- **4a:** Fejl ved kontoskift → Fejlbesked vises, aktiv konto forbliver uændret.
+## Alternative flows
+- **4a:** Error when switching account -> An error message is shown, the active account remains unchanged.
 
-## Tekniske noter
-- PowerShell-kommando: `Set-PAAccount -ID "<account-id>"`
+## Technical notes
+- PowerShell command: `Set-PAAccount -ID "<account-id>"`

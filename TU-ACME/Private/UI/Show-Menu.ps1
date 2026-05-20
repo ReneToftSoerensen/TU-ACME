@@ -160,9 +160,9 @@
         }
     }
     finally {
-        # Forlad altid Show-Menu med markoeren ved kolonne 0 paa en frisk
-        # linje under menuens indhold, saa kalderen kan skrive input/output
-        # forankret til venstre side ogsaa paa brede terminaler.
+        # Always leave Show-Menu with the cursor at column 0 on a fresh
+        # line below the menu's content, so the caller can write input/output
+        # anchored to the left side also on wide terminals.
         $lastRow = [Math]::Min($visibleOptions.Count + 5, [Math]::Max((Get-ConsoleHeight) - 1, 0))
         Set-ConsoleCursorPos -X 0 -Y $lastRow
         Set-ConsoleCursorVisible -Visible $true

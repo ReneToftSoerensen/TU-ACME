@@ -1,11 +1,11 @@
 ﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
-    Post-renewal plugin til automatisk opdatering af IIS HTTPS-bindings.
-    Registreres med: Set-PAConfig -PostScript "<sti>\Posh-ACME-IIS-Plugin.ps1"
+    Post-renewal plugin for automatic update of IIS HTTPS bindings.
+    Register with: Set-PAConfig -PostScript "<path>\Posh-ACME-IIS-Plugin.ps1"
 
 .NOTES
-    Posh-ACME kalder scriptet med følgende parametre i $env:POSHACME_* eller direkte:
+    Posh-ACME calls the script with the following parameters in $env:POSHACME_* or directly:
     - OldCertThumbprint / $OldThumbprint
     - NewCertPath       / $CertFile
     - NewCertThumbprint / $Thumbprint
@@ -17,14 +17,14 @@ param(
     [string] $Thumbprint
 )
 
-# Posh-ACME sender også via environment-variabler som fallback
+# Posh-ACME also passes values via environment variables as a fallback
 if (-not $OldThumbprint) { $OldThumbprint = $env:POSHACME_OLD_CERT_THUMBPRINT }
 if (-not $CertFile)      { $CertFile      = $env:POSHACME_CERT_FILE }
 if (-not $Thumbprint)    { $Thumbprint    = $env:POSHACME_THUMBPRINT }
 
 $onWindows = if (Test-Path variable:IsWindows) { $IsWindows } else { $true }
 if (-not $onWindows) {
-    Write-Host 'Posh-ACME-IIS-Plugin.ps1 er kun understøttet på Windows (kræver IIS).' -ForegroundColor Yellow
+    Write-Host 'Posh-ACME-IIS-Plugin.ps1 is only supported on Windows (requires IIS).' -ForegroundColor Yellow
     exit 0
 }
 
@@ -42,37 +42,37 @@ function Write-IISLog {
     } catch {}
 }
 
-# Intet gammelt thumbprint — intet at opdatere
+# No old thumbprint — nothing to update
 if (-not $OldThumbprint) {
-    Write-IISLog -EventId 1002 -Message 'TU-ACME IIS-plugin: Intet gammelt thumbprint. Springer over.'
+    Write-IISLog -EventId 1002 -Message 'TU-ACME IIS plugin: No old thumbprint. Skipping.'
     exit 0
 }
 
 try {
     Import-Module WebAdministration -ErrorAction Stop
 } catch {
-    Write-IISLog -EventId 3002 -Message "TU-ACME IIS-plugin: WebAdministration ikke tilgængeligt. $_" -EntryType Error
+    Write-IISLog -EventId 3002 -Message "TU-ACME IIS plugin: WebAdministration not available. $_" -EntryType Error
     exit 1
 }
 
-# Importer nyt certifikat til LocalMachine\My hvis CertFile er angivet
+# Import new certificate to LocalMachine\My if CertFile is provided
 if ($CertFile -and (Test-Path $CertFile)) {
     try {
         Import-PfxCertificate -FilePath $CertFile `
             -CertStoreLocation 'Cert:\LocalMachine\My' -Exportable | Out-Null
     } catch {
         Write-IISLog -EventId 3002 `
-            -Message "TU-ACME IIS-plugin: Fejl ved import af certifikat: $_" -EntryType Error
+            -Message "TU-ACME IIS plugin: Error importing certificate: $_" -EntryType Error
     }
 }
 
-# Find og opdater alle HTTPS-bindings med det gamle thumbprint
+# Find and update all HTTPS bindings that use the old thumbprint
 $bindings = @(Get-WebBinding -Protocol 'https' |
     Where-Object { $_.certificateHash -eq $OldThumbprint })
 
 if ($bindings.Count -eq 0) {
     Write-IISLog -EventId 1002 `
-        -Message "TU-ACME IIS-plugin: Ingen bindings matchede thumbprint $OldThumbprint."
+        -Message "TU-ACME IIS plugin: No bindings matched thumbprint $OldThumbprint."
     exit 0
 }
 
@@ -81,11 +81,11 @@ foreach ($binding in $bindings) {
     try {
         $binding.certificateHash = $Thumbprint
         $binding | Set-WebBinding
-        $msg = "IIS-binding opdateret: $site — gammelt thumbprint: $OldThumbprint — nyt: $Thumbprint"
+        $msg = "IIS binding updated: $site — old thumbprint: $OldThumbprint — new: $Thumbprint"
         Write-IISLog -EventId 1002 -Message $msg
     } catch {
-        $errMsg = "IIS-binding fejl: $site — $_"
+        $errMsg = "IIS binding error: $site — $_"
         Write-IISLog -EventId 3002 -Message $errMsg -EntryType Error
-        # Fortsæt med næste binding selvom én fejler
+        # Continue with the next binding even if one fails
     }
 }

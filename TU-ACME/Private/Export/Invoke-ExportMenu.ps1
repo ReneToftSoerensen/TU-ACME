@@ -38,28 +38,28 @@ function _Export-PFX {
     param($Cert)
 
     Invoke-ConsoleClear
-    Write-Host '  === Eksporter PFX ===' -ForegroundColor Cyan
+    Write-Host '  === Export PFX ===' -ForegroundColor Cyan
     Write-Host ''
 
     $desktop = [System.Environment]::GetFolderPath('Desktop')
     if (-not $desktop) { $desktop = [System.IO.Path]::GetTempPath() }
     $defaultPath = Join-Path $desktop "$($Cert.MainDomain).pfx"
-    Write-Host "  Destinationssti (standard: $defaultPath):" -ForegroundColor Gray
-    $path = Read-Host '  Sti'
+    Write-Host "  Destination path (default: $defaultPath):" -ForegroundColor Gray
+    $path = Read-Host '  Path'
     if ($path -eq '') { $path = $defaultPath }
 
-    $pass1 = ConvertTo-MaskedInput -Prompt '  PFX adgangskode' -AsSecureString
+    $pass1 = ConvertTo-MaskedInput -Prompt '  PFX password' -AsSecureString
     if ($pass1 -eq $null) { return }
-    $pass2 = ConvertTo-MaskedInput -Prompt '  Bekraeft adgangskode' -AsSecureString
+    $pass2 = ConvertTo-MaskedInput -Prompt '  Confirm password' -AsSecureString
     if ($pass2 -eq $null) { return }
 
-    # Sammenlign SecureString
+    # Compare SecureString
     $p1 = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($pass1))
     $p2 = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($pass2))
 
     if ($p1 -ne $p2) {
-        Write-Host '  Adgangskoderne er ikke ens. Prøv igen.' -ForegroundColor Red
-        Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+        Write-Host '  Passwords do not match. Try again.' -ForegroundColor Red
+        Write-Host '  Press any key...' -ForegroundColor DarkGray
         Invoke-ConsoleWaitKey
         return
     }
@@ -75,16 +75,16 @@ function _Export-PFX {
             $p1
         )
         [System.IO.File]::WriteAllBytes($path, $exported)
-        Write-Host "  PFX gemt: $path" -ForegroundColor Green
+        Write-Host "  PFX saved: $path" -ForegroundColor Green
     } catch {
-        Write-Host "  Fejl ved eksport: $_" -ForegroundColor Red
+        Write-Host "  Export error: $_" -ForegroundColor Red
         if ($_ -match 'Access') {
-            Write-Host '  Kontrollér at du har skriverettigheder til destinationsmappen.' -ForegroundColor Yellow
+            Write-Host '  Check that you have write permissions to the destination folder.' -ForegroundColor Yellow
         }
     }
 
     Write-Host ''
-    Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+    Write-Host '  Press any key...' -ForegroundColor DarkGray
     Invoke-ConsoleWaitKey
 }
 
@@ -92,18 +92,18 @@ function _Export-PEM {
     param($Cert)
 
     Invoke-ConsoleClear
-    Write-Host '  === Eksporter PEM/CRT/KEY ===' -ForegroundColor Cyan
+    Write-Host '  === Export PEM/CRT/KEY ===' -ForegroundColor Cyan
     Write-Host ''
 
     $defaultDir = [System.Environment]::GetFolderPath('Desktop')
     if (-not $defaultDir) { $defaultDir = [System.IO.Path]::GetTempPath() }
-    Write-Host "  Destinationsmappe (standard: $defaultDir):" -ForegroundColor Gray
-    $dir = Read-Host '  Mappe'
+    Write-Host "  Destination folder (default: $defaultDir):" -ForegroundColor Gray
+    $dir = Read-Host '  Folder'
     if ($dir -eq '') { $dir = $defaultDir }
 
     if (-not (Test-Path $dir)) {
-        $create = Read-Host "  Mappen '$dir' eksisterer ikke. Opret? (J/N)"
-        if ($create -match '^[Jj]') {
+        $create = Read-Host "  The folder '$dir' does not exist. Create? (Y/N)"
+        if ($create -match '^[Yy]') {
             New-Item -ItemType Directory -Path $dir -Force | Out-Null
         } else {
             return
@@ -120,19 +120,19 @@ function _Export-PEM {
         Copy-Item -Path $Cert.KeyFile   -Destination $keyDst   -Force
         Copy-Item -Path $Cert.ChainFile -Destination $chainDst -Force
 
-        Write-Host '  Eksporterede filer:' -ForegroundColor Green
-        Write-Host "    Certifikat: $certDst"  -ForegroundColor White
-        Write-Host "    Privat nøgle: $keyDst" -ForegroundColor White
-        Write-Host "    Certifikatkæde: $chainDst" -ForegroundColor White
+        Write-Host '  Exported files:' -ForegroundColor Green
+        Write-Host "    Certificate: $certDst"  -ForegroundColor White
+        Write-Host "    Private key: $keyDst" -ForegroundColor White
+        Write-Host "    Certificate chain: $chainDst" -ForegroundColor White
     } catch {
-        Write-Host "  Fejl ved eksport: $_" -ForegroundColor Red
+        Write-Host "  Export error: $_" -ForegroundColor Red
         if ($_ -match 'Access') {
-            Write-Host '  Kontrollér skriverettigheder.' -ForegroundColor Yellow
+            Write-Host '  Check write permissions.' -ForegroundColor Yellow
         }
     }
 
     Write-Host ''
-    Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+    Write-Host '  Press any key...' -ForegroundColor DarkGray
     Invoke-ConsoleWaitKey
 }
 
@@ -140,20 +140,20 @@ function _Import-WinStore {
     param($Cert)
 
     if (-not $script:TUACMEIsAdmin) {
-        Show-StatusBar -AdminWarning 'Import til Windows Store kræver administratorrettigheder'
+        Show-StatusBar -AdminWarning 'Import to Windows Store requires administrator privileges'
         Start-Sleep -Seconds 2
         return
     }
 
     Invoke-ConsoleClear
-    Write-Host '  === Importer til Windows Certificate Store ===' -ForegroundColor Cyan
+    Write-Host '  === Import to Windows Certificate Store ===' -ForegroundColor Cyan
     Write-Host ''
 
     $storeOptions = @(
-        '1. Personligt (My)',
+        '1. Personal (My)',
         '2. Web Hosting (WebHosting)'
     )
-    $storeSel = Show-Menu -Title 'Vaelg certifikatarkiv' -Options $storeOptions
+    $storeSel = Show-Menu -Title 'Select certificate store' -Options $storeOptions
     if ($storeSel -lt 0) { return }
 
     $storeName = if ($storeSel -eq 0) { 'My' } else { 'WebHosting' }
@@ -162,12 +162,12 @@ function _Import-WinStore {
         Import-PfxCertificate -FilePath $Cert.PfxFile `
             -CertStoreLocation "Cert:\LocalMachine\$storeName" `
             -Exportable | Out-Null
-        Write-Host "  Certifikat importeret til LocalMachine\$storeName." -ForegroundColor Green
+        Write-Host "  Certificate imported to LocalMachine\$storeName." -ForegroundColor Green
     } catch {
-        Write-Host "  Fejl ved import: $_" -ForegroundColor Red
+        Write-Host "  Import error: $_" -ForegroundColor Red
     }
 
     Write-Host ''
-    Write-Host '  Tryk en tast...' -ForegroundColor DarkGray
+    Write-Host '  Press any key...' -ForegroundColor DarkGray
     Invoke-ConsoleWaitKey
 }

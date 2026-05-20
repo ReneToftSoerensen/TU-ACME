@@ -1,16 +1,16 @@
 ﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
-    Baggrundsscript til automatisk certifikatfornyelse via Scheduled Task.
-    Køres med: powershell.exe -NonInteractive -WindowStyle Hidden -File "Invoke-RenewalBackground.ps1"
+    Background script for automatic certificate renewal via Scheduled Task.
+    Run with: powershell.exe -NonInteractive -WindowStyle Hidden -File "Invoke-RenewalBackground.ps1"
 #>
 
 $ErrorActionPreference = 'Stop'
 
 $onWindows = if (Test-Path variable:IsWindows) { $IsWindows } else { $true }
 if (-not $onWindows) {
-    Write-Host 'Invoke-RenewalBackground.ps1 er designet til Windows Scheduled Tasks.' -ForegroundColor Yellow
-    Write-Host 'Brug cron + pwsh Submit-Renewal til Linux/macOS.' -ForegroundColor Gray
+    Write-Host 'Invoke-RenewalBackground.ps1 is designed for Windows Scheduled Tasks.' -ForegroundColor Yellow
+    Write-Host 'Use cron + pwsh Submit-Renewal on Linux/macOS.' -ForegroundColor Gray
     exit 0
 }
 
@@ -47,19 +47,19 @@ function Send-ErrorMail {
     if (-not $config -or -not $config.Email.SmtpServer) { return }
 
     $credPath = Join-Path $configDir 'smtp-credentials.xml'
-    $subject  = "[TU-ACME] FEJL ved certifikatfornyelse - $Domain"
+    $subject  = "[TU-ACME] ERROR during certificate renewal - $Domain"
     $body     = @"
-Tidsstempel:  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+Timestamp:    $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 Server:       $env:COMPUTERNAME
-Domæne:       $Domain
-Fejltype:     Certifikatfornyelse mislykkedes
-Fejlbesked:   $ErrorMessage
+Domain:       $Domain
+Error type:   Certificate renewal failed
+Error:        $ErrorMessage
 
-Handling påkrævet:
-Tjek certifikatstatus i TU-ACME eller kør:
+Action required:
+Check certificate status in TU-ACME or run:
   Submit-Renewal -Force -Domain "$Domain"
 
--- Sendt automatisk af TU-ACME --
+-- Sent automatically by TU-ACME --
 "@
 
     $mailParams = @{
@@ -91,31 +91,31 @@ Tjek certifikatstatus i TU-ACME eller kør:
 try {
     Import-Module Posh-ACME -ErrorAction Stop
 } catch {
-    Write-Log -EventId 3001 -Message "TU-ACME: Posh-ACME ikke tilgængeligt. $_" -EntryType Error
+    Write-Log -EventId 3001 -Message "TU-ACME: Posh-ACME not available. $_" -EntryType Error
     exit 1
 }
 
-# Kør fornyelse
+# Run renewal
 try {
     $results = Submit-Renewal -AllAccounts
 
     if ($results) {
         foreach ($r in $results) {
-            $msg = "Certifikat fornyet: $($r.MainDomain). Nyt thumbprint: $($r.Thumbprint)"
+            $msg = "Certificate renewed: $($r.MainDomain). New thumbprint: $($r.Thumbprint)"
             Write-Log -EventId 1001 -Message $msg
         }
     } else {
-        Write-Log -EventId 1001 -Message 'TU-ACME: Ingen certifikater krævede fornyelse.'
+        Write-Log -EventId 1001 -Message 'TU-ACME: No certificates required renewal.'
     }
 } catch {
     $errMsg = "$_"
-    $domain = 'Ukendt'
+    $domain = 'Unknown'
 
     try {
         $domain = (Get-PACertificate -List | Where-Object { $_.status -eq 'pending' } | Select-Object -First 1).MainDomain
     } catch {}
 
-    Write-Log -EventId 3001 -Message "TU-ACME: Certifikatfornyelse fejlet for $domain. $_" -EntryType Error
+    Write-Log -EventId 3001 -Message "TU-ACME: Certificate renewal failed for $domain. $_" -EntryType Error
     Send-ErrorMail -Domain $domain -ErrorMessage $errMsg
     exit 1
 }
