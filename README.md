@@ -50,7 +50,7 @@ cd tu-acme
 Start the TUI in a PowerShell session. For full functionality (IIS, Scheduled Tasks), PowerShell must be run as Administrator.
 
 ```
-TU-ACME v0.0.2
+TU-ACME v0.1.0
 ==========================================
 Active account: admin@example.com | Let's Encrypt Production
 
