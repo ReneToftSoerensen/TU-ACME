@@ -94,7 +94,7 @@ Describe 'Invoke-OrderCertificate' -Tag Unit, Certificates {
             BeforeEach {
                 Mock -CommandName 'Get-AcmeDnsAccountPath' -MockWith { 'C:\fake\eksempel_dk.json' }
                 Mock -CommandName 'Get-Content' -MockWith { (New-FakeAcmeDnsAccount | ConvertTo-Json) }
-                Mock -CommandName 'Read-Host'   -MockWith { 'J' }   # reuse
+                Mock -CommandName 'Read-Host'   -MockWith { 'Y' }   # reuse
             }
             It 'returns hashtable with ACMEDnsServer and ACMEDnsAccountJson' {
                 $r = _Collect-AcmeDnsArgs -Domains @('eksempel.dk')

@@ -97,7 +97,7 @@ Describe 'Invoke-IISMenu' -Tag Unit, IIS -Skip:$script:SkipIIS {
             BeforeEach {
                 Mock -CommandName 'Test-Path' -MockWith { $true }
                 Mock -CommandName 'Get-PAServer' -MockWith { [PSCustomObject]@{ PostScript = '' } }
-                Mock -CommandName 'Read-Host'   -MockWith { 'J' }
+                Mock -CommandName 'Read-Host'   -MockWith { 'Y' }
             }
             It 'calls Set-PAConfig once' {
                 _Register-PostRenewalPlugin

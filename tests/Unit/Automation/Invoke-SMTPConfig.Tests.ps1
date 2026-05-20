@@ -38,7 +38,7 @@ Describe 'Invoke-SMTPConfig' -Tag Unit, Automation {
         Context 'Auth enabled — saves encrypted credentials' {
             BeforeEach {
                 $script:ri = 0
-                $script:rseq = @('smtp.test.dk', '587', 'N', 'from@test.dk', 'to@test.dk', 'J', 'N')
+                $script:rseq = @('smtp.test.dk', '587', 'N', 'from@test.dk', 'to@test.dk', 'Y', 'N')
                 Mock -CommandName 'Read-Host' -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
                 $script:ki = 0
                 $script:kseq = @(
@@ -58,7 +58,7 @@ Describe 'Invoke-SMTPConfig' -Tag Unit, Automation {
         Context 'Test mail requested after save' {
             BeforeEach {
                 $script:ri = 0
-                $script:rseq = @('smtp.test.dk', '', '', '', '', 'N', 'J')  # accept many defaults, then test
+                $script:rseq = @('smtp.test.dk', '', '', '', '', 'N', 'Y')  # accept many defaults, then test
                 Mock -CommandName 'Read-Host' -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
             }
             It 'calls Send-TUACMEMail' {

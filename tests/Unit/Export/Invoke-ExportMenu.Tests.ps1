@@ -59,7 +59,7 @@ Describe 'Invoke-ExportMenu' -Tag Unit, Export {
         Context '_Export-PEM — destination folder missing, user creates' {
             BeforeEach {
                 $script:ri = 0
-                $script:rseq = @('C:\NewDir', 'J')
+                $script:rseq = @('C:\NewDir', 'Y')
                 Mock -CommandName 'Read-Host' -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
                 Mock -CommandName 'Test-Path' -MockWith { $false }
                 Mock -CommandName 'New-Item'  -MockWith {}

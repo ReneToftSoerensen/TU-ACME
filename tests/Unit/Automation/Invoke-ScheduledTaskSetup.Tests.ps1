@@ -44,7 +44,7 @@ Describe 'Invoke-ScheduledTaskSetup' -Tag Unit, Automation {
                 Mock -CommandName 'Get-ScheduledTask' -MockWith { New-FakeScheduledTask }
                 Mock -CommandName 'Unregister-ScheduledTask' -MockWith {}
                 $script:ri = 0
-                $script:rseq = @('', 'J')   # default time, then confirm overwrite
+                $script:rseq = @('', 'Y')   # default time, then confirm overwrite
                 Mock -CommandName 'Read-Host' -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
             }
             It 'unregisters old task before creating new' {
