@@ -136,7 +136,16 @@ Verify no stragglers with:
 git grep '<old-version>'   # must return only changelog/history references
 ```
 
-After bumping, `Remove-Module TU-ACME -Force` and re-import to pick up the new manifest in an existing PowerShell session — `Get-Module -ListAvailable` caches.
+After bumping, re-install the module so `Get-Module -ListAvailable` reports the new version:
+
+```powershell
+$dest = "$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME"
+Remove-Module TU-ACME -Force -ErrorAction SilentlyContinue
+if (Test-Path $dest) { Remove-Item -Path $dest -Recurse -Force }
+Copy-Item -Path .\TU-ACME -Destination $dest -Recurse -Force
+```
+
+`Remove-Module` alone only unloads from the current session — the installed manifest on disk still has the old `ModuleVersion`. Also note that on PS 5.1, `Copy-Item -Recurse -Force` does **not** cleanly overwrite an existing module directory — it nests the source inside, leaving stale files. Always `Remove-Item` the destination first, then copy.
 
 ## Continuous Integration (GitHub Actions)
 The project uses `.github/workflows/test.yml` to run automated tests on all branches and pull requests.

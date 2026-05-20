@@ -96,6 +96,15 @@ Download and extract `tu-acme.zip` to a folder on the server.
 # Requires Administrator
 $moduleDest = "$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME"
 
+# Unload from current session and remove the old install (if any).
+# Copy-Item -Recurse -Force does NOT overwrite an existing directory
+# cleanly on PS 5.1 — it nests the source inside, which leaves stale
+# files (and the wrong ModuleVersion). Wipe first, then copy.
+Remove-Module TU-ACME -Force -ErrorAction SilentlyContinue
+if (Test-Path $moduleDest) {
+    Remove-Item -Path $moduleDest -Recurse -Force
+}
+
 Copy-Item -Path ".\TU-ACME" -Destination $moduleDest -Recurse -Force
 
 # Verify that the module can be found
