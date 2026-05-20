@@ -101,9 +101,13 @@ All `.ps1`, `.psm1`, and `.psd1` files in the repository **must** be saved as **
 - Verify with: `(Get-Content -Path file.ps1 -Raw -Encoding Byte)[0..2] | ForEach-Object { '{0:X2}' -f $_ }` → must show `EF BB BF`.
 - When creating new files: save explicitly as UTF-8 BOM in your editor, or use `$content | Set-Content -Path file.ps1 -Encoding UTF8` in PowerShell (PS 5.1's `UTF8` includes the BOM).
 
+## Language
+- Always respond, write code, write comments, write commit messages, and write documentation in **English**, even when the user writes in Danish or another language. The repository is English-only.
+
 ## Development workflow
 1. All use cases are atomic and can be implemented independently.
 2. Use `claude/posh-acme-tui-specs-9Sbhg` as the development branch.
-3. Commit frequently with descriptive commit messages in Danish or English.
-4. Test TUI input/output manually in a PowerShell 5.1 session before pushing.
-5. All new `.ps1`/`.psm1`/`.psd1` files must have a UTF-8 BOM (see **File encoding** above).
+3. **Always run the test suite (`Invoke-Pester ./tests`) before committing.** If tests fail, fix them before committing — never commit with failing tests.
+4. Commit frequently with descriptive commit messages in English.
+5. Test TUI input/output manually in a PowerShell 5.1 session before pushing.
+6. All new `.ps1`/`.psm1`/`.psd1` files must have a UTF-8 BOM (see **File encoding** above).
