@@ -46,7 +46,11 @@ function Wait-AnyKey {
 }
 
 function Confirm-YesNo {
-    param([Parameter(Mandatory)][string] $Prompt)
+    param(
+        [Parameter(Mandatory)][string] $Prompt,
+        [bool] $Default = $true
+    )
     $response = Read-Host $Prompt
+    if ($response -eq '') { return $Default }
     return ($response -match '^[Yy]')
 }
