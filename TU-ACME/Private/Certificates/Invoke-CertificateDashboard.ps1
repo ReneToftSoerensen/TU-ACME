@@ -13,8 +13,7 @@
             Write-Host '  No certificates found.' -ForegroundColor Yellow
             Write-Host '  Use "Order new certificate" to get started.' -ForegroundColor DarkGray
             Write-Host ''
-            Write-Host '  Press any key...' -ForegroundColor DarkGray
-            Invoke-ConsoleWaitKey
+            Wait-AnyKey
             return
         }
 
@@ -85,37 +84,19 @@ function _Show-CertDetail {
 
     while ($true) {
         $key = Invoke-ConsoleReadKey
-        switch ($key.Key) {
-            ([ConsoleKey]::Escape) { return }
-            default {
-                switch ($key.KeyChar) {
-                    'e' { Invoke-ExportMenu -Cert $Cert; return }
-                    'E' { Invoke-ExportMenu -Cert $Cert; return }
-                    'r' {
-                        Write-Host '  Renewal starting...' -ForegroundColor Cyan
-                        try {
-                            Submit-Renewal -MainDomain $Cert.MainDomain -Force | Out-Null
-                            Write-Host '  Renewal completed.' -ForegroundColor Green
-                        } catch {
-                            Write-Host "  Error: $_" -ForegroundColor Red
-                        }
-                        Write-Host '  Press any key...' -ForegroundColor DarkGray
-                        Invoke-ConsoleWaitKey
-                        return
-                    }
-                    'R' {
-                        Write-Host '  Renewal starting...' -ForegroundColor Cyan
-                        try {
-                            Submit-Renewal -MainDomain $Cert.MainDomain -Force | Out-Null
-                            Write-Host '  Renewal completed.' -ForegroundColor Green
-                        } catch {
-                            Write-Host "  Error: $_" -ForegroundColor Red
-                        }
-                        Write-Host '  Press any key...' -ForegroundColor DarkGray
-                        Invoke-ConsoleWaitKey
-                        return
-                    }
+        if ($key.Key -eq [ConsoleKey]::Escape) { return }
+        switch -Regex ($key.KeyChar.ToString()) {
+            '^[Ee]$' { Invoke-ExportMenu -Cert $Cert; return }
+            '^[Rr]$' {
+                Write-Host '  Renewal starting...' -ForegroundColor Cyan
+                try {
+                    Submit-Renewal -MainDomain $Cert.MainDomain -Force | Out-Null
+                    Write-Host '  Renewal completed.' -ForegroundColor Green
+                } catch {
+                    Write-Host "  Error: $_" -ForegroundColor Red
                 }
+                Wait-AnyKey
+                return
             }
         }
     }

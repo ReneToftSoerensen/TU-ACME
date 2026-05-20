@@ -1,4 +1,4 @@
-﻿function Invoke-LogViewer {
+function Invoke-LogViewer {
     # Find Posh-ACME log files
     $logDir   = Join-Path $env:LOCALAPPDATA 'Posh-ACME'
     $logFiles = @(Get-ChildItem -Path $logDir -Filter '*.log' -ErrorAction SilentlyContinue)
@@ -13,8 +13,7 @@
         Write-Host '  No log files found.' -ForegroundColor Yellow
         Write-Host '  Searched in: ' -NoNewline; Write-Host $logDir -ForegroundColor DarkGray
         Write-Host ''
-        Write-Host '  Press any key...' -ForegroundColor DarkGray
-        Invoke-ConsoleWaitKey
+        Wait-AnyKey
         return
     }
 
@@ -115,8 +114,7 @@ function _Export-Log {
     if ($dest -eq '') { $dest = $default }
 
     if ((Test-Path $dest)) {
-        $overwrite = Read-Host "  '$dest' exists. Overwrite? (Y/N)"
-        if ($overwrite -notmatch '^[Yy]') { return }
+        if (-not (Confirm-YesNo "  '$dest' exists. Overwrite? (Y/N)")) { return }
     }
 
     try {

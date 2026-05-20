@@ -8,9 +8,9 @@
     $mainDomain  = ''
 
     while ($mainDomain -eq '') {
-        $input = Read-Host '  Primary domain (e.g. example.com)'
-        if ($input -match $domainRegex) {
-            $mainDomain = $input.Trim().ToLower()
+        $domainInput = Read-Host '  Primary domain (e.g. example.com)'
+        if ($domainInput -match $domainRegex) {
+            $mainDomain = $domainInput.Trim().ToLower()
         } else {
             Write-Host '  Invalid domain name. Please try again.' -ForegroundColor Red
         }
@@ -64,8 +64,7 @@
     Write-Host "  Persistent DNS:  $persistTxt" -ForegroundColor $(if ($dnsConfig.PersistentRecords) { 'Yellow' } else { 'White' })
     Write-Host ''
 
-    $confirm = Read-Host '  Confirm order? (Y/N)'
-    if ($confirm -notmatch '^[Yy]') { return }
+    if (-not (Confirm-YesNo '  Confirm order? (Y/N)')) { return }
 
     # UC-2.2: Order certificate with DNS-01 step
     $result = $null
@@ -101,8 +100,7 @@
             Write-Host '           Verify that the TXT record has been created at your DNS provider.' -ForegroundColor Yellow
         }
         Write-Host ''
-        Write-Host '  Press any key...' -ForegroundColor DarkGray
-        Invoke-ConsoleWaitKey
+        Wait-AnyKey
         return
     }
 
@@ -122,8 +120,7 @@
     }
 
     Write-Host ''
-    Write-Host '  Press any key...' -ForegroundColor DarkGray
-    Invoke-ConsoleWaitKey
+    Wait-AnyKey
 }
 
 function _Configure-DNS01Challenge {
@@ -194,8 +191,7 @@ function _Configure-DNS01Challenge {
 
     # Save as new defaults
     Write-Host ''
-    $saveDefaults = Read-Host '  Save as default settings? (Y/N)'
-    if ($saveDefaults -match '^[Yy]') {
+    if (Confirm-YesNo '  Save as default settings? (Y/N)') {
         $config.DNS = [PSCustomObject]@{
             DefaultDnsSleep          = $dnsSleep
             DefaultValidationTimeout = $validationTimeout
@@ -265,9 +261,9 @@ function _Collect-PluginArgs {
 function _Collect-AcmeDnsArgs {
     param([string[]] $Domains)
 
-    # Check whether an account is already stored for the primary domain
-    $primaryDomain  = $Domains[0] -replace '^\*\.', ''
-    $existingPath   = Get-AcmeDnsAccountPath -Domain $primaryDomain
+    $primaryDomain = $Domains[0] -replace '^\*\.', ''
+    $existingPath  = Get-AcmeDnsAccountPath -Domain $primaryDomain
+    $config        = Get-TUACMEConfig
 
     if ($existingPath) {
         Invoke-ConsoleClear
@@ -280,10 +276,7 @@ function _Collect-AcmeDnsArgs {
         } catch {}
         Write-Host ''
 
-        $reuse = Read-Host '  Reuse existing account? (Y/N)'
-        if ($reuse -match '^[Yy]') {
-            # Retrieve server URL from config
-            $config = Get-TUACMEConfig
+        if (Confirm-YesNo '  Reuse existing account? (Y/N)') {
             $server = if ($config.DNS -and $config.DNS.AcmeDnsServer) {
                 $config.DNS.AcmeDnsServer
             } else {
@@ -296,12 +289,9 @@ function _Collect-AcmeDnsArgs {
         }
     }
 
-    # Guided setup (UC-3.5)
     $result = Invoke-AcmeDnsSetup -Domains $Domains
     if ($result -eq $null) { return $null }
 
-    # Save the server URL in config for reuse during renewal
-    $config = Get-TUACMEConfig
     if (-not $config.DNS) {
         $config.DNS = [PSCustomObject]@{
             DefaultDnsSleep          = 120

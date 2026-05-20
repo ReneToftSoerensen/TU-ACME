@@ -1,4 +1,4 @@
-﻿function Invoke-ExportMenu {
+function Invoke-ExportMenu {
     param($Cert = $null)
 
     # If no certificate is passed in, let the user select one from the dashboard
@@ -59,8 +59,7 @@ function _Export-PFX {
 
     if ($p1 -ne $p2) {
         Write-Host '  Passwords do not match. Try again.' -ForegroundColor Red
-        Write-Host '  Press any key...' -ForegroundColor DarkGray
-        Invoke-ConsoleWaitKey
+        Wait-AnyKey
         return
     }
 
@@ -84,8 +83,7 @@ function _Export-PFX {
     }
 
     Write-Host ''
-    Write-Host '  Press any key...' -ForegroundColor DarkGray
-    Invoke-ConsoleWaitKey
+    Wait-AnyKey
 }
 
 function _Export-PEM {
@@ -102,12 +100,8 @@ function _Export-PEM {
     if ($dir -eq '') { $dir = $defaultDir }
 
     if (-not (Test-Path $dir)) {
-        $create = Read-Host "  The folder '$dir' does not exist. Create? (Y/N)"
-        if ($create -match '^[Yy]') {
-            New-Item -ItemType Directory -Path $dir -Force | Out-Null
-        } else {
-            return
-        }
+        if (-not (Confirm-YesNo "  The folder '$dir' does not exist. Create? (Y/N)")) { return }
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
 
     try {
@@ -132,8 +126,7 @@ function _Export-PEM {
     }
 
     Write-Host ''
-    Write-Host '  Press any key...' -ForegroundColor DarkGray
-    Invoke-ConsoleWaitKey
+    Wait-AnyKey
 }
 
 function _Import-WinStore {
@@ -168,6 +161,5 @@ function _Import-WinStore {
     }
 
     Write-Host ''
-    Write-Host '  Press any key...' -ForegroundColor DarkGray
-    Invoke-ConsoleWaitKey
+    Wait-AnyKey
 }

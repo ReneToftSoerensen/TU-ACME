@@ -1,4 +1,4 @@
-﻿function Invoke-SMTPConfig {
+function Invoke-SMTPConfig {
     Invoke-ConsoleClear
     Write-Host '  === Configure SMTP failure notification ===' -ForegroundColor Cyan
     Write-Host ''
@@ -47,8 +47,7 @@
     Write-Host '  SMTP configuration saved.' -ForegroundColor Green
 
     Write-Host ''
-    $sendTest = Read-Host '  Send test email now? (Y/N)'
-    if ($sendTest -match '^[Yy]') {
+    if (Confirm-YesNo '  Send test email now? (Y/N)') {
         _Send-TestMail
     }
 }
@@ -78,6 +77,5 @@ Version:     0.0.2
     }
 
     Write-Host ''
-    Write-Host '  Press any key...' -ForegroundColor DarkGray
-    Invoke-ConsoleWaitKey
+    Wait-AnyKey
 }

@@ -39,3 +39,14 @@ function Set-ConsoleCursorVisible {
     param([bool] $Visible)
     try { [Console]::CursorVisible = $Visible } catch {}
 }
+
+function Wait-AnyKey {
+    Write-Host '  Press any key...' -ForegroundColor DarkGray
+    Invoke-ConsoleWaitKey
+}
+
+function Confirm-YesNo {
+    param([Parameter(Mandatory)][string] $Prompt)
+    $response = Read-Host $Prompt
+    return ($response -match '^[Yy]')
+}

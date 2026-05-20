@@ -1,4 +1,4 @@
-﻿function Invoke-AccountMenu {
+function Invoke-AccountMenu {
     param([switch] $StagingToggle)
 
     $stagingUrl    = 'https://acme-staging-v02.api.letsencrypt.org/directory'
@@ -89,8 +89,7 @@ function _New-ACMEAccount {
     }
 
     Write-Host ''
-    Write-Host '  Press any key...' -ForegroundColor DarkGray
-    Invoke-ConsoleWaitKey
+    Wait-AnyKey
 }
 
 function _Set-ActiveAccount {
@@ -134,6 +133,5 @@ function _Toggle-StagingAccount {
     }
 
     Write-Host ''
-    Write-Host '  Press any key...' -ForegroundColor DarkGray
-    Invoke-ConsoleWaitKey
+    Wait-AnyKey
 }

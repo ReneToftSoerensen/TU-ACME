@@ -1,10 +1,9 @@
-﻿function Invoke-IISMenu {
+function Invoke-IISMenu {
     if (-not $script:OnWindows) {
         Write-Host ''
         Write-Host '  IIS Integration is only available on Windows.' -ForegroundColor Yellow
         Write-Host ''
-        Write-Host '  Press any key...' -ForegroundColor DarkGray
-        Invoke-ConsoleWaitKey
+        Wait-AnyKey
         return
     }
 
@@ -22,8 +21,7 @@
         Write-Host '  [ERROR] The WebAdministration module is not available.' -ForegroundColor Red
         Write-Host '  IIS may not be installed on this system.' -ForegroundColor Yellow
         Write-Host ''
-        Write-Host '  Press any key...' -ForegroundColor DarkGray
-        Invoke-ConsoleWaitKey
+        Wait-AnyKey
         return
     }
 
@@ -56,8 +54,7 @@ function _Show-IISBindings {
     if ($bindings.Count -eq 0) {
         Write-Host '  No HTTPS bindings found.' -ForegroundColor Yellow
         Write-Host ''
-        Write-Host '  Press any key...' -ForegroundColor DarkGray
-        Invoke-ConsoleWaitKey
+        Wait-AnyKey
         return
     }
 
@@ -92,8 +89,7 @@ function _Show-IISBindings {
         -ColorRule $colorRule
 
     Write-Host ''
-    Write-Host '  Press any key...' -ForegroundColor DarkGray
-    Invoke-ConsoleWaitKey
+    Wait-AnyKey
 }
 
 function _Bind-CertToIIS {
@@ -188,8 +184,7 @@ function _Bind-CertToIIS {
     }
 
     Write-Host ''
-    Write-Host '  Press any key...' -ForegroundColor DarkGray
-    Invoke-ConsoleWaitKey
+    Wait-AnyKey
 }
 
 function _Register-PostRenewalPlugin {
@@ -203,8 +198,7 @@ function _Register-PostRenewalPlugin {
         Write-Host "  Script file not found: $scriptPath" -ForegroundColor Red
         Write-Host '  Place Posh-ACME-IIS-Plugin.ps1 in TU-ACME\Scripts\ and try again.' -ForegroundColor Yellow
         Write-Host ''
-        Write-Host '  Press any key...' -ForegroundColor DarkGray
-        Invoke-ConsoleWaitKey
+        Wait-AnyKey
         return
     }
 
@@ -216,8 +210,7 @@ function _Register-PostRenewalPlugin {
 
     Write-Host "  Script: $scriptPath"
     Write-Host ''
-    $confirm = Read-Host '  Register this script as post-renewal plugin? (Y/N)'
-    if ($confirm -notmatch '^[Yy]') { return }
+    if (-not (Confirm-YesNo '  Register this script as post-renewal plugin? (Y/N)')) { return }
 
     try {
         Set-PAConfig -PostScript $scriptPath
@@ -228,6 +221,5 @@ function _Register-PostRenewalPlugin {
     }
 
     Write-Host ''
-    Write-Host '  Press any key...' -ForegroundColor DarkGray
-    Invoke-ConsoleWaitKey
+    Wait-AnyKey
 }

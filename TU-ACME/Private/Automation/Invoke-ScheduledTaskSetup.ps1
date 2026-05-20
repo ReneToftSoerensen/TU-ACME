@@ -1,4 +1,4 @@
-﻿function Invoke-ScheduledTaskSetup {
+function Invoke-ScheduledTaskSetup {
     if (-not $script:TUACMEIsAdmin) {
         Show-StatusBar -AdminWarning 'Scheduled Tasks requires administrator privileges'
         Start-Sleep -Seconds 2
@@ -13,8 +13,7 @@
         Write-Host '  Example crontab line (daily at 03:00):' -ForegroundColor DarkGray
         Write-Host '  0 3 * * * pwsh -NonInteractive -File "/pfx/Invoke-RenewalBackground.ps1"' -ForegroundColor DarkGray
         Write-Host ''
-        Write-Host '  Press any key...' -ForegroundColor DarkGray
-        Invoke-ConsoleWaitKey
+        Wait-AnyKey
         return
     }
 
@@ -42,8 +41,7 @@
     # Check if task already exists
     $existing = Get-ScheduledTask -TaskName $taskCfg.TaskName -ErrorAction SilentlyContinue
     if ($existing -ne $null) {
-        $overwrite = Read-Host "  Task '$($taskCfg.TaskName)' already exists. Overwrite? (Y/N)"
-        if ($overwrite -notmatch '^[Yy]') { return }
+        if (-not (Confirm-YesNo "  Task '$($taskCfg.TaskName)' already exists. Overwrite? (Y/N)")) { return }
         Unregister-ScheduledTask -TaskName $taskCfg.TaskName -Confirm:$false
     }
 
@@ -89,6 +87,5 @@
     }
 
     Write-Host ''
-    Write-Host '  Press any key...' -ForegroundColor DarkGray
-    Invoke-ConsoleWaitKey
+    Wait-AnyKey
 }

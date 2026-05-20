@@ -1,4 +1,4 @@
-﻿function Invoke-AcmeDnsSetup {
+function Invoke-AcmeDnsSetup {
     <#
     .SYNOPSIS
         Guided setup for the ACME-DNS plugin (UC-3.5).
@@ -70,8 +70,7 @@ function _Get-AcmeDnsServer {
             }
             Write-Host ' ERROR' -ForegroundColor Red
             Write-Host "  Could not connect: $_" -ForegroundColor Red
-            $retry = Read-Host '  Try again? (Y/N)'
-            if ($retry -notmatch '^[Yy]') { return $null }
+            if (-not (Confirm-YesNo '  Try again? (Y/N)')) { return $null }
         }
     }
 }
@@ -80,9 +79,7 @@ function _Get-AcmeDnsAccount {
     param([string] $Server, [string[]] $Domains)
 
     Write-Host ''
-    $existing = Read-Host '  Do you already have an ACME-DNS account for this domain? (Y/N)'
-
-    if ($existing -match '^[Yy]') {
+    if (Confirm-YesNo '  Do you already have an ACME-DNS account for this domain? (Y/N)') {
         return _Load-ExistingAccount
     }
 
@@ -128,8 +125,7 @@ function _Register-NewAccount {
         Write-Host "  [ERROR] Registration failed: $_" -ForegroundColor Red
         Write-Host '  Verify that the server accepts new registrations.' -ForegroundColor Yellow
         Write-Host ''
-        Write-Host '  Press any key...' -ForegroundColor DarkGray
-        Invoke-ConsoleWaitKey
+        Wait-AnyKey
         return $null
     }
 }
@@ -205,9 +201,7 @@ function _Save-AcmeDnsAccount {
     param($AccountData, [string[]] $Domains)
 
     $accountDir = Join-Path $env:ProgramData 'TU-ACME\acmedns-accounts'
-    if (-not (Test-Path $accountDir)) {
-        New-Item -ItemType Directory -Path $accountDir -Force | Out-Null
-    }
+    New-Item -ItemType Directory -Path $accountDir -Force | Out-Null
 
     # Use the primary domain as the file name (sanitized)
     $primaryDomain  = ($Domains[0] -replace '^\*\.', '') -replace '[^a-zA-Z0-9\-]', '_'

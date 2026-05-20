@@ -11,6 +11,7 @@
     # Width caps at 79 so wide terminals do not stretch lines toward the right,
     # and the cursor is always placed with X = 0.
     $w           = [Math]::Min((Get-ConsoleWidth) - 1, 79)
+    $border      = '=' * $w
     $index       = $InitialIndex
     $filter      = ''
     $searching   = $false
@@ -23,7 +24,6 @@
         Set-ConsoleCursorPos -X 0 -Y 0
         Set-ConsoleCursorVisible -Visible $false
 
-        $border = '=' * $w
         Write-Host "  $Title".PadRight($w) -ForegroundColor Cyan -NoNewline
         Set-ConsoleCursorPos -X 0 -Y 1
         Write-Host "  $border" -ForegroundColor DarkCyan -NoNewline
