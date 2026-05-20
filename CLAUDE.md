@@ -111,6 +111,32 @@ All `.ps1`, `.psm1`, and `.psd1` files in the repository **must** be saved as **
 4. Commit frequently with descriptive commit messages in English.
 5. Test TUI input/output manually in a PowerShell 5.1 session before pushing.
 6. All new `.ps1`/`.psm1`/`.psd1` files must have a UTF-8 BOM (see **File encoding** above).
+7. **Always bump the version** before pushing user-visible changes. See **Versioning** below for the rules and the exact files to update.
+
+## Versioning
+The project follows semver. Pre-1.0 releases use `0.MINOR.PATCH`:
+- **PATCH** (`0.1.0` → `0.1.1`) — bug fixes, internal refactors, doc-only edits, CI changes.
+- **MINOR** (`0.1.0` → `0.2.0`) — new user-visible features, behavior changes, new menu options, new prompts.
+- **MAJOR** (`0.x.y` → `1.0.0`) — first production-ready release; bump only after the full SMOKE-TEST checklist passes on Windows.
+
+When bumping the version, update **all** of the following references in a single commit:
+
+| File | Line / context |
+|---|---|
+| `TU-ACME/TU-ACME.psd1` | `ModuleVersion = '<new>'` (top of file) |
+| `TU-ACME/Private/Helpers/Get-TUACMEConfig.ps1` | `Version = '<new>'` inside the `$defaults` hashtable |
+| `TU-ACME/Public/Start-TUACME.ps1` | `Show-Menu -Title 'TU-ACME v<new> — Certificate Management'` |
+| `TU-ACME/Private/Automation/Invoke-SMTPConfig.ps1` | `Version:     <new>` in the test-mail body heredoc |
+| `README.md` | `TU-ACME v<new>` in the usage example |
+| `INSTALL.md` | `Script      <new>    TU-ACME   Start-TUACME` in the verify output |
+| `SMOKE-TEST.md` | `TU-ACME v<new> - Certificate Management` in section 1 |
+
+Verify no stragglers with:
+```powershell
+git grep '<old-version>'   # must return only changelog/history references
+```
+
+After bumping, `Remove-Module TU-ACME -Force` and re-import to pick up the new manifest in an existing PowerShell session — `Get-Module -ListAvailable` caches.
 
 ## Continuous Integration (GitHub Actions)
 The project uses `.github/workflows/test.yml` to run automated tests on all branches and pull requests.

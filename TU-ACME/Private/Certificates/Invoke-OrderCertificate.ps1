@@ -4,11 +4,11 @@
     Write-Host ''
 
     # UC-2.1: Domain validation
-    $domainRegex = '^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
+    $domainRegex = '^(?:\*\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
     $mainDomain  = ''
 
     while ($mainDomain -eq '') {
-        $domainInput = Read-Host '  Primary domain (e.g. example.com)'
+        $domainInput = Read-Host '  Primary domain (e.g. example.com or *.example.com)'
         if ($domainInput -match $domainRegex) {
             $mainDomain = $domainInput.Trim().ToLower()
         } else {
@@ -31,22 +31,47 @@
         }
     }
 
-    # UC-3.1: Select DNS plugin
-    $plugin = _Select-DNSPlugin
-    if ($plugin -eq $null) { return }
+    $allDomains  = @($mainDomain) + $sans
+    $hasWildcard = ($allDomains | Where-Object { $_ -match '^\*\.' }).Count -gt 0
 
-    # UC-3.2 + 3.3 / UC-3.5: Collect plugin parameters
-    $allDomains = @($mainDomain) + $sans
-    if ($plugin -eq 'AcmeDns') {
-        $pluginArgs = _Collect-AcmeDnsArgs -Domains $allDomains
+    # Challenge type selection: HTTP-01 default, DNS-01 required for wildcards
+    $http01Label = if ($hasWildcard) {
+        '1. HTTP-01  (not available - wildcards require DNS-01)'
     } else {
-        $pluginArgs = _Collect-PluginArgs -Plugin $plugin
+        '1. HTTP-01  (default, web server serves a challenge file)'
     }
-    if ($pluginArgs -eq $null) { return }
+    $challengeOptions = @(
+        $http01Label,
+        '2. DNS-01   (DNS TXT record, required for wildcards)'
+    )
+    $disabled = @()
+    if ($hasWildcard) { $disabled += 0 }
 
-    # UC-3.4: DNS-01 challenge configuration
-    $dnsConfig = _Configure-DNS01Challenge -Plugin $plugin
-    if ($dnsConfig -eq $null) { return }
+    $challengeSel = Show-Menu -Title 'Select challenge type' `
+        -Options $challengeOptions -DisabledIndices $disabled
+    if ($challengeSel -lt 0) { return }
+
+    $challengeType = if ($challengeSel -eq 0) { 'HTTP-01' } else { 'DNS-01' }
+
+    if ($challengeType -eq 'HTTP-01') {
+        $plugin     = 'WebRoot'
+        $pluginArgs = _Collect-HTTP01Args
+        if ($pluginArgs -eq $null) { return }
+        $dnsConfig = $null
+    } else {
+        $plugin = _Select-DNSPlugin
+        if ($plugin -eq $null) { return }
+
+        if ($plugin -eq 'AcmeDns') {
+            $pluginArgs = _Collect-AcmeDnsArgs -Domains $allDomains
+        } else {
+            $pluginArgs = _Collect-PluginArgs -Plugin $plugin
+        }
+        if ($pluginArgs -eq $null) { return }
+
+        $dnsConfig = _Configure-DNS01Challenge -Plugin $plugin
+        if ($dnsConfig -eq $null) { return }
+    }
 
     # Summary view
     Invoke-ConsoleClear
@@ -56,32 +81,49 @@
     if ($sans.Count -gt 0) {
         Write-Host "  SAN:             $($sans -join ', ')" -ForegroundColor White
     }
+    Write-Host "  Challenge:       $challengeType" -ForegroundColor White
     Write-Host "  Plugin:          $plugin" -ForegroundColor White
-    Write-Host "  Challenge:       DNS-01" -ForegroundColor White
-    Write-Host "  DNS sleep:       $($dnsConfig.DnsSleep) sec" -ForegroundColor White
-    Write-Host "  Timeout:         $($dnsConfig.ValidationTimeout) sec" -ForegroundColor White
-    $persistTxt = if ($dnsConfig.PersistentRecords) { 'Yes (records will not be deleted)' } else { 'No' }
-    Write-Host "  Persistent DNS:  $persistTxt" -ForegroundColor $(if ($dnsConfig.PersistentRecords) { 'Yellow' } else { 'White' })
+    if ($challengeType -eq 'HTTP-01') {
+        Write-Host "  WebRoot:         $($pluginArgs.WRPath)" -ForegroundColor White
+    } else {
+        Write-Host "  DNS sleep:       $($dnsConfig.DnsSleep) sec" -ForegroundColor White
+        Write-Host "  Timeout:         $($dnsConfig.ValidationTimeout) sec" -ForegroundColor White
+        $persistTxt = if ($dnsConfig.PersistentRecords) { 'Yes (records will not be deleted)' } else { 'No' }
+        Write-Host "  Persistent DNS:  $persistTxt" -ForegroundColor $(if ($dnsConfig.PersistentRecords) { 'Yellow' } else { 'White' })
+    }
     Write-Host ''
 
     if (-not (Confirm-YesNo '  Confirm order? (y/N)' -Default $false)) { return }
 
-    # UC-2.2: Order certificate with DNS-01 step
+    # UC-2.2: Order certificate
     $result = $null
 
     Write-Host ''
-    Write-Host '  [ > ] Creating DNS TXT record...' -ForegroundColor Cyan
+    if ($challengeType -eq 'HTTP-01') {
+        Write-Host '  [ > ] Writing challenge file and requesting validation...' -ForegroundColor Cyan
+    } else {
+        Write-Host '  [ > ] Creating DNS TXT record...' -ForegroundColor Cyan
+    }
 
     try {
-        $result = Show-Spinner -Message "Waiting for DNS propagation ($($dnsConfig.DnsSleep) sec)..." -ScriptBlock {
-            $certParams = @{
-                Domain            = $allDomains
-                Plugin            = $plugin
-                PluginArgs        = $pluginArgs
-                DnsSleep          = $dnsConfig.DnsSleep
-                ValidationTimeout = $dnsConfig.ValidationTimeout
-                AcceptTOS         = $true
-            }
+        $certParams = @{
+            Domain     = $allDomains
+            Plugin     = $plugin
+            PluginArgs = $pluginArgs
+            AcceptTOS  = $true
+        }
+        if ($challengeType -eq 'DNS-01') {
+            $certParams['DnsSleep']          = $dnsConfig.DnsSleep
+            $certParams['ValidationTimeout'] = $dnsConfig.ValidationTimeout
+        }
+
+        $spinnerMsg = if ($challengeType -eq 'HTTP-01') {
+            'Waiting for HTTP-01 validation...'
+        } else {
+            "Waiting for DNS propagation ($($dnsConfig.DnsSleep) sec)..."
+        }
+
+        $result = Show-Spinner -Message $spinnerMsg -ScriptBlock {
             New-PACertificate @certParams
         }
     } catch {
@@ -94,7 +136,12 @@
             Write-Host ''
             Write-Host '  Tip: You have hit the rate limit. Switch to Staging with [F3].' -ForegroundColor Yellow
         }
-        if ($errMsg -match 'DNS|TXT|propagat|timeout') {
+        if ($challengeType -eq 'HTTP-01' -and $errMsg -match 'unauthorized|connection|fetching|404|403') {
+            Write-Host ''
+            Write-Host '  HTTP-01 tip: Verify that http://<domain>/.well-known/acme-challenge/ is reachable.' -ForegroundColor Yellow
+            Write-Host '               Confirm the WebRoot path is correct and the web server serves static files there.' -ForegroundColor Yellow
+        }
+        if ($challengeType -eq 'DNS-01' -and $errMsg -match 'DNS|TXT|propagat|timeout') {
             Write-Host ''
             Write-Host '  DNS tip: Increase DnsSleep to 300+ seconds and try again.' -ForegroundColor Yellow
             Write-Host '           Verify that the TXT record has been created at your DNS provider.' -ForegroundColor Yellow
@@ -113,7 +160,7 @@
         Write-Host "  Thumbprint: $($result.Thumbprint)" -ForegroundColor White
     }
 
-    if ($dnsConfig.PersistentRecords) {
+    if ($challengeType -eq 'DNS-01' -and $dnsConfig.PersistentRecords) {
         Write-Host ''
         Write-Host '  Note: DNS TXT records have not been deleted (persistent mode).' -ForegroundColor Yellow
         Write-Host '        Remove them manually at your DNS provider when they are no longer needed.' -ForegroundColor Yellow
@@ -121,6 +168,33 @@
 
     Write-Host ''
     Wait-AnyKey
+}
+
+function _Collect-HTTP01Args {
+    Invoke-ConsoleClear
+    Write-Host '  === HTTP-01 Challenge ===' -ForegroundColor Cyan
+    Write-Host ''
+    Write-Host '  The ACME server requests a file at:' -ForegroundColor Gray
+    Write-Host '    http://<your-domain>/.well-known/acme-challenge/<token>' -ForegroundColor DarkGray
+    Write-Host ''
+    Write-Host '  Posh-ACME writes the challenge file under:' -ForegroundColor Gray
+    Write-Host '    <WebRoot>/.well-known/acme-challenge/' -ForegroundColor DarkGray
+    Write-Host ''
+    Write-Host '  Common WebRoot paths:' -ForegroundColor DarkGray
+    Write-Host '    IIS default site:  C:\inetpub\wwwroot' -ForegroundColor DarkGray
+    Write-Host '    nginx default:     /var/www/html' -ForegroundColor DarkGray
+    Write-Host '    Apache default:    /var/www/html' -ForegroundColor DarkGray
+    Write-Host ''
+    Write-Host '  Requirements:' -ForegroundColor Gray
+    Write-Host '   - The web server must serve files from this directory' -ForegroundColor DarkGray
+    Write-Host '   - Port 80 must be reachable from the ACME server' -ForegroundColor DarkGray
+    Write-Host '   - The directory (and .well-known/acme-challenge) must be writable' -ForegroundColor DarkGray
+    Write-Host ''
+
+    $path = Read-Host '  WebRoot path (blank = cancel)'
+    if ($path -eq '') { return $null }
+
+    return @{ WRPath = $path.Trim() }
 }
 
 function _Configure-DNS01Challenge {

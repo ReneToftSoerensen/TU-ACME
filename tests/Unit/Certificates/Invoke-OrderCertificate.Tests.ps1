@@ -102,5 +102,35 @@ Describe 'Invoke-OrderCertificate' -Tag Unit, Certificates {
                 $r.ContainsKey('ACMEDnsAccountJson') | Should -BeTrue
             }
         }
+
+        Context '_Collect-HTTP01Args — user provides webroot path' {
+            BeforeEach {
+                Mock -CommandName 'Read-Host' -MockWith { 'C:\inetpub\wwwroot' }
+            }
+            It 'returns hashtable with WRPath key' {
+                $r = _Collect-HTTP01Args
+                $r | Should -Not -BeNullOrEmpty
+                $r.ContainsKey('WRPath') | Should -BeTrue
+            }
+            It 'WRPath equals the entered path' {
+                $r = _Collect-HTTP01Args
+                $r.WRPath | Should -Be 'C:\inetpub\wwwroot'
+            }
+            It 'trims surrounding whitespace from the path' {
+                Mock -CommandName 'Read-Host' -MockWith { '   /var/www/html   ' }
+                $r = _Collect-HTTP01Args
+                $r.WRPath | Should -Be '/var/www/html'
+            }
+        }
+
+        Context '_Collect-HTTP01Args — user enters blank to cancel' {
+            BeforeEach {
+                Mock -CommandName 'Read-Host' -MockWith { '' }
+            }
+            It 'returns null' {
+                $r = _Collect-HTTP01Args
+                $r | Should -BeNullOrEmpty
+            }
+        }
     }
 }
