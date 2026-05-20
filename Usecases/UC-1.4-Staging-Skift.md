@@ -1,30 +1,30 @@
-# UC-1.4: Hurtig skift til Staging/Test-miljø
+# UC-1.4: Quick switch to the Staging/Test environment
 
-**Kategori:** Kontostyring  
-**Prioritet:** Høj
+**Category:** Account management  
+**Priority:** High
 
-## Mål
-At gøre det nemt at skifte til Let's Encrypt Staging-miljøet under test for at undgå rate-limits.
+## Goal
+Make it easy to switch to the Let's Encrypt Staging environment during testing in order to avoid rate limits.
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- TUI'en er startet og viser statusbar i bunden.
+## Preconditions
+- The TUI is started and shows a status bar at the bottom.
 
-## Hovedforløb
-1. I TUI-bunden vises den aktive konto og server (f.eks. `Aktiv: admin@eks.dk | Let's Encrypt Production`).
-2. Brugeren trykker på genvejstasten **F3** (eller vælger menupunkt "Skift til Staging").
-3. Appen tjekker om en Let's Encrypt Staging-konto allerede eksisterer.
-4. Hvis staging-konto eksisterer: Appen skifter øjeblikkeligt og statusbaren opdateres.
-5. Statusbaren viser nu: `Aktiv: admin@eks.dk | Let's Encrypt STAGING`.
+## Main flow
+1. At the bottom of the TUI, the active account and server are shown (e.g. `Active: admin@example.com | Let's Encrypt Production`).
+2. The user presses the hotkey **F3** (or selects the menu item "Switch to Staging").
+3. The app checks whether a Let's Encrypt Staging account already exists.
+4. If a staging account exists: the app switches immediately and the status bar is updated.
+5. The status bar now shows: `Active: admin@example.com | Let's Encrypt STAGING`.
 
-## Postkonditioner
-- Aktiv ACME-server er Let's Encrypt Staging.
+## Postconditions
+- The active ACME server is Let's Encrypt Staging.
 
-## Alternative forløb
-- **3a:** Ingen staging-konto fundet → TUI guider brugeren til UC-1.2 med Let's Encrypt Staging forudvalgt.
+## Alternative flows
+- **3a:** No staging account found -> the TUI guides the user to UC-1.2 with Let's Encrypt Staging preselected.
 
-## Tekniske noter
+## Technical notes
 - Let's Encrypt Staging URL: `https://acme-staging-v02.api.letsencrypt.org/directory`
-- Staging-certifikater er ikke tillid til af browsere, men er egnede til test.
+- Staging certificates are not trusted by browsers, but they are suitable for testing.

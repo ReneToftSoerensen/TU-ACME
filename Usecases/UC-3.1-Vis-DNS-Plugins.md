@@ -1,23 +1,23 @@
-# UC-3.1: Vis understøttede DNS-plugins i menu
+# UC-3.1: Show supported DNS plugins in menu
 
-**Kategori:** DNS-Plugins og Credentials  
-**Prioritet:** Høj
+**Category:** DNS plugins and credentials  
+**Priority:** High
 
-## Mål
-Give brugeren en interaktiv liste over de mange DNS-plugins, Posh-ACME understøtter.
+## Goal
+Provide the user with an interactive list of the many DNS plugins that Posh-ACME supports.
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- Posh-ACME er installeret med plugins tilgængelige.
+## Preconditions
+- Posh-ACME is installed with plugins available.
 
-## Hovedforløb
-1. Brugeren er i gang med certifikatbestilling og skal vælge valideringsmetode.
-2. TUI'en indlæser listen over tilgængelige plugins fra Posh-ACMEs plugin-mappe.
-3. Plugins præsenteres i en rullbar, søgbar liste, f.eks.:
+## Main flow
+1. The user is in the middle of certificate ordering and needs to select a validation method.
+2. The TUI loads the list of available plugins from Posh-ACME's plugin folder.
+3. Plugins are presented in a scrollable, searchable list, e.g.:
    ```
-   Vælg DNS-plugin (brug piletaster, søg med /):
+   Select DNS plugin (use arrow keys, search with /):
    > Azure
      Cloudflare
      Route53
@@ -25,15 +25,15 @@ Give brugeren en interaktiv liste over de mange DNS-plugins, Posh-ACME understø
      Manual
      ...
    ```
-4. Brugeren navigerer med piletasterne og bekræfter valget med Enter.
+4. The user navigates with the arrow keys and confirms the selection with Enter.
 
-## Postkonditioner
-- Et DNS-plugin er valgt og processen fortsætter til UC-3.2.
+## Postconditions
+- A DNS plugin has been selected and the process continues to UC-3.2.
 
-## Alternative forløb
-- **2a:** Plugin-mappen ikke fundet → Fejlbesked, kun "Manual" tilbydes som fallback.
-- **4a:** Brugeren vælger "Manual" → TUI guider til manuel DNS-validering med kopiérbar TXT-record.
+## Alternative flows
+- **2a:** Plugin folder not found -> error message, only "Manual" is offered as a fallback.
+- **4a:** The user selects "Manual" -> the TUI guides them through manual DNS validation with a copyable TXT record.
 
-## Tekniske noter
-- Plugin-liste hentes via: `Get-PAPlugin` eller ved at liste `.ps1`-filer i Posh-ACMEs plugin-mappe.
-- Søgning i listen filtrerer øjeblikkeligt ved tastatur-input efter `/`.
+## Technical notes
+- The plugin list is retrieved via: `Get-PAPlugin` or by listing `.ps1` files in Posh-ACME's plugin folder.
+- The search in the list filters instantly on keyboard input after `/`.

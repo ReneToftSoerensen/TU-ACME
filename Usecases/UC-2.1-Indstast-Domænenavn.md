@@ -1,36 +1,36 @@
-# UC-2.1: Indtast domænenavn og alternative navne (SAN)
+# UC-2.1: Enter domain name and alternative names (SAN)
 
-**Kategori:** Certifikatbestilling  
-**Prioritet:** Høj
+**Category:** Certificate ordering  
+**Priority:** High
 
-## Mål
-Opsamle domæneoplysninger til det nye certifikat uden risiko for syntaksfejl.
+## Goal
+Collect the domain information for the new certificate without the risk of syntax errors.
 
-## Aktører
-- Systemadministrator (Admin)
+## Actors
+- System administrator (Admin)
 
-## Prækonditioner
-- En aktiv ACME-konto er konfigureret (UC-1.1 / UC-1.2).
+## Preconditions
+- An active ACME account is configured (UC-1.1 / UC-1.2).
 
-## Hovedforløb
-1. Brugeren vælger "Bestil nyt certifikat" i hovedmenuen.
-2. TUI'en prompter for **Primært domænenavn (Common Name)**:  
-   `Primært domæne: _` (f.eks. `eksempel.dk`)
-3. TUI'en prompter for **Alternative navne (SAN)** (valgfrit):  
-   `Alternative navne (kommasepareret, tryk Enter for at springe over): _`  
-   (f.eks. `www.eksempel.dk, mail.eksempel.dk`)
-4. Systemet validerer input:
-   - Primært domæne må ikke være tomt.
-   - Alle domæner valideres mod RFC-kompatibel domæne-syntaks (regex).
-   - Eventuelle whitespace-fejl i SAN-listen trimmes automatisk.
-5. Ved gyldig input vises en opsummeringsvisning med alle domæner inden bekræftelse.
+## Main flow
+1. The user selects "Order new certificate" from the main menu.
+2. The TUI prompts for the **Primary domain name (Common Name)**:  
+   `Primary domain: _` (e.g. `example.com`)
+3. The TUI prompts for **Alternative names (SAN)** (optional):  
+   `Alternative names (comma-separated, press Enter to skip): _`  
+   (e.g. `www.example.com, mail.example.com`)
+4. The system validates the input:
+   - The primary domain must not be empty.
+   - All domains are validated against RFC-compliant domain syntax (regex).
+   - Any whitespace errors in the SAN list are trimmed automatically.
+5. On valid input, a summary view is shown with all domains before confirmation.
 
-## Postkonditioner
-- Domænenavne er valideret og klar til certifikatbestilling (UC-2.2).
+## Postconditions
+- Domain names are validated and ready for certificate ordering (UC-2.2).
 
-## Alternative forløb
-- **4a:** Ugyldigt domæneformat → Rød fejlbesked og brugeren bedes rette inputtet.
-- **4b:** Wildcard-domæne (f.eks. `*.eksempel.dk`) → Accepteres, men DNS-validering kræves.
+## Alternative flows
+- **4a:** Invalid domain format -> red error message and the user is asked to correct the input.
+- **4b:** Wildcard domain (e.g. `*.example.com`) -> accepted, but DNS validation is required.
 
-## Tekniske noter
-- Domænevalidering regex: `^(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$`
+## Technical notes
+- Domain validation regex: `^(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$`
