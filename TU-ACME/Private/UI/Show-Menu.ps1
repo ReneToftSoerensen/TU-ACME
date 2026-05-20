@@ -163,8 +163,9 @@
                             $sel = $visibleIndices[$digit]
                             if ($DisabledIndices -notcontains $sel) { return $sel }
                         }
-                    } elseif ($key.KeyChar -eq 'q' -or $key.KeyChar -eq 'Q') {
-                        # Q as shortcut for the exit option (last in the list)
+                    } elseif ('q','Q','b','B' -contains [string]$key.KeyChar) {
+                        # Q/B as shortcut for the last option (Exit on the main
+                        # menu, Back on every sub-menu).
                         $sel = $visibleIndices[$visibleOptions.Count - 1]
                         if ($DisabledIndices -notcontains $sel) { return $sel }
                     }
