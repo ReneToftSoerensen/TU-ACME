@@ -111,3 +111,32 @@ All `.ps1`, `.psm1`, and `.psd1` files in the repository **must** be saved as **
 4. Commit frequently with descriptive commit messages in English.
 5. Test TUI input/output manually in a PowerShell 5.1 session before pushing.
 6. All new `.ps1`/`.psm1`/`.psd1` files must have a UTF-8 BOM (see **File encoding** above).
+
+## Continuous Integration (GitHub Actions)
+The project uses `.github/workflows/test.yml` to run automated tests on all branches and pull requests.
+
+### Test Matrix Strategy
+The workflow uses a **matrix strategy** to run test suites in parallel for efficiency:
+- **Unit tests** — Core functionality and mocked dependencies
+- **Integration tests** — Cross-module integration scenarios
+- **Scripts tests** — Standalone script execution
+
+All three test suites run **concurrently** on `windows-latest`, eliminating sequential job dependencies.
+
+### Optimizations
+- **Module Caching:** Dependencies (Pester, Posh-ACME) are cached between runs using `actions/cache@v4` to avoid repeated installations.
+- **Reusable Steps:** Setup steps (checkout, version display, dependency installation, artifact publishing) are unified in a single job definition with matrix-driven tag filtering.
+- **Smart Artifact Naming:** Test results are published with matrix-aware names (`test-results-Unit`, `test-results-Integration`, etc.) for easy identification.
+- **Conditional Coverage:** Coverage reports are only generated for Unit tests (other matrices skip this step).
+
+### Running Tests Locally
+Before pushing, always run the full test suite locally:
+```powershell
+Invoke-Pester ./tests -Configuration (& .\tests\pester.config.ps1)
+```
+Or run a specific test type:
+```powershell
+$cfg = & .\tests\pester.config.ps1
+$cfg.Filter.Tag = @('Unit')
+Invoke-Pester -Configuration $cfg
+```
