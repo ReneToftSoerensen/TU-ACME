@@ -3,12 +3,16 @@
     Write-Host '  === Order new certificate ===' -ForegroundColor Cyan
     Write-Host ''
 
-    # UC-2.1: Domain validation
-    $domainRegex = '^(?:\*\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
+    # UC-2.1: Domain validation. Accepts bare hostnames (e.g. "myserver"
+    # for internal ACME CAs), FQDNs ("example.com", "sub.example.com"),
+    # and wildcards ("*.example.com"). Rejects all-numeric labels via
+    # the alphanumeric-first rule, leading/trailing hyphens, empty
+    # labels, and stray dots.
+    $domainRegex = '^(?:\*\.)?[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$'
     $mainDomain  = ''
 
     while ($mainDomain -eq '') {
-        $domainInput = Read-Host '  Primary domain (e.g. example.com or *.example.com)'
+        $domainInput = Read-Host '  Primary domain (e.g. example.com, *.example.com, or internal hostname)'
         if ($domainInput -match $domainRegex) {
             $mainDomain = $domainInput.Trim().ToLower()
         } else {
