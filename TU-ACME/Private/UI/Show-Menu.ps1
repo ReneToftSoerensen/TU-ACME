@@ -2,8 +2,9 @@
     param(
         [Parameter(Mandatory)] [string]   $Title,
         [Parameter(Mandatory)] [string[]] $Options,
-        [int]    $InitialIndex  = 0,
-        [string] $StatusMessage = '',
+        [int]    $InitialIndex    = 0,
+        [string] $StatusMessage   = '',
+        [int[]]  $DisabledIndices = @(),
         [switch] $AllowSearch
     )
 
@@ -30,11 +31,20 @@
 
         for ($i = 0; $i -lt $visibleOptions.Count; $i++) {
             Set-ConsoleCursorPos -X 0 -Y ($i + 2)
-            $line = ('  ' + $visibleOptions[$i]).PadRight($w)
+            $line       = ('  ' + $visibleOptions[$i]).PadRight($w)
+            $isDisabled = $DisabledIndices -contains $visibleIndices[$i]
             if ($i -eq $index) {
-                Write-Host $line -ForegroundColor Black -BackgroundColor Cyan -NoNewline
+                if ($isDisabled) {
+                    Write-Host $line -ForegroundColor DarkGray -BackgroundColor DarkBlue -NoNewline
+                } else {
+                    Write-Host $line -ForegroundColor Black -BackgroundColor Cyan -NoNewline
+                }
             } else {
-                Write-Host $line -ForegroundColor White -NoNewline
+                if ($isDisabled) {
+                    Write-Host $line -ForegroundColor DarkGray -NoNewline
+                } else {
+                    Write-Host $line -ForegroundColor White -NoNewline
+                }
             }
         }
 
@@ -135,7 +145,8 @@
                     Render-Menu
                 }
                 ([ConsoleKey]::Enter) {
-                    return $visibleIndices[$index]
+                    $sel = $visibleIndices[$index]
+                    if ($DisabledIndices -notcontains $sel) { return $sel }
                 }
                 ([ConsoleKey]::Escape) {
                     return -1
@@ -149,11 +160,13 @@
                         # Hotkey: digit matches the option's leading digit
                         $digit = [int]::Parse($key.KeyChar.ToString()) - 1
                         if ($digit -ge 0 -and $digit -lt $visibleOptions.Count) {
-                            return $visibleIndices[$digit]
+                            $sel = $visibleIndices[$digit]
+                            if ($DisabledIndices -notcontains $sel) { return $sel }
                         }
                     } elseif ($key.KeyChar -eq 'q' -or $key.KeyChar -eq 'Q') {
                         # Q as shortcut for the exit option (last in the list)
-                        return $visibleIndices[$visibleOptions.Count - 1]
+                        $sel = $visibleIndices[$visibleOptions.Count - 1]
+                        if ($DisabledIndices -notcontains $sel) { return $sel }
                     }
                 }
             }

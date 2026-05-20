@@ -35,18 +35,36 @@
         Invoke-ConsoleClear
         Show-StatusBar
 
+        $automationLabel = '4. Automation'
+        $iisLabel        = '6. IIS Integration'
+        $disabled        = @()
+
+        if (-not $script:TUACMEIsAdmin) {
+            $automationLabel = '4. Automation       (Requires admin)'
+            $disabled       += 3
+        }
+
+        if (-not $script:OnWindows) {
+            $iisLabel = '6. IIS Integration  (Windows only)'
+            $disabled += 5
+        } elseif (-not $script:TUACMEIsAdmin) {
+            $iisLabel = '6. IIS Integration  (Requires admin)'
+            $disabled += 5
+        }
+
         $menuOptions = @(
             '1. Account Management',
             '2. Order new certificate',
             '3. Certificate Dashboard',
-            '4. Automation',
+            $automationLabel,
             '5. Export / Import',
-            '6. IIS Integration',
+            $iisLabel,
             '7. Troubleshooting / Logs',
             'Q. Exit'
         )
 
-        $selection = Show-Menu -Title 'TU-ACME v0.0.2 — Certificate Management' -Options $menuOptions
+        $selection = Show-Menu -Title 'TU-ACME v0.0.2 — Certificate Management' `
+            -Options $menuOptions -DisabledIndices $disabled
 
         switch ($selection) {
             -2 {
@@ -60,27 +78,9 @@
             0  { Invoke-AccountMenu }
             1  { Invoke-CertificateMenu -ShowOrder }
             2  { Invoke-CertificateDashboard }
-            3  {
-                if (-not $script:TUACMEIsAdmin) {
-                    Show-StatusBar -AdminWarning 'Automation requires administrator privileges'
-                    Start-Sleep -Seconds 2
-                } else {
-                    Invoke-AutomationMenu
-                }
-            }
+            3  { Invoke-AutomationMenu }
             4  { Invoke-ExportMenu }
-            5  {
-                if (-not $script:OnWindows) {
-                    Write-Host ''
-                    Write-Host '  IIS Integration is only available on Windows.' -ForegroundColor Yellow
-                    Start-Sleep -Seconds 2
-                } elseif (-not $script:TUACMEIsAdmin) {
-                    Show-StatusBar -AdminWarning 'IIS Integration requires administrator privileges'
-                    Start-Sleep -Seconds 2
-                } else {
-                    Invoke-IISMenu
-                }
-            }
+            5  { Invoke-IISMenu }
             6  { Invoke-LogViewer }
             7  { $running = $false }
         }
