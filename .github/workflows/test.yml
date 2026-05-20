@@ -20,12 +20,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup PowerShell Module Cache
+        id: cache
         uses: actions/cache@v4
         with:
-          path: |
-            C:\Users\runneradmin\Documents\PowerShell\Modules\Pester
-            C:\Users\runneradmin\Documents\PowerShell\Modules\Posh-ACME
-          key: ps-modules-${{ runner.os }}-${{ hashFiles('**/psd1') }}
+          path: C:\Users\runneradmin\Documents\WindowsPowerShell\Modules
+          key: ps-modules-${{ runner.os }}-${{ hashFiles('**/*.psd1') }}
           restore-keys: |
             ps-modules-${{ runner.os }}-
 
@@ -34,6 +33,7 @@ jobs:
         run: $PSVersionTable.PSVersion | Out-String
 
       - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         shell: powershell
         run: |
           Install-Module -Name Posh-ACME -Scope CurrentUser -Force -SkipPublisherCheck
@@ -46,21 +46,10 @@ jobs:
       - name: Run ${{ matrix.test-type }} Tests
         shell: powershell
         run: |
+          $tag = '${{ matrix.test-type }}'
           $cfg = & ".\tests\pester.config.ps1"
-          switch ("${{ matrix.test-type }}") {
-            "Unit" {
-              $cfg.Filter.Tag = @('Unit')
-              $cfg.Filter.ExcludeTag = @('LiveExternal', 'Integration')
-            }
-            "Integration" {
-              $cfg.Filter.Tag = @('Integration')
-              $cfg.Filter.ExcludeTag = @('LiveExternal')
-            }
-            "Scripts" {
-              $cfg.Filter.Tag = @('Scripts')
-              $cfg.Filter.ExcludeTag = @('LiveExternal')
-            }
-          }
+          $cfg.Filter.Tag = @($tag)
+          if ($tag -eq 'Unit') { $cfg.Filter.ExcludeTag = @('LiveExternal', 'Integration') }
           $cfg.Run.PassThru = $true
           $result = Invoke-Pester -Configuration $cfg
           if ($result.FailedCount -gt 0) { exit 1 }
@@ -72,8 +61,8 @@ jobs:
           name: test-results-${{ matrix.test-type }}
           path: TestResults/
 
-      - name: Publish Coverage (Unit only)
-        if: always() && matrix.test-type == 'Unit'
+      - name: Publish Coverage
+        if: success() && matrix.test-type == 'Unit'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
