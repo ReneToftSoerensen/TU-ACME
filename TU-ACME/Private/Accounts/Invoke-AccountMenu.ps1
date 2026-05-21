@@ -122,7 +122,21 @@ function _New-ACMEAccount {
     try {
         Set-PAServer $server
         $newAccount = New-PAAccount -AcceptTOS -Contact "mailto:$email"
-        if ($newAccount -and $friendlyName -ne '') {
+        if (-not $newAccount) {
+            Write-Host '  Error: New-PAAccount returned nothing. Verify the ACME server URL and contact email.' -ForegroundColor Red
+            Write-Host ''
+            Wait-AnyKey
+            return
+        }
+
+        # Force the new account to be the active one. Without this, Posh-ACME
+        # may leave the previous server's account selected, which causes
+        # Get-PAAccount -List in the outer menu loop to return an empty set
+        # on the just-switched server — making the new account "invisible"
+        # for Rename / Switch until you reopen the menu.
+        Set-PAAccount -ID $newAccount.id | Out-Null
+
+        if ($friendlyName -ne '') {
             _Set-AccountFriendlyName -Id $newAccount.id -Name $friendlyName.Trim()
         }
         Write-Host "  Account created: $($newAccount.id)" -ForegroundColor Green

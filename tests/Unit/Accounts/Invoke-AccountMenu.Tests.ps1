@@ -103,9 +103,29 @@ Describe 'Invoke-AccountMenu' -Tag Unit, Accounts {
                 _New-ACMEAccount
                 Should -Invoke New-PAAccount -Times 1 -Exactly
             }
+            It 'activates the new account via Set-PAAccount so subsequent Get-PAAccount -List finds it' {
+                _New-ACMEAccount
+                Should -Invoke Set-PAAccount -ParameterFilter { $ID -eq 'new-001' } -Times 1 -Exactly
+            }
             It 'persists the friendly name via Set-TUACMEConfig' {
                 _New-ACMEAccount
                 Should -Invoke Set-TUACMEConfig -Times 1 -Exactly
+            }
+        }
+
+        Context '_New-ACMEAccount — New-PAAccount returns nothing (server unreachable / invalid contact)' {
+            BeforeEach {
+                Mock -CommandName 'Read-Host'     -MockWith { 'admin@test.dk' }
+                Mock -CommandName 'Show-Menu'     -MockWith { 0 }
+                Mock -CommandName 'New-PAAccount' -MockWith { $null }
+            }
+            It 'does not call Set-PAAccount' {
+                _New-ACMEAccount
+                Should -Invoke Set-PAAccount -Times 0
+            }
+            It 'does not call Set-TUACMEConfig' {
+                _New-ACMEAccount
+                Should -Invoke Set-TUACMEConfig -Times 0
             }
         }
 
@@ -147,6 +167,55 @@ Describe 'Invoke-AccountMenu' -Tag Unit, Accounts {
             It 'calls Set-TUACMEConfig once' {
                 _Rename-Account -Accounts $script:accounts
                 Should -Invoke Set-TUACMEConfig -Times 1 -Exactly
+            }
+        }
+
+        Context 'Create-then-rename flow — newly created account is renameable' {
+            # Reproduces the user-reported bug: after creating an account,
+            # picking "Rename" said "No accounts to rename". Root cause was
+            # Posh-ACME leaving the previous server's account selected so
+            # Get-PAAccount -List returned [] on the just-switched server.
+            BeforeEach {
+                # Simulate Posh-ACME's state: -List returns [] before any
+                # account exists; New-PAAccount creates 'new-001'; -List
+                # then returns it.
+                $script:createdId = $null
+                Mock -CommandName 'Get-PAAccount' -MockWith {
+                    if ($PSBoundParameters.ContainsKey('List')) {
+                        if ($script:createdId) { return @([PSCustomObject]@{ id = $script:createdId; contact = 'mailto:admin@test.dk'; status = 'valid' }) }
+                        return @()
+                    }
+                    if ($script:createdId) { return [PSCustomObject]@{ id = $script:createdId; contact = 'mailto:admin@test.dk'; status = 'valid' } }
+                    return $null
+                }
+                Mock -CommandName 'New-PAAccount' -MockWith {
+                    $script:createdId = 'new-001'
+                    [PSCustomObject]@{ id = 'new-001' }
+                }
+                Mock -CommandName 'Set-PAAccount' -MockWith {}
+                Mock -CommandName 'Set-PAServer'  -MockWith {}
+
+                $script:ri = 0
+                $script:rseq = @('admin@test.dk', 'My new account', 'Renamed account')
+                Mock -CommandName 'Read-Host' -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
+                Mock -CommandName 'Show-Menu' -MockWith { 0 }   # production server, then first account in rename list
+            }
+
+            It 'lists the new account after create' {
+                Get-PAAccount -List | Should -BeNullOrEmpty
+                _New-ACMEAccount
+                $listed = @(Get-PAAccount -List)
+                $listed.Count   | Should -Be 1
+                $listed[0].id   | Should -Be 'new-001'
+            }
+
+            It 'Rename succeeds on the just-created account (no "No accounts" message)' {
+                _New-ACMEAccount
+                $accounts = @(Get-PAAccount -List)
+                _Rename-Account -Accounts $accounts
+                Should -Invoke Set-TUACMEConfig -ParameterFilter {
+                    $Config.Accounts.PSObject.Properties['new-001'].Value.Name -eq 'Renamed account'
+                } -Times 1
             }
         }
 
