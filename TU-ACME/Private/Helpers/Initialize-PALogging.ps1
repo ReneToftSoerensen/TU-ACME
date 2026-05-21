@@ -31,10 +31,17 @@ function Initialize-PALogging {
             # Note: Set-PAConfig does NOT exist in v4 — there is no native
             # post-renewal hook. The IIS rebind runs from
             # Invoke-RenewalBackground.ps1 after Submit-Renewal completes.
+            # Note: Posh-ACME v4 has no Remove-PACertificate cmdlet —
+            # only Remove-PAAccount exists. Per-cert deletion is done
+            # by TU-ACME's own filesystem-based helper (the dashboard's
+            # _Remove-TUACMECertDir), so there's nothing to proxy.
+            # Revoke-PACertificate IS in Posh-ACME and sends a real
+            # revocation request to the ACME server, so we proxy it.
             $cmds = @(
                 'Get-PAAccount','New-PAAccount','Set-PAAccount',
                 'Get-PAServer','Set-PAServer',
-                'Get-PACertificate','New-PACertificate','Remove-PACertificate',
+                'Get-PACertificate','New-PACertificate','Revoke-PACertificate',
+                'Set-PAOrder',
                 'Submit-Renewal',
                 'Get-PAPlugin','Get-PAPluginArgs'
             )

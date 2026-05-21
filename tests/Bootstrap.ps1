@@ -76,7 +76,8 @@ function global:New-PAAccount     { param([switch]$AcceptTOS, [string]$Contact, 
 function global:Set-PAAccount     { param([string]$ID) }
 function global:Get-PACertificate { param([switch]$List) }
 function global:New-PACertificate { param([string[]]$Domain, [string]$Plugin, $PluginArgs, [switch]$Force) }
-function global:Remove-PACertificate { param([string]$MainDomain, [switch]$Force) }
+function global:Revoke-PACertificate { param([string]$MainDomain, [string]$Name, [string]$Reason, [switch]$Force) }
+function global:Set-PAOrder { param([string]$MainDomain, [string]$Name, [switch]$NewKey) }
 function global:Get-PAServer      { param([string]$DirectoryUrl) }
 function global:Set-PAServer      { param([string]$DirectoryUrl) }
 function global:Set-PAConfig      { param([string]$PostScript, [string]$Server) }

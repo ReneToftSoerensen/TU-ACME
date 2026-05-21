@@ -17,11 +17,15 @@ Describe 'Invoke-CertificateDashboard' -Tag Unit, Certificates {
             Mock -CommandName 'Get-TUACMEConfig'      -MockWith { New-FakeConfig }
             Mock -CommandName 'Show-Table'            -MockWith { -1 }   # ESC — exit loop
             Mock -CommandName 'Show-StatusBar'        -MockWith {}
+            Mock -CommandName 'Get-PAServer'          -MockWith { [PSCustomObject]@{ Name = 'LE_PROD'; location = 'https://acme-v02.api.letsencrypt.org/directory' } }
+            Mock -CommandName 'Get-PAAccount'         -MockWith { [PSCustomObject]@{ id = 'acc-001'; status = 'valid' } }
+            Mock -CommandName 'Set-PAServer'          -MockWith {}
+            Mock -CommandName 'Set-PAAccount'         -MockWith {}
         }
 
         Context 'No certificates — shows message and returns' {
             BeforeEach {
-                Mock -CommandName 'Get-PACertificate' -MockWith { @() }
+                Mock -CommandName 'Get-TUACMEAllCertificates' -MockWith { @() }
             }
             It 'does not throw' {
                 { Invoke-CertificateDashboard } | Should -Not -Throw
@@ -34,7 +38,7 @@ Describe 'Invoke-CertificateDashboard' -Tag Unit, Certificates {
 
         Context 'Certificates exist — Show-Table called with data' {
             BeforeEach {
-                Mock -CommandName 'Get-PACertificate' -MockWith {
+                Mock -CommandName 'Get-TUACMEAllCertificates' -MockWith {
                     @(
                         (New-FakeCertificate)
                         (New-FakeWarnCertificate)
@@ -50,7 +54,7 @@ Describe 'Invoke-CertificateDashboard' -Tag Unit, Certificates {
 
         Context 'Row selected — cert detail shown' {
             BeforeEach {
-                Mock -CommandName 'Get-PACertificate' -MockWith { @(New-FakeCertificate) }
+                Mock -CommandName 'Get-TUACMEAllCertificates' -MockWith { @(New-FakeCertificate) }
                 $script:tableCall = 0
                 Mock -CommandName 'Show-Table' -MockWith {
                     if ($script:tableCall -eq 0) { $script:tableCall++; return 0 }
@@ -69,7 +73,10 @@ Describe 'Invoke-CertificateDashboard' -Tag Unit, Certificates {
 
         Context "Detail view — 'D' confirmed deletes certificate" {
             BeforeEach {
-                Mock -CommandName 'Get-PACertificate' -MockWith { @(New-FakeCertificate) }
+                $taggedCert = New-FakeCertificate
+                Add-Member -InputObject $taggedCert -NotePropertyName 'ServerName' -NotePropertyValue 'LE_STAGE' -Force
+                Add-Member -InputObject $taggedCert -NotePropertyName 'AccountID'  -NotePropertyValue 'acc-001'  -Force
+                Mock -CommandName 'Get-TUACMEAllCertificates' -MockWith { @($taggedCert) }
                 $script:tableCall = 0
                 Mock -CommandName 'Show-Table' -MockWith {
                     if ($script:tableCall -eq 0) { $script:tableCall++; return 0 }
@@ -78,21 +85,19 @@ Describe 'Invoke-CertificateDashboard' -Tag Unit, Certificates {
                 Mock -CommandName 'Invoke-ConsoleReadKey' -MockWith {
                     New-Object System.ConsoleKeyInfo([char]'d', [System.ConsoleKey]::D, $false, $false, $false)
                 }
-                Mock -CommandName 'Confirm-YesNo'        -MockWith { $true }
-                Mock -CommandName 'Remove-PACertificate' -MockWith {}
-                Mock -CommandName 'Write-EventLogEntry'  -MockWith {}
+                Mock -CommandName 'Confirm-YesNo'           -MockWith { $true }
+                Mock -CommandName '_Remove-TUACMECertDir'   -MockWith {}
+                Mock -CommandName 'Write-EventLogEntry'     -MockWith {}
             }
-            It 'calls Remove-PACertificate with the cert MainDomain' {
+            It 'calls _Remove-TUACMECertDir with the cert' {
                 Invoke-CertificateDashboard
-                Should -Invoke Remove-PACertificate -Times 1 -ParameterFilter {
-                    $MainDomain -eq 'eksempel.dk'
-                }
+                Should -Invoke _Remove-TUACMECertDir -Times 1
             }
         }
 
         Context "Detail view — 'D' cancelled does NOT delete" {
             BeforeEach {
-                Mock -CommandName 'Get-PACertificate' -MockWith { @(New-FakeCertificate) }
+                Mock -CommandName 'Get-TUACMEAllCertificates' -MockWith { @(New-FakeCertificate) }
                 $script:tableCall = 0
                 Mock -CommandName 'Show-Table' -MockWith {
                     if ($script:tableCall -eq 0) { $script:tableCall++; return 0 }
@@ -101,12 +106,91 @@ Describe 'Invoke-CertificateDashboard' -Tag Unit, Certificates {
                 Mock -CommandName 'Invoke-ConsoleReadKey' -MockWith {
                     New-Object System.ConsoleKeyInfo([char]'d', [System.ConsoleKey]::D, $false, $false, $false)
                 }
-                Mock -CommandName 'Confirm-YesNo'        -MockWith { $false }
-                Mock -CommandName 'Remove-PACertificate' -MockWith {}
+                Mock -CommandName 'Confirm-YesNo'         -MockWith { $false }
+                Mock -CommandName '_Remove-TUACMECertDir' -MockWith {}
             }
-            It 'does NOT call Remove-PACertificate when user declines' {
+            It 'does NOT call _Remove-TUACMECertDir when user declines' {
                 Invoke-CertificateDashboard
-                Should -Invoke Remove-PACertificate -Times 0
+                Should -Invoke _Remove-TUACMECertDir -Times 0
+            }
+        }
+
+        Context "Detail view — 'V' confirmed revokes certificate at ACME server" {
+            BeforeEach {
+                $taggedCert = New-FakeCertificate
+                Add-Member -InputObject $taggedCert -NotePropertyName 'ServerName' -NotePropertyValue 'LE_STAGE' -Force
+                Add-Member -InputObject $taggedCert -NotePropertyName 'AccountID'  -NotePropertyValue 'acc-001'  -Force
+                Mock -CommandName 'Get-TUACMEAllCertificates' -MockWith { @($taggedCert) }
+                $script:tableCall = 0
+                Mock -CommandName 'Show-Table' -MockWith {
+                    if ($script:tableCall -eq 0) { $script:tableCall++; return 0 }
+                    return -1
+                }
+                Mock -CommandName 'Invoke-ConsoleReadKey' -MockWith {
+                    New-Object System.ConsoleKeyInfo([char]'v', [System.ConsoleKey]::V, $false, $false, $false)
+                }
+                Mock -CommandName 'Confirm-YesNo'         -MockWith { $true }
+                Mock -CommandName 'Revoke-PACertificate'  -MockWith {}
+                Mock -CommandName 'Write-EventLogEntry'   -MockWith {}
+            }
+            It 'calls Revoke-PACertificate with the MainDomain' {
+                Invoke-CertificateDashboard
+                Should -Invoke Revoke-PACertificate -Times 1 -ParameterFilter {
+                    $MainDomain -eq 'eksempel.dk'
+                }
+            }
+        }
+
+        Context "Detail view — 'V' cancelled does NOT revoke" {
+            BeforeEach {
+                Mock -CommandName 'Get-TUACMEAllCertificates' -MockWith { @(New-FakeCertificate) }
+                $script:tableCall = 0
+                Mock -CommandName 'Show-Table' -MockWith {
+                    if ($script:tableCall -eq 0) { $script:tableCall++; return 0 }
+                    return -1
+                }
+                Mock -CommandName 'Invoke-ConsoleReadKey' -MockWith {
+                    New-Object System.ConsoleKeyInfo([char]'v', [System.ConsoleKey]::V, $false, $false, $false)
+                }
+                Mock -CommandName 'Confirm-YesNo'        -MockWith { $false }
+                Mock -CommandName 'Revoke-PACertificate' -MockWith {}
+            }
+            It 'does NOT call Revoke-PACertificate when user declines' {
+                Invoke-CertificateDashboard
+                Should -Invoke Revoke-PACertificate -Times 0
+            }
+        }
+
+        Context "Detail view — 'F' force-renews with new key" {
+            BeforeEach {
+                Mock -CommandName 'Get-TUACMEAllCertificates' -MockWith { @(New-FakeCertificate) }
+                $script:tableCall = 0
+                Mock -CommandName 'Show-Table' -MockWith {
+                    if ($script:tableCall -eq 0) { $script:tableCall++; return 0 }
+                    return -1
+                }
+                Mock -CommandName 'Invoke-ConsoleReadKey' -MockWith {
+                    New-Object System.ConsoleKeyInfo([char]'f', [System.ConsoleKey]::F, $false, $false, $false)
+                }
+                Mock -CommandName 'Confirm-YesNo'       -MockWith { $true }
+                Mock -CommandName 'Set-PAOrder'         -MockWith {}
+                Mock -CommandName 'Submit-Renewal'      -MockWith {}
+                Mock -CommandName 'Write-EventLogEntry' -MockWith {}
+            }
+            It 'flags the order with -NewKey before renewing' {
+                Invoke-CertificateDashboard
+                Should -Invoke Set-PAOrder    -Times 1 -ParameterFilter { $NewKey }
+                Should -Invoke Submit-Renewal -Times 1 -ParameterFilter { $Force }
+            }
+        }
+
+        Context 'Entry context restored on exit' {
+            BeforeEach {
+                Mock -CommandName 'Get-TUACMEAllCertificates' -MockWith { @() }
+            }
+            It 'restores the entry server when leaving the dashboard' {
+                Invoke-CertificateDashboard
+                Should -Invoke Set-PAServer -ParameterFilter { $DirectoryUrl -eq 'LE_PROD' }
             }
         }
     }
