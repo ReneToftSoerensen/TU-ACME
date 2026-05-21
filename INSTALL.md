@@ -124,7 +124,7 @@ Expected output:
 ```
 ModuleType  Version  Name      ExportedCommands
 ----------  -------  ----      ----------------
-Script      0.5.1    TU-ACME   Start-TUACME
+Script      0.5.2    TU-ACME   Start-TUACME
 ```
 
 ---

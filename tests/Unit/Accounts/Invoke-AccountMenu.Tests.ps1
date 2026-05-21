@@ -90,31 +90,49 @@ Describe 'Invoke-AccountMenu' -Tag Unit, Accounts {
             }
         }
 
-        Context '_New-ACMEAccount — production server selected' {
-            # Reproduces what happens on Posh-ACME versions where
-            # New-PAAccount returns $null but the account *was* created.
-            # The implementation must query Get-PAAccount post-call to
-            # get the source of truth.
+        Context '_New-ACMEAccount — New-PAAccount returns the account directly (Posh-ACME 4.32+)' {
+            # The happy path: capture the return value of New-PAAccount
+            # as the primary source. No need to consult Get-PAAccount.
             BeforeEach {
                 $script:ri = 0
                 $script:rseq = @('admin@test.dk', 'Production')  # email, friendly name
                 Mock -CommandName 'Read-Host'     -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
                 Mock -CommandName 'Show-Menu'     -MockWith { 0 }
                 Mock -CommandName 'Set-PAServer'  -MockWith {}
-                Mock -CommandName 'New-PAAccount' -MockWith { $null }   # simulate "no return"
-                Mock -CommandName 'Get-PAAccount' -MockWith { [PSCustomObject]@{ id = 'new-001' } }
+                Mock -CommandName 'New-PAAccount' -MockWith {
+                    [PSCustomObject]@{ id = 'returned-001'; status = 'valid' }
+                }
             }
-            It 'calls New-PAAccount once' {
+            It 'activates the account using the New-PAAccount return value' {
                 _New-ACMEAccount
-                Should -Invoke New-PAAccount -Times 1 -Exactly
+                Should -Invoke Set-PAAccount -ParameterFilter { $ID -eq 'returned-001' } -Times 1 -Exactly
             }
-            It 'activates the account it discovers via Get-PAAccount (not via New-PAAccount return)' {
+            It 'does not fall back to Get-PAAccount when the return is non-null' {
                 _New-ACMEAccount
-                Should -Invoke Set-PAAccount -ParameterFilter { $ID -eq 'new-001' } -Times 1 -Exactly
+                Should -Invoke Get-PAAccount -Times 0
             }
             It 'persists the friendly name via Set-TUACMEConfig' {
                 _New-ACMEAccount
                 Should -Invoke Set-TUACMEConfig -Times 1 -Exactly
+            }
+        }
+
+        Context '_New-ACMEAccount — New-PAAccount returns null, Get-PAAccount has the new account' {
+            # Posh-ACME versions where the return is $null but the
+            # current-account pointer IS set. Use the current pointer.
+            BeforeEach {
+                $script:ri = 0
+                $script:rseq = @('admin@test.dk', 'Production')
+                Mock -CommandName 'Read-Host'     -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
+                Mock -CommandName 'Show-Menu'     -MockWith { 0 }
+                Mock -CommandName 'Set-PAServer'  -MockWith {}
+                Mock -CommandName 'New-PAAccount' -MockWith { $null }
+                Mock -CommandName 'Get-PAAccount' -ParameterFilter { -not $List } `
+                    -MockWith { [PSCustomObject]@{ id = 'current-001'; status = 'valid' } }
+            }
+            It 'falls back to Get-PAAccount and activates its account' {
+                _New-ACMEAccount
+                Should -Invoke Set-PAAccount -ParameterFilter { $ID -eq 'current-001' } -Times 1 -Exactly
             }
         }
 
@@ -156,25 +174,28 @@ Describe 'Invoke-AccountMenu' -Tag Unit, Accounts {
             }
         }
 
-        Context '_New-ACMEAccount — Get-PAAccount returns null but -List has the new account' {
-            # Posh-ACME may register an account without updating the
-            # current-account pointer. The fallback path queries -List
-            # filtered by contact email.
+        Context '_New-ACMEAccount — Get-PAAccount returns null but -List has a valid account' {
+            # Two pointers above are null; the last resort is "most
+            # recently added valid account on this server". Filter is
+            # on status='valid' (NOT contact) because LE Staging does
+            # not echo contact back in the account object.
             BeforeEach {
                 $script:ri = 0
                 $script:rseq = @('admin@test.dk', '')
                 Mock -CommandName 'Read-Host'     -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
                 Mock -CommandName 'Show-Menu'     -MockWith { 0 }
                 Mock -CommandName 'New-PAAccount' -MockWith { $null }
-                # Use the -ParameterFilter form to dispatch -List vs no-List
-                # cleanly (more reliable than checking $PSBoundParameters
-                # from inside the mock body).
                 Mock -CommandName 'Get-PAAccount' -ParameterFilter { $List } `
-                    -MockWith { @([PSCustomObject]@{ id = 'list-only-001'; contact = 'mailto:admin@test.dk'; status = 'valid' }) }
+                    -MockWith {
+                        @(
+                            [PSCustomObject]@{ id = 'old-deactivated'; contact = $null; status = 'deactivated' }
+                            [PSCustomObject]@{ id = 'list-only-001';   contact = $null; status = 'valid' }
+                        )
+                    }
                 Mock -CommandName 'Get-PAAccount' -ParameterFilter { -not $List } `
                     -MockWith { $null }
             }
-            It 'finds the account via -List and calls Set-PAAccount with its id' {
+            It 'finds the valid account via -List (ignoring contact, ignoring deactivated)' {
                 _New-ACMEAccount
                 Should -Invoke Set-PAAccount -ParameterFilter { $ID -eq 'list-only-001' } -Times 1 -Exactly
             }

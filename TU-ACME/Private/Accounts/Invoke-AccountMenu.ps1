@@ -128,16 +128,23 @@ function _New-ACMEAccount {
         # below — without this, the error goes to the error stream
         # silently and we see an unhelpful "account appears to have
         # failed" with no actual reason.
-        New-PAAccount -AcceptTOS -Contact "mailto:$email" -ErrorAction Stop | Out-Null
+        #
+        # Capture the return value as the primary source of truth.
+        # Posh-ACME 4.32 returns the new account here, AND LE Staging
+        # does not echo the contact back on Get-PAAccount -List, so
+        # filtering by contact email is unreliable.
+        $newAccount = New-PAAccount -AcceptTOS -Contact "mailto:$email" -ErrorAction Stop
 
-        # Posh-ACME's New-PAAccount return value is version-dependent
-        # ($null on some versions, the account on others). Use
-        # Get-PAAccount as the source of truth. If the current pointer
-        # isn't set, fall back to -List filtered by our contact email.
-        $newAccount = Get-PAAccount 2>$null
         if (-not $newAccount) {
-            $newAccount = @(Get-PAAccount -List 2>$null) |
-                Where-Object { @($_.contact) -contains "mailto:$email" } |
+            # Fallback 1: Posh-ACME's "current account" pointer.
+            $newAccount = Get-PAAccount 2>$null
+        }
+        if (-not $newAccount) {
+            # Fallback 2: most recent valid account on this server.
+            # Filtering on status='valid' (not contact) because the
+            # contact field is often empty in the returned object.
+            $newAccount = @(Get-PAAccount -List 2>$null |
+                Where-Object { $_.status -eq 'valid' }) |
                 Select-Object -Last 1
         }
 
