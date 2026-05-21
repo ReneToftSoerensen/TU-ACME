@@ -22,17 +22,25 @@
     try { $origServer  = Get-PAServer  -ErrorAction SilentlyContinue } catch {}
     try { $origAccount = Get-PAAccount -ErrorAction SilentlyContinue } catch {}
 
-    $all = New-Object System.Collections.ArrayList
+    $all     = New-Object System.Collections.ArrayList
+    $skipped = 0
 
     $servers = @()
     try { $servers = @(Get-PAServer -List -ErrorAction SilentlyContinue) } catch {}
 
+    try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='enum-servers'; Count=$servers.Count } } catch {}
+
     foreach ($srv in $servers) {
         if (-not $srv) { continue }
         $srvName = if ($srv.Name) { $srv.Name } else { $srv.location }
+        if (-not $srvName) {
+            try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='skip-server'; Reason='no Name or location' } } catch {}
+            continue
+        }
         try {
             Set-PAServer $srvName -ErrorAction Stop
         } catch {
+            try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='skip-server'; Server=$srvName; Reason="Set-PAServer failed: $($_.Exception.Message)" } } catch {}
             continue
         }
 
@@ -50,8 +58,29 @@
             $certs = @()
             try { $certs = @(Get-PACertificate -List -ErrorAction SilentlyContinue) } catch {}
 
+            try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='enum-certs'; Server=$srvName; Account=$acc.id; Count=$certs.Count } } catch {}
+
             foreach ($c in $certs) {
                 if (-not $c) { continue }
+
+                # Skip phantom / half-formed cert objects. Posh-ACME's
+                # Get-PACertificate -List sometimes surfaces partial
+                # entries (e.g. a pending order whose validation
+                # failed) with no MainDomain, no CertFile, no
+                # Thumbprint — there is nothing useful to show or act
+                # on. Without this guard the dashboard renders an
+                # all-"(unknown)" row that confuses the user and any
+                # attempted delete/renew fails immediately.
+                $isEmpty = (-not $c.MainDomain) -and
+                           (-not $c.CertFile)   -and
+                           (-not $c.Thumbprint) -and
+                           (-not $c.NotAfter)
+                if ($isEmpty) {
+                    $skipped++
+                    try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='skip-empty-cert'; Server=$srvName; Account=$acc.id } } catch {}
+                    continue
+                }
+
                 Add-Member -InputObject $c -NotePropertyName 'ServerName'     -NotePropertyValue $srvName       -Force
                 Add-Member -InputObject $c -NotePropertyName 'ServerLocation' -NotePropertyValue $srv.location -Force
                 Add-Member -InputObject $c -NotePropertyName 'AccountID'      -NotePropertyValue $acc.id        -Force
@@ -67,6 +96,8 @@
             }
         }
     }
+
+    try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='done'; Kept=$all.Count; Skipped=$skipped } } catch {}
 
     # Restore the active context (best-effort).
     if ($origServer -and $origServer.Name) {
