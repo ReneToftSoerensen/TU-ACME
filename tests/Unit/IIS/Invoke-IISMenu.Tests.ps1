@@ -83,25 +83,11 @@ Describe 'Invoke-IISMenu' -Tag Unit, IIS -Skip:$script:SkipIIS {
             }
         }
 
-        Context '_Register-PostRenewalPlugin — script not found' {
-            BeforeEach {
-                Mock -CommandName 'Test-Path' -MockWith { $false }
-            }
-            It 'does not call Set-PAConfig' {
-                _Register-PostRenewalPlugin
-                Should -Invoke Set-PAConfig -Times 0
-            }
-        }
-
-        Context '_Register-PostRenewalPlugin — script found, user confirms' {
-            BeforeEach {
-                Mock -CommandName 'Test-Path' -MockWith { $true }
-                Mock -CommandName 'Get-PAServer' -MockWith { [PSCustomObject]@{ PostScript = '' } }
-                Mock -CommandName 'Read-Host'   -MockWith { 'Y' }
-            }
-            It 'calls Set-PAConfig once' {
-                _Register-PostRenewalPlugin
-                Should -Invoke Set-PAConfig -Times 1 -Exactly
+        Context 'IIS menu no longer offers Register-PostRenewalPlugin' {
+            # Set-PAConfig does not exist in Posh-ACME v4; the rebind is
+            # now wired into Invoke-RenewalBackground.ps1 directly.
+            It 'does not export _Register-PostRenewalPlugin' {
+                Get-Command -Name '_Register-PostRenewalPlugin' -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
             }
         }
 

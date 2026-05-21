@@ -1,4 +1,4 @@
-﻿#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
+#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 . "$PSScriptRoot\..\Bootstrap.ps1"
 . "$PSScriptRoot\..\Fixtures\FakeObjects.ps1"
 
@@ -55,11 +55,7 @@ Describe 'Posh-ACME-IIS-Plugin.ps1' -Tag Unit, Scripts {
         It 'logs EventId 3002 on failure' {
             $script:content | Should -Match '3002'
         }
-        It 'short-circuits when OldThumbprint is missing' {
-            $script:content | Should -Match 'exit 0'
-        }
         It 'continues remaining bindings on single failure (no global exit on error)' {
-            # The foreach loop should have per-iteration try/catch, not a function-level abort
             $script:content | Should -Match 'foreach.*binding'
         }
         It 'calls Import-PfxCertificate when CertFile provided' {
@@ -67,10 +63,38 @@ Describe 'Posh-ACME-IIS-Plugin.ps1' -Tag Unit, Scripts {
         }
     }
 
-    Context 'Exit code on WebAdministration failure' {
-        It 'script exits 1 when WebAdministration missing' {
-            $content = Get-Content -Path $script:PluginPath -Raw
-            $content | Should -Match 'exit 1'
+    Context 'Refactored to be both dot-sourceable and directly runnable' {
+        BeforeAll {
+            $script:content = Get-Content -Path $script:PluginPath -Raw
+        }
+        It 'defines an Update-IISBindingForCert function' {
+            $script:content | Should -Match 'function Update-IISBindingForCert'
+        }
+        It 'guards the direct-invocation block against dot-source' {
+            $script:content | Should -Match '\$MyInvocation\.InvocationName -ne ''\.'''
+        }
+        It 'no longer references the nonexistent Set-PAConfig' {
+            $script:content | Should -Not -Match 'Set-PAConfig'
+        }
+    }
+
+    Context 'Function shape (dot-source + invoke)' {
+        BeforeAll {
+            # Dot-source the script — the guard prevents the direct-run
+            # block from firing, but the function definition is exported
+            # into our test scope.
+            $script:OnWindows = $true
+            . $script:PluginPath
+        }
+
+        It 'Update-IISBindingForCert is defined' {
+            Get-Command Update-IISBindingForCert -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
+        }
+        It 'returns silently when OldThumbprint is empty (no rebind attempted)' {
+            Mock -CommandName 'Get-WebBinding'        -MockWith { throw 'should not be called' }
+            Mock -CommandName 'Write-EventLogEntry'   -MockWith {}
+            { Update-IISBindingForCert -OldThumbprint '' -NewThumbprint 'X' } | Should -Not -Throw
+            Should -Invoke Get-WebBinding -Times 0
         }
     }
 }

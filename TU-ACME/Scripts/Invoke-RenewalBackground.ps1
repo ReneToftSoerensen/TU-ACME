@@ -1,7 +1,10 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Background script for automatic certificate renewal via Scheduled Task.
+    Also performs the IIS post-renewal rebind because Posh-ACME v4 has no
+    native post-script hook.
+
     Run with: powershell.exe -NonInteractive -WindowStyle Hidden -File "Invoke-RenewalBackground.ps1"
 #>
 
@@ -17,13 +20,14 @@ if (-not $onWindows) {
 if (-not $env:ProgramData)  { $env:ProgramData  = '/tmp/TU-ACME' }
 if (-not $env:COMPUTERNAME) { $env:COMPUTERNAME = [System.Net.Dns]::GetHostName() }
 
-# Reuse the module's helpers instead of duplicating them.
-# The script lives in TU-ACME/Scripts/ next to TU-ACME/Private/Helpers/.
+# Reuse the module's helpers + the IIS rebind function. All live in
+# TU-ACME's tree next to this script.
 $script:OnWindows = $true
 $helpersDir = Join-Path $PSScriptRoot '..\Private\Helpers'
 . (Join-Path $helpersDir 'Get-TUACMEConfig.ps1')
 . (Join-Path $helpersDir 'Write-EventLogEntry.ps1')
 . (Join-Path $helpersDir 'Send-TUACMEMail.ps1')
+. (Join-Path $PSScriptRoot 'Posh-ACME-IIS-Plugin.ps1')   # defines Update-IISBindingForCert
 
 function Send-ErrorMail {
     param([string] $Domain, [string] $ErrorMessage)
@@ -48,6 +52,23 @@ Check certificate status in TU-ACME or run:
     Send-TUACMEMail -Subject "[TU-ACME] ERROR during certificate renewal - $Domain" -Body $body | Out-Null
 }
 
+function Get-CertThumbprintMap {
+    # Returns a hashtable: MainDomain -> @{ Thumbprint=; PfxFile= }
+    $map = @{}
+    try {
+        Get-PACertificate -List 2>$null | ForEach-Object {
+            if ($_.AllSANs -and $_.Thumbprint) {
+                $primary = @($_.AllSANs)[0]
+                $map[$primary] = @{
+                    Thumbprint = $_.Thumbprint
+                    PfxFile    = $_.PfxFile
+                }
+            }
+        }
+    } catch {}
+    return $map
+}
+
 try {
     Import-Module Posh-ACME -ErrorAction Stop
 } catch {
@@ -55,6 +76,10 @@ try {
         -Message "TU-ACME: Posh-ACME not available. $_"
     exit 1
 }
+
+# Snapshot thumbprints BEFORE the renewal so we can detect which certs
+# got new thumbprints and rebind their IIS bindings afterwards.
+$before = Get-CertThumbprintMap
 
 try {
     $results = Submit-Renewal -AllAccounts
@@ -79,4 +104,23 @@ try {
         -Message "TU-ACME: Certificate renewal failed for $domain. $_"
     Send-ErrorMail -Domain $domain -ErrorMessage $errMsg
     exit 1
+}
+
+# Post-renewal: rebind IIS for any cert whose thumbprint actually changed.
+$after = Get-CertThumbprintMap
+
+foreach ($domain in $after.Keys) {
+    $newTp = $after[$domain].Thumbprint
+    $oldTp = if ($before.ContainsKey($domain)) { $before[$domain].Thumbprint } else { '' }
+
+    if ($oldTp -and $oldTp -ne $newTp) {
+        Write-EventLogEntry -EventId 1002 `
+            -Message "TU-ACME: Detected new thumbprint for $domain (old: $oldTp -> new: $newTp). Rebinding IIS..."
+        try {
+            Update-IISBindingForCert -OldThumbprint $oldTp -NewThumbprint $newTp -CertFile $after[$domain].PfxFile
+        } catch {
+            Write-EventLogEntry -EventId 3002 -EntryType Error `
+                -Message "TU-ACME: IIS rebind failed for $domain - $_"
+        }
+    }
 }

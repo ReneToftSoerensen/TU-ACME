@@ -124,7 +124,7 @@ Expected output:
 ```
 ModuleType  Version  Name      ExportedCommands
 ----------  -------  ----      ----------------
-Script      0.4.8    TU-ACME   Start-TUACME
+Script      0.5.0    TU-ACME   Start-TUACME
 ```
 
 ---
@@ -197,15 +197,22 @@ Get-EventLog -LogName Application -Source TU-ACME -Newest 5
 
 If TU-ACME should automatically update IIS HTTPS bindings on certificate renewal:
 
-### 6.1 Register post-renewal plugin
+### 6.1 Post-renewal IIS rebind
 
-In the TUI: **6. IIS Integration -> Set up automatic IIS update**
+Posh-ACME v4 has no native `-PostScript` hook, so TU-ACME's renewal
+wrapper (`Invoke-RenewalBackground.ps1`) handles IIS rebinding itself.
+It snapshots `Get-PACertificate -List` thumbprints before
+`Submit-Renewal`, snapshots again after, and for every cert whose
+thumbprint changed it calls the rebind logic in
+`Posh-ACME-IIS-Plugin.ps1`. No registration required — install the
+Scheduled Task (Section 7.2) and rebinding happens automatically on
+every renewal.
 
-Or manually:
+To test the rebind logic manually with a known old/new thumbprint pair:
 
 ```powershell
 $scriptPath = "$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME\Scripts\Posh-ACME-IIS-Plugin.ps1"
-Set-PAConfig -PostScript $scriptPath
+& $scriptPath -OldThumbprint <old> -Thumbprint <new> -CertFile <path-to-pfx>
 ```
 
 ### 6.2 Bind existing certificates to IIS
@@ -264,16 +271,13 @@ Get-EventLog -LogName Application -Source TU-ACME -Newest 10
 # 1. Remove Scheduled Task
 Unregister-ScheduledTask -TaskName 'Posh-ACME-AutoRenewal' -Confirm:$false
 
-# 2. Remove Posh-ACME post-renewal plugin
-Set-PAConfig -PostScript $null
-
-# 3. Remove TU-ACME module
+# 2. Remove TU-ACME module
 Remove-Item -Path "$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME" -Recurse -Force
 
-# 4. Remove configuration data (WARNING: deletes credentials and settings)
+# 3. Remove configuration data (WARNING: deletes credentials and settings)
 Remove-Item -Path "$env:ProgramData\TU-ACME" -Recurse -Force
 
-# 5. Remove Event Log source (optional)
+# 4. Remove Event Log source (optional)
 Remove-EventLog -Source 'TU-ACME'
 ```
 

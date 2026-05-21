@@ -97,4 +97,25 @@ Describe 'Invoke-RenewalBackground.ps1' -Tag Unit, Scripts {
             $content | Should -Match 'exit 1'
         }
     }
+
+    Context 'Post-renewal IIS rebind is wired into this script' {
+        # Posh-ACME v4 has no -PostScript hook. The rebind must happen
+        # here: snapshot thumbprints before, run Submit-Renewal, snapshot
+        # after, and rebind for every cert whose thumbprint changed.
+        BeforeAll {
+            $script:content = Get-Content -Path $script:ScriptPath -Raw
+        }
+        It 'dot-sources Posh-ACME-IIS-Plugin.ps1 to get Update-IISBindingForCert' {
+            $script:content | Should -Match 'Posh-ACME-IIS-Plugin\.ps1'
+        }
+        It 'snapshots Get-PACertificate -List before Submit-Renewal' {
+            $script:content | Should -Match 'Get-CertThumbprintMap'
+        }
+        It 'calls Update-IISBindingForCert when a thumbprint changes' {
+            $script:content | Should -Match 'Update-IISBindingForCert'
+        }
+        It 'no longer references the nonexistent Set-PAConfig' {
+            $script:content | Should -Not -Match 'Set-PAConfig'
+        }
+    }
 }

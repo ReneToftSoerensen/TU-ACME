@@ -29,7 +29,6 @@ function Invoke-IISMenu {
         $options = @(
             '1. Show HTTPS bindings',
             '2. Bind certificate to IIS binding',
-            '3. Set up automatic IIS update on renewal',
             'B. Back'
         )
         $sel = Show-Menu -Title 'IIS Integration' -Options $options
@@ -38,8 +37,7 @@ function Invoke-IISMenu {
             -1 { return }
             0  { _Show-IISBindings }
             1  { _Bind-CertToIIS }
-            2  { _Register-PostRenewalPlugin }
-            3  { return }
+            2  { return }
         }
     }
 }
@@ -191,39 +189,7 @@ function _Bind-CertToIIS {
     Wait-AnyKey
 }
 
-function _Register-PostRenewalPlugin {
-    $scriptPath = Join-Path $env:ProgramFiles "WindowsPowerShell\Modules\TU-ACME\Scripts\Posh-ACME-IIS-Plugin.ps1"
-
-    Invoke-ConsoleClear
-    Write-Host '  === Set up automatic IIS update ===' -ForegroundColor Cyan
-    Write-Host ''
-
-    if (-not (Test-Path $scriptPath)) {
-        Write-Host "  Script file not found: $scriptPath" -ForegroundColor Red
-        Write-Host '  Place Posh-ACME-IIS-Plugin.ps1 in TU-ACME\Scripts\ and try again.' -ForegroundColor Yellow
-        Write-Host ''
-        Wait-AnyKey
-        return
-    }
-
-    $current = (Get-PAServer 2>$null | Select-Object -ExpandProperty PostScript) 2>$null
-    if ($current) {
-        Write-Host "  Current PostScript: $current" -ForegroundColor DarkGray
-        Write-Host ''
-    }
-
-    Write-Host "  Script: $scriptPath"
-    Write-Host ''
-    if (-not (Confirm-YesNo '  Register this script as post-renewal plugin? (y/N)' -Default $false)) { return }
-
-    try {
-        Set-PAConfig -PostScript $scriptPath
-        Write-Host '  Post-renewal plugin registered.' -ForegroundColor Green
-        Write-Host '  IIS bindings will be updated automatically on the next certificate renewal.' -ForegroundColor White
-    } catch {
-        Write-Host "  Error: $_" -ForegroundColor Red
-    }
-
-    Write-Host ''
-    Wait-AnyKey
-}
+# Post-renewal IIS rebind is now handled automatically by
+# Invoke-RenewalBackground.ps1 (Posh-ACME v4 has no native -PostScript
+# hook, so the rebind runs from TU-ACME's own renewal wrapper instead).
+# No menu item needed.

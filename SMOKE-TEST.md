@@ -34,7 +34,7 @@ Start-TUACME
 ```
 
 Check:
-- [ ] Main menu title `TU-ACME v0.4.8 - Certificate Management` renders at column ~2 (the two-space indent), not centered
+- [ ] Main menu title `TU-ACME v0.5.0 - Certificate Management` renders at column ~2 (the two-space indent), not centered
 - [ ] All option lines start at column 2, not centered or right-aligned
 - [ ] After hitting `/` to search, the search prompt and input cursor sit at column 2
 - [ ] When you press a hotkey digit or arrow to navigate, the highlighted row's text stays left-anchored
@@ -112,12 +112,9 @@ Check:
 - [ ] `Show IIS bindings` lists your HTTPS sites with the Posh-ACME match column populated for any cert in PA's store
 - [ ] If `Get-PACertificate` is broken (e.g. no account), you now see a warning, not silent skip
 - [ ] `Bind certificate to IIS` flow: pick a cert, pick a site, confirm — binding updates and gets registered as the new thumbprint
-- [ ] `Register post-renewal plugin`:
-  - [ ] Blank Enter at the (y/N) confirm prompt does NOT register
-  - [ ] Explicit `Y` registers via `Set-PAConfig -PostScript`
-  - [ ] `Get-PAConfig` shows the PostScript path
+- [ ] The IIS menu has exactly two actions plus Back (no "Register post-renewal plugin" — that's automatic via the renewal script)
 
-Test the plugin standalone with a fake old/new thumbprint pair:
+Test the standalone rebind script with a fake old/new thumbprint pair (verifies the rebind logic the renewal script will call):
 
 ```powershell
 # Pick any two thumbprints from your cert store

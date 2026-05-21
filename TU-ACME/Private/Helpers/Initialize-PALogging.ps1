@@ -22,11 +22,15 @@ function Initialize-PALogging {
         }
 
         if ($reason -eq 'OK') {
+            # Verified against the Posh-ACME v4 FunctionsToExport list.
+            # Note: Set-PAConfig does NOT exist in v4 — there is no native
+            # post-renewal hook. The IIS rebind runs from
+            # Invoke-RenewalBackground.ps1 after Submit-Renewal completes.
             $cmds = @(
                 'Get-PAAccount','New-PAAccount','Set-PAAccount',
                 'Get-PAServer','Set-PAServer',
                 'Get-PACertificate','New-PACertificate','Submit-Renewal',
-                'Get-PAPlugin','Get-PAPluginArgs','Set-PAConfig'
+                'Get-PAPlugin','Get-PAPluginArgs'
             )
 
             foreach ($name in $cmds) {

@@ -85,7 +85,8 @@ Set-WebBinding -Name "<site>" -PropertyName "certificateHash" -Value $thumbprint
 
 # Automation
 Register-ScheduledTask -TaskName "Posh-ACME-AutoRenewal" ...
-Set-PAConfig -PostScript "<path-to-plugin>"
+# IIS rebind on renewal is wired into Invoke-RenewalBackground.ps1
+# (Posh-ACME v4 has no -PostScript hook).
 ```
 
 ## Security guidelines
