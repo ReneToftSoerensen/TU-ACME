@@ -173,9 +173,31 @@
         Write-Host '  [ERROR] Certificate order failed:' -ForegroundColor Red
         Write-Host "  $errMsg" -ForegroundColor Red
 
+        if ($_.Exception.InnerException) {
+            Write-Host "  Inner: $($_.Exception.InnerException.Message)" -ForegroundColor DarkYellow
+        }
+        if ($_.ScriptStackTrace) {
+            Write-Host ''
+            Write-Host '  Script stack (top 5 frames):' -ForegroundColor DarkGray
+            $_.ScriptStackTrace -split "`r?`n" | Select-Object -First 5 | ForEach-Object {
+                Write-Host "    $_" -ForegroundColor DarkGray
+            }
+        }
+
         if ($errMsg -match 'rateLimited|too many') {
             Write-Host ''
             Write-Host '  Tip: You have hit the rate limit. Switch to Staging with [F3].' -ForegroundColor Yellow
+        }
+        if ($errMsg -match "property 'expires' cannot be found|Exception setting `"expires`"") {
+            Write-Host ''
+            Write-Host '  Compatibility tip: Posh-ACME on PowerShell 7 may reject an ACME order' -ForegroundColor Yellow
+            Write-Host '                     response that omits the optional "expires" field' -ForegroundColor Yellow
+            Write-Host '                     (RFC 8555 §7.1.3). Common with internal ACME CAs.' -ForegroundColor Yellow
+            Write-Host '                     Options to try:' -ForegroundColor Yellow
+            Write-Host '                       1. Run the same order from Windows PowerShell 5.1' -ForegroundColor Yellow
+            Write-Host '                          (powershell.exe) - less strict about missing fields' -ForegroundColor Yellow
+            Write-Host '                       2. Check your CA returns "expires" in /newOrder responses' -ForegroundColor Yellow
+            Write-Host '                       3. Open an issue at https://github.com/rmbolger/Posh-ACME' -ForegroundColor Yellow
         }
         if ($challengeType -eq 'HTTP-01' -and $errMsg -match 'unauthorized|connection|fetching|404|403') {
             Write-Host ''
