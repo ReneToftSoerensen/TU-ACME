@@ -132,5 +132,71 @@ Describe 'Invoke-OrderCertificate' -Tag Unit, Certificates {
                 $r | Should -BeNullOrEmpty
             }
         }
+
+        Context '_Collect-HTTP01SelfHostArgs — defaults (blank port + blank timeout)' {
+            BeforeEach {
+                Mock -CommandName 'Read-Host' -MockWith { '' }
+            }
+            It 'returns WSHPort empty (== Posh-ACME port 80 default)' {
+                $r = _Collect-HTTP01SelfHostArgs
+                $r.WSHPort | Should -Be ''
+            }
+            It 'returns WSHTimeout 120 (Posh-ACME default)' {
+                $r = _Collect-HTTP01SelfHostArgs
+                $r.WSHTimeout | Should -Be 120
+            }
+        }
+
+        Context '_Collect-HTTP01SelfHostArgs — custom port + custom timeout' {
+            BeforeEach {
+                $script:ri = 0
+                $script:rseq = @('8080', '300')
+                Mock -CommandName 'Read-Host' -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
+            }
+            It 'returns the entered port' {
+                $r = _Collect-HTTP01SelfHostArgs
+                $r.WSHPort | Should -Be '8080'
+            }
+            It 'returns the entered timeout' {
+                $r = _Collect-HTTP01SelfHostArgs
+                $r.WSHTimeout | Should -Be 300
+            }
+        }
+
+        Context '_Collect-HTTP01SelfHostArgs — invalid port falls back to 80' {
+            BeforeEach {
+                $script:ri = 0
+                $script:rseq = @('not-a-port', '')
+                Mock -CommandName 'Read-Host' -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
+            }
+            It 'returns WSHPort empty (falls back to default)' {
+                $r = _Collect-HTTP01SelfHostArgs
+                $r.WSHPort | Should -Be ''
+            }
+        }
+
+        Context '_Collect-HTTP01SelfHostArgs — out-of-range port falls back to 80' {
+            BeforeEach {
+                $script:ri = 0
+                $script:rseq = @('99999', '')
+                Mock -CommandName 'Read-Host' -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
+            }
+            It 'returns WSHPort empty' {
+                $r = _Collect-HTTP01SelfHostArgs
+                $r.WSHPort | Should -Be ''
+            }
+        }
+
+        Context '_Collect-HTTP01SelfHostArgs — invalid timeout falls back to 120' {
+            BeforeEach {
+                $script:ri = 0
+                $script:rseq = @('', 'banana')
+                Mock -CommandName 'Read-Host' -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
+            }
+            It 'returns WSHTimeout 120' {
+                $r = _Collect-HTTP01SelfHostArgs
+                $r.WSHTimeout | Should -Be 120
+            }
+        }
     }
 }

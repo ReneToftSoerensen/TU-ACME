@@ -38,28 +38,56 @@
     $allDomains  = @($mainDomain) + $sans
     $hasWildcard = ($allDomains | Where-Object { $_ -match '^\*\.' }).Count -gt 0
 
-    # Challenge type selection: HTTP-01 default, DNS-01 required for wildcards
-    $http01Label = if ($hasWildcard) {
-        '1. HTTP-01  (not available - wildcards require DNS-01)'
+    # Challenge type selection. HTTP-01 is offered in two flavours:
+    #   - WebRoot:    Posh-ACME writes the challenge file to a folder
+    #                 served by your existing web server.
+    #   - Self-hosted: Posh-ACME starts a temporary HTTP listener via
+    #                 Windows http.sys. http.sys multiplexes by URL
+    #                 prefix, so /.well-known/acme-challenge/ is routed
+    #                 to our listener while IIS continues to serve
+    #                 everything else on port 80 — no IIS restart, no
+    #                 vdir, no rewrite. Same trick win-acme uses.
+    $selfHostDisabled = $hasWildcard -or (-not $script:OnWindows)
+
+    $labelWebRoot = if ($hasWildcard) {
+        '1. HTTP-01 WebRoot      (not available - wildcards require DNS-01)'
     } else {
-        '1. HTTP-01  (default, web server serves a challenge file)'
+        '1. HTTP-01 WebRoot      (web server serves the challenge file from a folder)'
+    }
+    $labelSelfHost = if ($hasWildcard) {
+        '2. HTTP-01 Self-hosted  (not available - wildcards require DNS-01)'
+    } elseif (-not $script:OnWindows) {
+        '2. HTTP-01 Self-hosted  (Windows only - uses http.sys to coexist with IIS)'
+    } else {
+        '2. HTTP-01 Self-hosted  (Posh-ACME starts an HTTP listener; coexists with IIS)'
     }
     $challengeOptions = @(
-        $http01Label,
-        '2. DNS-01   (DNS TXT record, required for wildcards)'
+        $labelWebRoot,
+        $labelSelfHost,
+        '3. DNS-01               (DNS TXT record, required for wildcards)'
     )
     $disabled = @()
-    if ($hasWildcard) { $disabled += 0 }
+    if ($hasWildcard)      { $disabled += 0 }
+    if ($selfHostDisabled) { $disabled += 1 }
 
     $challengeSel = Show-Menu -Title 'Select challenge type' `
         -Options $challengeOptions -DisabledIndices $disabled
     if ($challengeSel -lt 0) { return }
 
-    $challengeType = if ($challengeSel -eq 0) { 'HTTP-01' } else { 'DNS-01' }
+    $challengeType = switch ($challengeSel) {
+        0 { 'HTTP-01' }
+        1 { 'HTTP-01-SelfHost' }
+        2 { 'DNS-01' }
+    }
 
     if ($challengeType -eq 'HTTP-01') {
         $plugin     = 'WebRoot'
         $pluginArgs = _Collect-HTTP01Args
+        if ($pluginArgs -eq $null) { return }
+        $dnsConfig = $null
+    } elseif ($challengeType -eq 'HTTP-01-SelfHost') {
+        $plugin     = 'WebSelfHost'
+        $pluginArgs = _Collect-HTTP01SelfHostArgs
         if ($pluginArgs -eq $null) { return }
         $dnsConfig = $null
     } else {
@@ -85,10 +113,19 @@
     if ($sans.Count -gt 0) {
         Write-Host "  SAN:             $($sans -join ', ')" -ForegroundColor White
     }
-    Write-Host "  Challenge:       $challengeType" -ForegroundColor White
+    $challengeTxt = switch ($challengeType) {
+        'HTTP-01'          { 'HTTP-01 (WebRoot)' }
+        'HTTP-01-SelfHost' { 'HTTP-01 (Self-hosted)' }
+        'DNS-01'           { 'DNS-01' }
+    }
+    Write-Host "  Challenge:       $challengeTxt" -ForegroundColor White
     Write-Host "  Plugin:          $plugin" -ForegroundColor White
     if ($challengeType -eq 'HTTP-01') {
         Write-Host "  WebRoot:         $($pluginArgs.WRPath)" -ForegroundColor White
+    } elseif ($challengeType -eq 'HTTP-01-SelfHost') {
+        $portTxt = if ($pluginArgs.WSHPort) { $pluginArgs.WSHPort } else { '80 (default)' }
+        Write-Host "  Listener port:   $portTxt" -ForegroundColor White
+        Write-Host "  Listener timeout: $($pluginArgs.WSHTimeout) sec" -ForegroundColor White
     } else {
         Write-Host "  DNS sleep:       $($dnsConfig.DnsSleep) sec" -ForegroundColor White
         Write-Host "  Timeout:         $($dnsConfig.ValidationTimeout) sec" -ForegroundColor White
@@ -103,10 +140,10 @@
     $result = $null
 
     Write-Host ''
-    if ($challengeType -eq 'HTTP-01') {
-        Write-Host '  [ > ] Writing challenge file and requesting validation...' -ForegroundColor Cyan
-    } else {
-        Write-Host '  [ > ] Creating DNS TXT record...' -ForegroundColor Cyan
+    switch ($challengeType) {
+        'HTTP-01'          { Write-Host '  [ > ] Writing challenge file and requesting validation...' -ForegroundColor Cyan }
+        'HTTP-01-SelfHost' { Write-Host '  [ > ] Starting HTTP listener and requesting validation...' -ForegroundColor Cyan }
+        'DNS-01'           { Write-Host '  [ > ] Creating DNS TXT record...' -ForegroundColor Cyan }
     }
 
     try {
@@ -121,10 +158,10 @@
             $certParams['ValidationTimeout'] = $dnsConfig.ValidationTimeout
         }
 
-        $spinnerMsg = if ($challengeType -eq 'HTTP-01') {
-            'Waiting for HTTP-01 validation...'
-        } else {
-            "Waiting for DNS propagation ($($dnsConfig.DnsSleep) sec)..."
+        $spinnerMsg = switch ($challengeType) {
+            'HTTP-01'          { 'Waiting for HTTP-01 validation...' }
+            'HTTP-01-SelfHost' { 'Listener running; waiting for ACME server to fetch the token...' }
+            'DNS-01'           { "Waiting for DNS propagation ($($dnsConfig.DnsSleep) sec)..." }
         }
 
         $result = Show-Spinner -Message $spinnerMsg -ScriptBlock {
@@ -144,6 +181,17 @@
             Write-Host ''
             Write-Host '  HTTP-01 tip: Verify that http://<domain>/.well-known/acme-challenge/ is reachable.' -ForegroundColor Yellow
             Write-Host '               Confirm the WebRoot path is correct and the web server serves static files there.' -ForegroundColor Yellow
+        }
+        if ($challengeType -eq 'HTTP-01-SelfHost' -and $errMsg -match 'AccessDenied|HttpListenerException|access is denied') {
+            Write-Host ''
+            Write-Host '  Self-host tip: HTTP listener could not bind. Run TU-ACME as Administrator.' -ForegroundColor Yellow
+            Write-Host '                 If a non-Microsoft web server (nginx/Apache) holds port 80,' -ForegroundColor Yellow
+            Write-Host '                 stop it first - http.sys cannot share with non-MS listeners.' -ForegroundColor Yellow
+        }
+        if ($challengeType -eq 'HTTP-01-SelfHost' -and $errMsg -match 'unauthorized|connection|fetching|timeout') {
+            Write-Host ''
+            Write-Host '  Self-host tip: ACME server could not reach the listener. Check that the' -ForegroundColor Yellow
+            Write-Host '                 port is open in the firewall and reachable from the internet.' -ForegroundColor Yellow
         }
         if ($challengeType -eq 'DNS-01' -and $errMsg -match 'DNS|TXT|propagat|timeout') {
             Write-Host ''
@@ -176,7 +224,7 @@
 
 function _Collect-HTTP01Args {
     Invoke-ConsoleClear
-    Write-Host '  === HTTP-01 Challenge ===' -ForegroundColor Cyan
+    Write-Host '  === HTTP-01 Challenge (WebRoot) ===' -ForegroundColor Cyan
     Write-Host ''
     Write-Host '  The ACME server requests a file at:' -ForegroundColor Gray
     Write-Host '    http://<your-domain>/.well-known/acme-challenge/<token>' -ForegroundColor DarkGray
@@ -199,6 +247,50 @@ function _Collect-HTTP01Args {
     if ($path -eq '') { return $null }
 
     return @{ WRPath = $path.Trim() }
+}
+
+function _Collect-HTTP01SelfHostArgs {
+    Invoke-ConsoleClear
+    Write-Host '  === HTTP-01 Challenge (Self-hosted) ===' -ForegroundColor Cyan
+    Write-Host ''
+    Write-Host '  Posh-ACME starts a temporary HTTP listener that responds to' -ForegroundColor Gray
+    Write-Host '  the ACME validation request itself. Uses Windows http.sys to' -ForegroundColor Gray
+    Write-Host '  multiplex by URL prefix: /.well-known/acme-challenge/ goes to' -ForegroundColor Gray
+    Write-Host '  our listener, everything else stays with IIS - no restart,' -ForegroundColor Gray
+    Write-Host '  no vdir, no rewrite. Same trick win-acme uses.' -ForegroundColor Gray
+    Write-Host ''
+    Write-Host '  Requirements:' -ForegroundColor Gray
+    Write-Host '   - Run TU-ACME as Administrator (http.sys binding needs elevation)' -ForegroundColor DarkGray
+    Write-Host '   - Chosen port must be reachable from the ACME server (firewall)' -ForegroundColor DarkGray
+    Write-Host '   - Non-Microsoft servers (nginx/Apache on Windows) do NOT share' -ForegroundColor DarkGray
+    Write-Host '     http.sys; stop them first if they hold the port' -ForegroundColor DarkGray
+    Write-Host ''
+
+    $portInput = Read-Host '  Listener port (blank = 80)'
+    $port = $portInput.Trim()
+    if ($port -ne '') {
+        $parsed = 0
+        if (-not ([int]::TryParse($port, [ref] $parsed)) -or $parsed -lt 1 -or $parsed -gt 65535) {
+            Write-Host "  Invalid port - falling back to 80." -ForegroundColor Yellow
+            $port = ''
+        }
+    }
+
+    $timeoutInput = Read-Host '  Listener timeout in seconds (blank = 120)'
+    $timeout = 120
+    if ($timeoutInput -ne '') {
+        $parsed = 0
+        if ([int]::TryParse($timeoutInput, [ref] $parsed) -and $parsed -gt 0) {
+            $timeout = $parsed
+        } else {
+            Write-Host "  Invalid number - using default (120 sec)." -ForegroundColor Yellow
+        }
+    }
+
+    return @{
+        WSHPort    = $port
+        WSHTimeout = $timeout
+    }
 }
 
 function _Configure-DNS01Challenge {
