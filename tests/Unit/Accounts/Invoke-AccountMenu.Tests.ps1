@@ -136,6 +136,50 @@ Describe 'Invoke-AccountMenu' -Tag Unit, Accounts {
             }
         }
 
+        Context '_New-ACMEAccount — New-PAAccount throws (-ErrorAction Stop catches non-terminating errors)' {
+            # Earlier versions did "New-PAAccount ... | Out-Null" without
+            # -ErrorAction Stop, which swallowed non-terminating errors
+            # like invalid contact / server unreachable and surfaced a
+            # generic "appears to have failed" with no useful detail.
+            BeforeEach {
+                Mock -CommandName 'Read-Host'     -MockWith { 'admin@test.dk' }
+                Mock -CommandName 'Show-Menu'     -MockWith { 0 }
+                Mock -CommandName 'New-PAAccount' -MockWith { throw 'urn:ietf:params:acme:error:malformed: contact must be valid' }
+            }
+            It 'does not call Set-PAAccount when New-PAAccount throws' {
+                _New-ACMEAccount
+                Should -Invoke Set-PAAccount -Times 0
+            }
+            It 'does not call Set-TUACMEConfig when New-PAAccount throws' {
+                _New-ACMEAccount
+                Should -Invoke Set-TUACMEConfig -Times 0
+            }
+        }
+
+        Context '_New-ACMEAccount — Get-PAAccount returns null but -List has the new account' {
+            # Posh-ACME may register an account without updating the
+            # current-account pointer. The fallback path queries -List
+            # filtered by contact email.
+            BeforeEach {
+                $script:ri = 0
+                $script:rseq = @('admin@test.dk', '')
+                Mock -CommandName 'Read-Host'     -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
+                Mock -CommandName 'Show-Menu'     -MockWith { 0 }
+                Mock -CommandName 'New-PAAccount' -MockWith { $null }
+                # Use the -ParameterFilter form to dispatch -List vs no-List
+                # cleanly (more reliable than checking $PSBoundParameters
+                # from inside the mock body).
+                Mock -CommandName 'Get-PAAccount' -ParameterFilter { $List } `
+                    -MockWith { @([PSCustomObject]@{ id = 'list-only-001'; contact = 'mailto:admin@test.dk'; status = 'valid' }) }
+                Mock -CommandName 'Get-PAAccount' -ParameterFilter { -not $List } `
+                    -MockWith { $null }
+            }
+            It 'finds the account via -List and calls Set-PAAccount with its id' {
+                _New-ACMEAccount
+                Should -Invoke Set-PAAccount -ParameterFilter { $ID -eq 'list-only-001' } -Times 1 -Exactly
+            }
+        }
+
         Context '_New-ACMEAccount — blank friendly name skips Set-TUACMEConfig' {
             BeforeEach {
                 $script:ri = 0

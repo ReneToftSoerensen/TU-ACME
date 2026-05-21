@@ -121,16 +121,32 @@ function _New-ACMEAccount {
 
     try {
         Set-PAServer $server
-        # Posh-ACME's New-PAAccount returns the new account on some
-        # versions and nothing on others. Don't rely on the return —
-        # query Get-PAAccount after the call to get the source of truth.
-        New-PAAccount -AcceptTOS -Contact "mailto:$email" | Out-Null
+
+        # -ErrorAction Stop turns Posh-ACME's non-terminating errors
+        # (e.g. invalid contact format, server unreachable, CA-side
+        # rejection) into terminating ones so we actually catch them
+        # below — without this, the error goes to the error stream
+        # silently and we see an unhelpful "account appears to have
+        # failed" with no actual reason.
+        New-PAAccount -AcceptTOS -Contact "mailto:$email" -ErrorAction Stop | Out-Null
+
+        # Posh-ACME's New-PAAccount return value is version-dependent
+        # ($null on some versions, the account on others). Use
+        # Get-PAAccount as the source of truth. If the current pointer
+        # isn't set, fall back to -List filtered by our contact email.
         $newAccount = Get-PAAccount 2>$null
+        if (-not $newAccount) {
+            $newAccount = @(Get-PAAccount -List 2>$null) |
+                Where-Object { @($_.contact) -contains "mailto:$email" } |
+                Select-Object -Last 1
+        }
 
         if (-not $newAccount) {
-            Write-Host '  Error: account creation appears to have failed.' -ForegroundColor Red
-            Write-Host '  Get-PAAccount returns nothing after New-PAAccount. Check the ACME server URL,' -ForegroundColor Yellow
-            Write-Host '  the contact email format, and network connectivity to the ACME directory.' -ForegroundColor Yellow
+            Write-Host '  Error: account was not registered on the server.' -ForegroundColor Red
+            Write-Host '  New-PAAccount returned without error but no matching account exists in' -ForegroundColor Yellow
+            Write-Host '  the Posh-ACME store. Run this manually to see the underlying error:' -ForegroundColor Yellow
+            Write-Host "    Set-PAServer $server" -ForegroundColor DarkGray
+            Write-Host "    New-PAAccount -AcceptTOS -Contact 'mailto:$email' -Verbose" -ForegroundColor DarkGray
             Write-Host ''
             Wait-AnyKey
             return
@@ -151,7 +167,11 @@ function _New-ACMEAccount {
             Write-Host "  Name:            $($friendlyName.Trim())" -ForegroundColor Green
         }
     } catch {
-        Write-Host "  Error: $_" -ForegroundColor Red
+        Write-Host '  Error creating account:' -ForegroundColor Red
+        Write-Host "    $($_.Exception.Message)" -ForegroundColor Yellow
+        if ($_.Exception.InnerException) {
+            Write-Host "    Inner: $($_.Exception.InnerException.Message)" -ForegroundColor DarkYellow
+        }
     }
 
     Write-Host ''
