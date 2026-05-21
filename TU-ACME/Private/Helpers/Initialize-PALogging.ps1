@@ -57,6 +57,23 @@ function Initialize-PALogging {
                     # function.
                     $body = $body -replace "\.GetCommand\('$name'", ".GetCommand('Posh-ACME\$name'"
 
+                    # Strip [ValidateScript({...})] attributes. Real
+                    # Posh-ACME parameters carry validators like
+                    # [ValidateScript({ Test-ValidDirUrl $_ })] where
+                    # Test-ValidDirUrl is a *private* function inside
+                    # the Posh-ACME module. ProxyCommand.Create copies
+                    # the attribute verbatim into our proxy body — but
+                    # our proxy lives in TU-ACME's scope, where that
+                    # private validator is invisible, so parameter
+                    # binding fails with
+                    #   "The term 'Test-ValidDirUrl' is not recognized".
+                    # Posh-ACME's own function re-runs validation in
+                    # ITS scope when we delegate via Posh-ACME\<cmd>,
+                    # so stripping the proxy's copy is safe.
+                    # (Single-line attribute form; multi-line ValidateScript
+                    # is not used by Posh-ACME's public surface.)
+                    $body = $body -replace '(?m)^\s*\[ValidateScript\([^\r\n]*\)\]\s*\r?\n', ''
+
                     $injection = "`r`n    try { Write-PALog -Cmdlet '$name' -BoundArgs `$PSBoundParameters } catch {}"
                     $body = $body -replace '(begin\s*\{)', "`$1$injection"
 
