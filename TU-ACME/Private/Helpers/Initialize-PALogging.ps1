@@ -11,11 +11,16 @@ function Initialize-PALogging {
     $reason    = 'OK'
 
     try {
+        # Posh-ACME should already be imported by TU-ACME.psm1's eager
+        # import at the top of module load. If it isn't, fall back to
+        # importing it here — but on PS 5.1 this nested-scope import
+        # is less reliable, so we surface the situation in the [init]
+        # line so it's easier to diagnose.
         if (-not (Get-Module -ListAvailable -Name 'Posh-ACME')) {
             $reason = 'Posh-ACME not installed on this machine'
         } elseif (-not (Get-Module -Name 'Posh-ACME')) {
             try {
-                Import-Module Posh-ACME -ErrorAction Stop -Global
+                Import-Module Posh-ACME -ErrorAction Stop
             } catch {
                 $reason = "Import-Module Posh-ACME failed: $($_.Exception.Message)"
             }
