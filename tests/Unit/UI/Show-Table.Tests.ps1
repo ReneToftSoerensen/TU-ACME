@@ -19,8 +19,18 @@ Describe 'Show-Table' -Tag Unit, UI {
         }
 
         BeforeEach {
-            Mock -CommandName 'Write-Host'          -MockWith {}
-            Mock -CommandName 'Invoke-ConsoleClear' -MockWith {}
+            Mock -CommandName 'Write-Host'               -MockWith {}
+            Mock -CommandName 'Invoke-ConsoleClear'      -MockWith {}
+            # Mock the console helpers so the real Windows cursor
+            # doesn't move during tests (otherwise Pester output
+            # overwrites the buffer from the top — looks like the
+            # screen got cleared).
+            Mock -CommandName 'Set-ConsoleCursorPos'     -MockWith {}
+            Mock -CommandName 'Set-ConsoleCursorVisible' -MockWith {}
+            Mock -CommandName 'Get-ConsoleWidth'         -MockWith { 80 }
+            Mock -CommandName 'Get-ConsoleHeight'        -MockWith { 24 }
+            Mock -CommandName 'Get-ConsoleCursorLeft'    -MockWith { 0 }
+            Mock -CommandName 'Get-ConsoleCursorTop'     -MockWith { 0 }
         }
 
         Context 'Non-interactive — no return value' {

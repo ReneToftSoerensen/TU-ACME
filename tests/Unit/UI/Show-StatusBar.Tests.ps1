@@ -10,7 +10,17 @@ Describe 'Show-StatusBar' -Tag Unit, UI {
 
     InModuleScope TU-ACME {
         BeforeEach {
-            Mock -CommandName 'Write-Host' -MockWith {}
+            Mock -CommandName 'Write-Host'               -MockWith {}
+            # Mock the console helpers so the real Windows cursor
+            # doesn't move during tests (otherwise Pester output
+            # overwrites the buffer from the top — looks like the
+            # screen got cleared).
+            Mock -CommandName 'Set-ConsoleCursorPos'     -MockWith {}
+            Mock -CommandName 'Set-ConsoleCursorVisible' -MockWith {}
+            Mock -CommandName 'Get-ConsoleWidth'         -MockWith { 80 }
+            Mock -CommandName 'Get-ConsoleHeight'        -MockWith { 24 }
+            Mock -CommandName 'Get-ConsoleCursorLeft'    -MockWith { 0 }
+            Mock -CommandName 'Get-ConsoleCursorTop'     -MockWith { 0 }
         }
 
         It 'does not throw with no parameters' {

@@ -21,8 +21,18 @@ Describe 'Show-Menu' -Tag Unit, UI {
         }
 
         BeforeEach {
-            Mock -CommandName 'Write-Host'           -MockWith {}
-            Mock -CommandName 'Invoke-ConsoleClear'  -MockWith {}
+            Mock -CommandName 'Write-Host'               -MockWith {}
+            Mock -CommandName 'Invoke-ConsoleClear'      -MockWith {}
+            # Without these mocks, Show-Menu actually moves the Windows
+            # console cursor to (0,0) and back, which causes Pester's
+            # later output to overwrite the buffer from the top — looks
+            # exactly like the screen got cleared.
+            Mock -CommandName 'Set-ConsoleCursorPos'     -MockWith {}
+            Mock -CommandName 'Set-ConsoleCursorVisible' -MockWith {}
+            Mock -CommandName 'Get-ConsoleWidth'         -MockWith { 80 }
+            Mock -CommandName 'Get-ConsoleHeight'        -MockWith { 24 }
+            Mock -CommandName 'Get-ConsoleCursorLeft'    -MockWith { 0 }
+            Mock -CommandName 'Get-ConsoleCursorTop'     -MockWith { 0 }
         }
 
         Context 'Enter on first item returns index 0' {
