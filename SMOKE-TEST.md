@@ -34,7 +34,7 @@ Start-TUACME
 ```
 
 Check:
-- [ ] Main menu title `TU-ACME v0.6.1 - Certificate Management` renders at column ~2 (the two-space indent), not centered
+- [ ] Main menu title `TU-ACME v0.7.0 - Certificate Management` renders at column ~2 (the two-space indent), not centered
 - [ ] All option lines start at column 2, not centered or right-aligned
 - [ ] After hitting `/` to search, the search prompt and input cursor sit at column 2
 - [ ] When you press a hotkey digit or arrow to navigate, the highlighted row's text stays left-anchored

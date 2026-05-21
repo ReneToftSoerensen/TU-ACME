@@ -1,5 +1,5 @@
 ﻿@{
-    ModuleVersion     = '0.6.1'
+    ModuleVersion     = '0.7.0'
     GUID              = '6F921BD1-01FD-4A14-B267-3B10108F0235'
     Author            = 'TU-ACME'
     CompanyName       = 'TU-ACME'

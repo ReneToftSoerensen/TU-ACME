@@ -39,44 +39,46 @@
     $hasWildcard = ($allDomains | Where-Object { $_ -match '^\*\.' }).Count -gt 0
 
     # Challenge type selection. HTTP-01 is offered in two flavours:
-    #   - WebRoot:    Posh-ACME writes the challenge file to a folder
-    #                 served by your existing web server.
     #   - Self-hosted: Posh-ACME starts a temporary HTTP listener via
     #                 Windows http.sys. http.sys multiplexes by URL
     #                 prefix, so /.well-known/acme-challenge/ is routed
     #                 to our listener while IIS continues to serve
     #                 everything else on port 80 — no IIS restart, no
     #                 vdir, no rewrite. Same trick win-acme uses.
+    #                 Listed first because it requires no web-server
+    #                 configuration on the host.
+    #   - WebRoot:    Posh-ACME writes the challenge file to a folder
+    #                 served by your existing web server.
     $selfHostDisabled = $hasWildcard -or (-not $script:OnWindows)
 
-    $labelWebRoot = if ($hasWildcard) {
-        '1. HTTP-01 WebRoot      (not available - wildcards require DNS-01)'
-    } else {
-        '1. HTTP-01 WebRoot      (web server serves the challenge file from a folder)'
-    }
     $labelSelfHost = if ($hasWildcard) {
-        '2. HTTP-01 Self-hosted  (not available - wildcards require DNS-01)'
+        '1. HTTP-01 Self-hosted  (not available - wildcards require DNS-01)'
     } elseif (-not $script:OnWindows) {
-        '2. HTTP-01 Self-hosted  (Windows only - uses http.sys to coexist with IIS)'
+        '1. HTTP-01 Self-hosted  (Windows only - uses http.sys to coexist with IIS)'
     } else {
-        '2. HTTP-01 Self-hosted  (Posh-ACME starts an HTTP listener; coexists with IIS)'
+        '1. HTTP-01 Self-hosted  (Posh-ACME starts an HTTP listener; coexists with IIS)'
+    }
+    $labelWebRoot = if ($hasWildcard) {
+        '2. HTTP-01 WebRoot      (not available - wildcards require DNS-01)'
+    } else {
+        '2. HTTP-01 WebRoot      (web server serves the challenge file from a folder)'
     }
     $challengeOptions = @(
-        $labelWebRoot,
         $labelSelfHost,
+        $labelWebRoot,
         '3. DNS-01               (DNS TXT record, required for wildcards)'
     )
     $disabled = @()
-    if ($hasWildcard)      { $disabled += 0 }
-    if ($selfHostDisabled) { $disabled += 1 }
+    if ($selfHostDisabled) { $disabled += 0 }
+    if ($hasWildcard)      { $disabled += 1 }
 
     $challengeSel = Show-Menu -Title 'Select challenge type' `
         -Options $challengeOptions -DisabledIndices $disabled
     if ($challengeSel -lt 0) { return }
 
     $challengeType = switch ($challengeSel) {
-        0 { 'HTTP-01' }
-        1 { 'HTTP-01-SelfHost' }
+        0 { 'HTTP-01-SelfHost' }
+        1 { 'HTTP-01' }
         2 { 'DNS-01' }
     }
 

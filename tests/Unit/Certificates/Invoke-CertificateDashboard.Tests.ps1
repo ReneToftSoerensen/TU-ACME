@@ -66,5 +66,48 @@ Describe 'Invoke-CertificateDashboard' -Tag Unit, Certificates {
                 { Invoke-CertificateDashboard } | Should -Not -Throw
             }
         }
+
+        Context "Detail view — 'D' confirmed deletes certificate" {
+            BeforeEach {
+                Mock -CommandName 'Get-PACertificate' -MockWith { @(New-FakeCertificate) }
+                $script:tableCall = 0
+                Mock -CommandName 'Show-Table' -MockWith {
+                    if ($script:tableCall -eq 0) { $script:tableCall++; return 0 }
+                    return -1
+                }
+                Mock -CommandName 'Invoke-ConsoleReadKey' -MockWith {
+                    New-Object System.ConsoleKeyInfo([char]'d', [System.ConsoleKey]::D, $false, $false, $false)
+                }
+                Mock -CommandName 'Confirm-YesNo'        -MockWith { $true }
+                Mock -CommandName 'Remove-PACertificate' -MockWith {}
+                Mock -CommandName 'Write-EventLogEntry'  -MockWith {}
+            }
+            It 'calls Remove-PACertificate with the cert MainDomain' {
+                Invoke-CertificateDashboard
+                Should -Invoke Remove-PACertificate -Times 1 -ParameterFilter {
+                    $MainDomain -eq 'eksempel.dk'
+                }
+            }
+        }
+
+        Context "Detail view — 'D' cancelled does NOT delete" {
+            BeforeEach {
+                Mock -CommandName 'Get-PACertificate' -MockWith { @(New-FakeCertificate) }
+                $script:tableCall = 0
+                Mock -CommandName 'Show-Table' -MockWith {
+                    if ($script:tableCall -eq 0) { $script:tableCall++; return 0 }
+                    return -1
+                }
+                Mock -CommandName 'Invoke-ConsoleReadKey' -MockWith {
+                    New-Object System.ConsoleKeyInfo([char]'d', [System.ConsoleKey]::D, $false, $false, $false)
+                }
+                Mock -CommandName 'Confirm-YesNo'        -MockWith { $false }
+                Mock -CommandName 'Remove-PACertificate' -MockWith {}
+            }
+            It 'does NOT call Remove-PACertificate when user declines' {
+                Invoke-CertificateDashboard
+                Should -Invoke Remove-PACertificate -Times 0
+            }
+        }
     }
 }

@@ -34,7 +34,8 @@ function Initialize-PALogging {
             $cmds = @(
                 'Get-PAAccount','New-PAAccount','Set-PAAccount',
                 'Get-PAServer','Set-PAServer',
-                'Get-PACertificate','New-PACertificate','Submit-Renewal',
+                'Get-PACertificate','New-PACertificate','Remove-PACertificate',
+                'Submit-Renewal',
                 'Get-PAPlugin','Get-PAPluginArgs'
             )
 

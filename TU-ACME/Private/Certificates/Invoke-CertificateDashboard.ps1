@@ -80,7 +80,7 @@ function _Show-CertDetail {
     }
 
     Write-Host ''
-    Write-Host '  [E] Export  [R] Renew now  [ESC] Back' -ForegroundColor DarkGray
+    Write-Host '  [E] Export  [R] Renew now  [D] Delete  [ESC] Back' -ForegroundColor DarkGray
 
     while ($true) {
         $key = Invoke-ConsoleReadKey
@@ -96,6 +96,25 @@ function _Show-CertDetail {
                     Write-Host "  Error: $_" -ForegroundColor Red
                 }
                 Wait-AnyKey
+                return
+            }
+            '^[Dd]$' {
+                Write-Host ''
+                Write-Host "  Delete certificate for '$($Cert.MainDomain)' from the Posh-ACME store?" -ForegroundColor Yellow
+                Write-Host '  This removes the local certificate, key, and renewal config.' -ForegroundColor DarkGray
+                Write-Host '  The ACME order itself is unaffected; the cert is not revoked.' -ForegroundColor DarkGray
+                Write-Host ''
+                if (Confirm-YesNo '  Confirm delete? (y/N)' -Default $false) {
+                    try {
+                        Remove-PACertificate -MainDomain $Cert.MainDomain -Force
+                        Write-Host '  Certificate removed.' -ForegroundColor Green
+                        Write-EventLogEntry -EventId 1003 -EntryType Information `
+                            -Message "TU-ACME: Removed certificate $($Cert.MainDomain)"
+                    } catch {
+                        Write-Host "  Error: $_" -ForegroundColor Red
+                    }
+                    Wait-AnyKey
+                }
                 return
             }
         }
