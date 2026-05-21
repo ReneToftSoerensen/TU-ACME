@@ -2,7 +2,7 @@
     $configPath = Join-Path $env:ProgramData 'TU-ACME\config.json'
 
     $defaults = [PSCustomObject]@{
-        Version       = '0.3.0'
+        Version       = '0.4.0'
         ScheduledTask = [PSCustomObject]@{
             TaskName     = 'Posh-ACME-AutoRenewal'
             RunTime      = '03:00'
@@ -25,6 +25,7 @@
             DefaultValidationTimeout = 60
             PersistentRecords       = $false
         }
+        Accounts      = [PSCustomObject]@{}
     }
 
     if (-not (Test-Path $configPath)) {
