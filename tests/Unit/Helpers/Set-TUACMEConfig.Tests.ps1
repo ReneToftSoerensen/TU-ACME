@@ -12,14 +12,16 @@ Describe 'Set-TUACMEConfig' -Tag Unit, Helpers {
     InModuleScope TU-ACME {
         Context 'Writes JSON to config path' {
             BeforeEach {
-                $script:tmp       = New-TempTestDir
-                $script:cfgDir    = Join-Path $script:tmp 'TU-ACME'
-                $script:cfgPath   = Join-Path $script:cfgDir 'config.json'
-                Mock -CommandName 'Test-Path'    -MockWith { $false } -ParameterFilter { $Path -eq $script:cfgDir }
+                # Unconditional mocks - the previous ParameterFilter
+                # ($Path -eq $script:cfgDir) never matched because the
+                # production code uses $env:ProgramData\TU-ACME, not a
+                # test-scoped path. Test-Path then ran for real against
+                # whatever existed on disk and the assertion flapped
+                # depending on whether TU-ACME was installed.
+                Mock -CommandName 'Test-Path'    -MockWith { $false }
                 Mock -CommandName 'New-Item'     -MockWith {}
                 Mock -CommandName 'Set-Content'  -MockWith { $script:writtenContent = $Value }
             }
-            AfterEach { Remove-TempTestDir $script:tmp }
 
             It 'calls Set-Content once' {
                 Set-TUACMEConfig -Config (New-FakeConfig)
