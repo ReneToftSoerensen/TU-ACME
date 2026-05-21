@@ -15,4 +15,9 @@ foreach ($file in ($Private + $Public)) {
     catch { Write-Error "Failed to dot-source $($file.FullName): $_" }
 }
 
+# Install logging proxies for every Posh-ACME cmdlet TU-ACME calls so
+# we have an audit trail under $env:ProgramData\TU-ACME\posh-acme.log.
+# Must run after the helpers above are dot-sourced.
+Initialize-PALogging
+
 Export-ModuleMember -Function $Public.BaseName

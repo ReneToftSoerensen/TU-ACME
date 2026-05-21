@@ -91,19 +91,24 @@ Describe 'Invoke-AccountMenu' -Tag Unit, Accounts {
         }
 
         Context '_New-ACMEAccount — production server selected' {
+            # Reproduces what happens on Posh-ACME versions where
+            # New-PAAccount returns $null but the account *was* created.
+            # The implementation must query Get-PAAccount post-call to
+            # get the source of truth.
             BeforeEach {
                 $script:ri = 0
                 $script:rseq = @('admin@test.dk', 'Production')  # email, friendly name
                 Mock -CommandName 'Read-Host'     -MockWith { $r = $script:rseq[$script:ri]; $script:ri++; $r }
                 Mock -CommandName 'Show-Menu'     -MockWith { 0 }
                 Mock -CommandName 'Set-PAServer'  -MockWith {}
-                Mock -CommandName 'New-PAAccount' -MockWith { [PSCustomObject]@{ id = 'new-001' } }
+                Mock -CommandName 'New-PAAccount' -MockWith { $null }   # simulate "no return"
+                Mock -CommandName 'Get-PAAccount' -MockWith { [PSCustomObject]@{ id = 'new-001' } }
             }
             It 'calls New-PAAccount once' {
                 _New-ACMEAccount
                 Should -Invoke New-PAAccount -Times 1 -Exactly
             }
-            It 'activates the new account via Set-PAAccount so subsequent Get-PAAccount -List finds it' {
+            It 'activates the account it discovers via Get-PAAccount (not via New-PAAccount return)' {
                 _New-ACMEAccount
                 Should -Invoke Set-PAAccount -ParameterFilter { $ID -eq 'new-001' } -Times 1 -Exactly
             }
@@ -113,11 +118,13 @@ Describe 'Invoke-AccountMenu' -Tag Unit, Accounts {
             }
         }
 
-        Context '_New-ACMEAccount — New-PAAccount returns nothing (server unreachable / invalid contact)' {
+        Context '_New-ACMEAccount — both New-PAAccount and Get-PAAccount return nothing' {
+            # Only here should we surface the failure to the user.
             BeforeEach {
                 Mock -CommandName 'Read-Host'     -MockWith { 'admin@test.dk' }
                 Mock -CommandName 'Show-Menu'     -MockWith { 0 }
                 Mock -CommandName 'New-PAAccount' -MockWith { $null }
+                Mock -CommandName 'Get-PAAccount' -MockWith { $null }
             }
             It 'does not call Set-PAAccount' {
                 _New-ACMEAccount

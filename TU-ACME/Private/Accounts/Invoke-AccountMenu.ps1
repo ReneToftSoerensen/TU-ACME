@@ -121,9 +121,16 @@ function _New-ACMEAccount {
 
     try {
         Set-PAServer $server
-        $newAccount = New-PAAccount -AcceptTOS -Contact "mailto:$email"
+        # Posh-ACME's New-PAAccount returns the new account on some
+        # versions and nothing on others. Don't rely on the return —
+        # query Get-PAAccount after the call to get the source of truth.
+        New-PAAccount -AcceptTOS -Contact "mailto:$email" | Out-Null
+        $newAccount = Get-PAAccount 2>$null
+
         if (-not $newAccount) {
-            Write-Host '  Error: New-PAAccount returned nothing. Verify the ACME server URL and contact email.' -ForegroundColor Red
+            Write-Host '  Error: account creation appears to have failed.' -ForegroundColor Red
+            Write-Host '  Get-PAAccount returns nothing after New-PAAccount. Check the ACME server URL,' -ForegroundColor Yellow
+            Write-Host '  the contact email format, and network connectivity to the ACME directory.' -ForegroundColor Yellow
             Write-Host ''
             Wait-AnyKey
             return
