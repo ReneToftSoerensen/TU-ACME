@@ -116,7 +116,7 @@ All `.ps1`, `.psm1`, and `.psd1` files in the repository **must** be saved as **
 7. **Always bump the version** before pushing user-visible changes. See **Versioning** below for the rules and the exact files to update.
 
 ## Versioning
-The project follows semver. Pre-1.0 releases use `0.MINOR.PATCH`:
+The project follows semver. All `0.x.y` releases are development / pre-production; `1.0.0` is the first production-ready tag. Pre-1.0 releases use `0.MINOR.PATCH`:
 - **PATCH** (`0.1.0` → `0.1.1`) — bug fixes, internal refactors, doc-only edits, CI changes.
 - **MINOR** (`0.1.0` → `0.2.0`) — new user-visible features, behavior changes, new menu options, new prompts.
 - **MAJOR** (`0.x.y` → `1.0.0`) — first production-ready release; bump only after the full SMOKE-TEST checklist passes on Windows.
