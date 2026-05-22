@@ -28,7 +28,16 @@ Initialize-TUACMEStore | Out-Null
 # before any function definitions or proxy installation, sidesteps that.
 if (Get-Module -ListAvailable -Name 'Posh-ACME') {
     try {
-        Import-Module Posh-ACME -ErrorAction Stop
+        # -Force matters here: if Posh-ACME was loaded earlier in the
+        # session (e.g. the user dot-sourced or imported it manually
+        # before Import-Module TU-ACME), Posh-ACME has already cached
+        # its store root from whatever POSHACME_HOME was at THAT
+        # moment - usually undefined, falling back to the per-user
+        # %LOCALAPPDATA%\Posh-ACME path. A plain Import-Module is a
+        # no-op against an already-loaded module and would not
+        # re-read the env var. -Force tears it down and reloads,
+        # picking up the value Initialize-TUACMEStore set above.
+        Import-Module Posh-ACME -Force -ErrorAction Stop
     } catch {
         Write-Warning "TU-ACME: Could not import Posh-ACME at module load: $($_.Exception.Message)"
     }
