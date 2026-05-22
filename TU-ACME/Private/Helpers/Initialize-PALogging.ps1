@@ -85,6 +85,28 @@ function Initialize-PALogging {
                     # single-line and multi-line attribute bodies.
                     $body = $body -replace '(?s)\s*\[ValidateScript\(.*?\)\]\s*\r?\n', ''
 
+                    # Strip Posh-ACME private type annotations on
+                    # parameters. ProxyCommand.Create copies them
+                    # verbatim, but types like [RevocationReasons]
+                    # (an enum defined inside Posh-ACME) cannot be
+                    # resolved from TU-ACME's scope - parameter
+                    # binding throws "Unable to find type
+                    # [RevocationReasons]" when the proxy is called,
+                    # even if the user never passes -Reason.
+                    # Stripping the annotation drops the proxy's
+                    # parameter to [object]; the wrapped Posh-ACME
+                    # cmdlet still has its own typed param block and
+                    # re-validates inside its own scope where the
+                    # type IS visible. Pattern matches a bare type
+                    # annotation on its own line: "[TypeName]" or
+                    # "[TypeName[]]" with no parentheses (so we
+                    # don't accidentally strip [Parameter(...)],
+                    # [ValidateSet(...)], [Alias(...)], etc.).
+                    $privateTypes = @('RevocationReasons')
+                    foreach ($t in $privateTypes) {
+                        $body = $body -replace "(?m)^\s*\[$t\]\s*\r?\n", ''
+                    }
+
                     $injection = "`r`n    try { Write-PALog -Cmdlet '$name' -BoundArgs `$PSBoundParameters } catch {}"
                     $body = $body -replace '(begin\s*\{)', "`$1$injection"
 

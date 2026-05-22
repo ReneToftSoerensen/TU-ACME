@@ -63,7 +63,7 @@
             'Q. Exit'
         )
 
-        $selection = Show-Menu -Title 'TU-ACME v0.9.2 — Certificate Management' `
+        $selection = Show-Menu -Title 'TU-ACME v0.9.3 — Certificate Management' `
             -Options $menuOptions -DisabledIndices $disabled
 
         switch ($selection) {
