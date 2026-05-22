@@ -124,7 +124,7 @@ Expected output:
 ```
 ModuleType  Version  Name      ExportedCommands
 ----------  -------  ----      ----------------
-Script      0.9.3    TU-ACME   Start-TUACME
+Script      0.10.0   TU-ACME   Start-TUACME
 ```
 
 ---
@@ -151,8 +151,11 @@ TU-ACME automatically creates these folders on first startup:
 | `$env:ProgramData\TU-ACME\config.json` | Non-secret settings (SMTP, Task, Dashboard, DNS) |
 | `$env:ProgramData\TU-ACME\smtp-credentials.xml` | SMTP credentials (DPAPI-encrypted) |
 | `$env:ProgramData\TU-ACME\acmedns-accounts\` | ACME-DNS account JSON files (one per domain) |
+| `$env:ProgramData\TU-ACME\Posh-ACME\` | Posh-ACME data store (servers, accounts, certs, orders) — points the `POSHACME_HOME` env var here so both the interactive admin and the SYSTEM scheduled task read the same data |
 
-The folders are created with standard Windows permissions — accessible to all users and the `SYSTEM` account.
+The folders are created with standard Windows permissions — accessible to all users and the `SYSTEM` account. The Posh-ACME store gets an explicit ACL granting Administrators + SYSTEM Full Control so a SYSTEM-run renewal task can read and write certs created by the interactive admin.
+
+> **Migration:** if you used a TU-ACME release earlier than 0.10.0, Posh-ACME data lives in `$env:LOCALAPPDATA\Posh-ACME\` under the admin's profile. On first launch of 0.10.0+ TU-ACME offers a one-click copy of that data into the new machine-wide location. The legacy folder is left in place as a rollback.
 
 ### Create manually (optional)
 

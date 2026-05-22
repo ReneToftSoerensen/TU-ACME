@@ -24,6 +24,14 @@
         New-Item -ItemType Directory -Path $configDir -Force | Out-Null
     }
 
+    # One-time migration from the legacy per-user Posh-ACME store
+    # ($env:LOCALAPPDATA\Posh-ACME) to the new machine-wide store
+    # ($env:ProgramData\TU-ACME\Posh-ACME). No-op when there is no
+    # legacy data or the new store already has content.
+    try {
+        Invoke-TUACMEStoreMigration -StoreRoot (Join-Path $env:ProgramData 'TU-ACME\Posh-ACME')
+    } catch {}
+
     # Register Event Log source if admin
     if ($script:TUACMEIsAdmin) {
         Write-EventLogEntry -EventId 1000 -Message 'TU-ACME started.' -EntryType Information
@@ -63,7 +71,7 @@
             'Q. Exit'
         )
 
-        $selection = Show-Menu -Title 'TU-ACME v0.9.3 — Certificate Management' `
+        $selection = Show-Menu -Title 'TU-ACME v0.10.0 — Certificate Management' `
             -Options $menuOptions -DisabledIndices $disabled
 
         switch ($selection) {

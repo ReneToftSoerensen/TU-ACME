@@ -291,5 +291,25 @@ function _Remove-TUACMECertDir {
     if (-not $looksRight) {
         throw "Folder $certDir does not look like a Posh-ACME cert directory; refusing to delete."
     }
+    $certLeaf   = Split-Path -Leaf $certDir
+    $accountDir = Split-Path -Parent $certDir
     Remove-Item -Path $certDir -Recurse -Force -ErrorAction Stop
+
+    # Clear the account-level current-order.txt if it still points at
+    # the cert we just removed. Posh-ACME writes this pointer when an
+    # order becomes active and does not clean it up when the order's
+    # folder is removed externally - leaving a dangling reference that
+    # causes Get-PACertificate -List to surface a phantom entry on the
+    # next dashboard refresh.
+    if ($accountDir) {
+        $pointer = Join-Path $accountDir 'current-order.txt'
+        if (Test-Path -LiteralPath $pointer) {
+            try {
+                $target = (Get-Content -Path $pointer -Raw -ErrorAction SilentlyContinue).Trim()
+                if ($target -eq $certLeaf) {
+                    Remove-Item -Path $pointer -Force -ErrorAction SilentlyContinue
+                }
+            } catch {}
+        }
+    }
 }

@@ -24,10 +24,21 @@ if (-not $env:COMPUTERNAME) { $env:COMPUTERNAME = [System.Net.Dns]::GetHostName(
 # TU-ACME's tree next to this script.
 $script:OnWindows = $true
 $helpersDir = Join-Path $PSScriptRoot '..\Private\Helpers'
+. (Join-Path $helpersDir 'Initialize-TUACMEStore.ps1')
 . (Join-Path $helpersDir 'Get-TUACMEConfig.ps1')
 . (Join-Path $helpersDir 'Write-EventLogEntry.ps1')
 . (Join-Path $helpersDir 'Send-TUACMEMail.ps1')
 . (Join-Path $PSScriptRoot 'Posh-ACME-IIS-Plugin.ps1')   # defines Update-IISBindingForCert
+
+# Point Posh-ACME at the shared ProgramData store BEFORE Import-Module
+# Posh-ACME below. Without this, SYSTEM's Posh-ACME falls back to
+# C:\Windows\System32\config\systemprofile\AppData\Local\Posh-ACME and
+# sees none of the certs the interactive admin created under their
+# own profile. The machine-scope POSHACME_HOME env var that
+# Initialize-TUACMEStore persists on first interactive run would also
+# work here for new SYSTEM sessions, but setting it explicitly per
+# invocation makes the wiring robust against env-var drift.
+Initialize-TUACMEStore | Out-Null
 
 function Send-ErrorMail {
     param([string] $Domain, [string] $ErrorMessage)

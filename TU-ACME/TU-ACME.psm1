@@ -7,6 +7,13 @@ if (-not $env:ProgramFiles) { $env:ProgramFiles = [System.IO.Path]::GetTempPath(
 if (-not $env:LOCALAPPDATA) { $env:LOCALAPPDATA = Join-Path ([System.IO.Path]::GetTempPath()) 'TU-ACME-Local' }
 if (-not $env:COMPUTERNAME) { $env:COMPUTERNAME = [System.Net.Dns]::GetHostName() }
 
+# Redirect Posh-ACME's data store to a machine-wide ProgramData path
+# BEFORE we import Posh-ACME below. Posh-ACME reads POSHACME_HOME on
+# Import-Module to resolve the store root, then caches it for the
+# session - so the env var has to be in place first.
+. (Join-Path $PSScriptRoot 'Private\Helpers\Initialize-TUACMEStore.ps1')
+Initialize-TUACMEStore | Out-Null
+
 # Eagerly import Posh-ACME at the top of module load. The PA-logging
 # proxies installed below by Initialize-PALogging need to resolve
 # 'Posh-ACME\<cmd>' at runtime; importing here ensures Posh-ACME is in

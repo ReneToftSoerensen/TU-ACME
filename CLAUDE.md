@@ -37,6 +37,7 @@ TU-ACME/
 | Distribution | PowerShell module (`.psm1` + `.psd1`) |
 | Install path | `$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME\` (AllUsers) |
 | Configuration | JSON (`$env:ProgramData\TU-ACME\config.json`) |
+| Posh-ACME store | `$env:ProgramData\TU-ACME\Posh-ACME\` (machine-wide via `POSHACME_HOME`; ACL: Administrators + SYSTEM Full Control) |
 | Secret data | `Export-Clixml` DPAPI encryption (`.xml`) |
 | Email | `Send-MailMessage` plaintext |
 | IIS scope | Local IIS with thumbprint matching |
