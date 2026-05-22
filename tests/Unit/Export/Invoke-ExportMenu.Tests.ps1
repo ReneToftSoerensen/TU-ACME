@@ -71,12 +71,13 @@ Describe 'Invoke-ExportMenu' -Tag Unit, Export {
             }
         }
 
-        Context '_Import-WinStore — not admin — returns early' {
+        Context '_Import-WinStore — not Windows — refuses' {
             BeforeEach {
-                $script:TUACMEIsAdmin = $false
-                Mock -CommandName 'Show-StatusBar' -MockWith {}
-                Mock -CommandName 'Start-Sleep'    -MockWith {}
+                $script:OnWindows = $false
                 Mock -CommandName 'Import-PfxCertificate' -MockWith {}
+            }
+            AfterEach {
+                $script:OnWindows = $true   # restore so later tests see Windows
             }
             It 'does not call Import-PfxCertificate' {
                 _Import-WinStore -Cert (New-FakeCertificate)
@@ -84,15 +85,55 @@ Describe 'Invoke-ExportMenu' -Tag Unit, Export {
             }
         }
 
-        Context '_Import-WinStore — admin, imports to My store' {
+        Context '_Import-WinStore — not admin — imports to CurrentUser without prompting for scope' {
             BeforeEach {
-                $script:TUACMEIsAdmin = $true
+                $script:OnWindows     = $true
+                $script:TUACMEIsAdmin = $false
+                Mock -CommandName 'Test-Path'             -MockWith { $true }
                 Mock -CommandName 'Show-Menu'             -MockWith { 0 }   # My store
                 Mock -CommandName 'Import-PfxCertificate' -MockWith {}
+                Mock -CommandName 'Write-EventLogEntry'   -MockWith {}
+            }
+            It 'calls Import-PfxCertificate exactly once' {
+                _Import-WinStore -Cert (New-FakeCertificate)
+                Should -Invoke Import-PfxCertificate -Times 1 -Exactly
+            }
+            It 'calls Show-Menu exactly once (store-only, no scope prompt)' {
+                _Import-WinStore -Cert (New-FakeCertificate)
+                Should -Invoke Show-Menu -Times 1 -Exactly
+            }
+        }
+
+        Context '_Import-WinStore — admin — prompts for scope then store' {
+            BeforeEach {
+                $script:OnWindows     = $true
+                $script:TUACMEIsAdmin = $true
+                Mock -CommandName 'Test-Path'             -MockWith { $true }
+                # Two Show-Menu calls: scope (return 0 = LocalMachine), store (return 0 = My)
+                Mock -CommandName 'Show-Menu'             -MockWith { 0 }
+                Mock -CommandName 'Import-PfxCertificate' -MockWith {}
+                Mock -CommandName 'Write-EventLogEntry'   -MockWith {}
+            }
+            It 'calls Show-Menu twice (scope + store)' {
+                _Import-WinStore -Cert (New-FakeCertificate)
+                Should -Invoke Show-Menu -Times 2 -Exactly
             }
             It 'calls Import-PfxCertificate once' {
                 _Import-WinStore -Cert (New-FakeCertificate)
                 Should -Invoke Import-PfxCertificate -Times 1 -Exactly
+            }
+        }
+
+        Context '_Import-WinStore — admin cancels scope prompt — does not import' {
+            BeforeEach {
+                $script:OnWindows     = $true
+                $script:TUACMEIsAdmin = $true
+                Mock -CommandName 'Show-Menu'             -MockWith { -1 }   # ESC scope prompt
+                Mock -CommandName 'Import-PfxCertificate' -MockWith {}
+            }
+            It 'does not call Import-PfxCertificate' {
+                _Import-WinStore -Cert (New-FakeCertificate)
+                Should -Invoke Import-PfxCertificate -Times 0
             }
         }
     }

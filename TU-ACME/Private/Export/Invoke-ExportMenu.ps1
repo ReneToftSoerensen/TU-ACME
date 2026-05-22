@@ -132,15 +132,33 @@ function _Export-PEM {
 function _Import-WinStore {
     param($Cert)
 
-    if (-not $script:TUACMEIsAdmin) {
-        Show-StatusBar -AdminWarning 'Import to Windows Store requires administrator privileges'
-        Start-Sleep -Seconds 2
+    if (-not $script:OnWindows) {
+        Write-Host '  Windows certificate store is only available on Windows.' -ForegroundColor Yellow
+        Wait-AnyKey
         return
     }
 
     Invoke-ConsoleClear
     Write-Host '  === Import to Windows Certificate Store ===' -ForegroundColor Cyan
     Write-Host ''
+
+    # Scope selection. LocalMachine requires admin; CurrentUser is
+    # always allowed. If we're not admin there's only one valid choice
+    # so we skip the prompt entirely.
+    $scope = 'CurrentUser'
+    if ($script:TUACMEIsAdmin) {
+        $scopeOptions = @(
+            '1. Local computer (LocalMachine) — visible to all users and services',
+            '2. Current user (CurrentUser)    — only the user running TU-ACME'
+        )
+        $scopeSel = Show-Menu -Title 'Where should the certificate be imported?' -Options $scopeOptions
+        if ($scopeSel -lt 0) { return }
+        $scope = if ($scopeSel -eq 0) { 'LocalMachine' } else { 'CurrentUser' }
+    } else {
+        Write-Host '  Not running as administrator — importing into CurrentUser store.' -ForegroundColor Yellow
+        Write-Host '  Re-run TU-ACME elevated to install into LocalMachine.' -ForegroundColor DarkGray
+        Write-Host ''
+    }
 
     $storeOptions = @(
         '1. Personal (My)',
@@ -150,14 +168,31 @@ function _Import-WinStore {
     if ($storeSel -lt 0) { return }
 
     $storeName = if ($storeSel -eq 0) { 'My' } else { 'WebHosting' }
+    $certLoc   = "Cert:\$scope\$storeName"
+
+    if (-not $Cert.PfxFile -or -not (Test-Path $Cert.PfxFile)) {
+        Write-Host "  PFX file not found at: $($Cert.PfxFile)" -ForegroundColor Red
+        Write-Host '  The certificate may have been issued without a PFX bundle.' -ForegroundColor DarkGray
+        Wait-AnyKey
+        return
+    }
 
     try {
         Import-PfxCertificate -FilePath $Cert.PfxFile `
-            -CertStoreLocation "Cert:\LocalMachine\$storeName" `
+            -CertStoreLocation $certLoc `
             -Exportable | Out-Null
-        Write-Host "  Certificate imported to LocalMachine\$storeName." -ForegroundColor Green
+        $displayName = _Get-TUACMECertDisplayName -Cert $Cert
+        Write-Host "  Certificate '$displayName' imported to $scope\$storeName." -ForegroundColor Green
+        Write-EventLogEntry -EventId 1006 -EntryType Information `
+            -Message "TU-ACME: Imported $displayName to $scope\$storeName"
     } catch {
         Write-Host "  Import error: $_" -ForegroundColor Red
+        if ("$_" -match 'denied|not authorized') {
+            Write-Host "  Tip: writing to $scope\$storeName needs more rights." -ForegroundColor Yellow
+            if ($scope -eq 'LocalMachine') {
+                Write-Host '       Re-run TU-ACME elevated.' -ForegroundColor Yellow
+            }
+        }
     }
 
     Write-Host ''

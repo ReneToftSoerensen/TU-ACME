@@ -59,7 +59,7 @@ This is a test email from TU-ACME.
 
 Timestamp:   $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 Server:      $env:COMPUTERNAME
-Version:     0.8.2
+Version:     0.9.0
 
 -- Sent automatically by TU-ACME --
 "@
