@@ -40,14 +40,21 @@
     foreach ($srv in $servers) {
         if (-not $srv) { continue }
         $srvName = if ($srv.Name) { $srv.Name } else { $srv.location }
-        if (-not $srvName) {
-            try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='skip-server'; Reason='no Name or location' } } catch {}
+        $srvUrl  = $srv.location
+        if (-not $srvUrl) {
+            try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='skip-server'; Server=$srvName; Reason='no location URL' } } catch {}
             continue
         }
+        # Posh-ACME 4.32 validates Set-PAServer -DirectoryUrl strictly:
+        # only built-in short names (LE_PROD, LE_STAGE, etc.) or a
+        # full https:// URL are accepted. Custom-named servers
+        # ("acme", "acme.fragt.root.local") get rejected if we pass
+        # their short Name. Always pass the location URL — it works
+        # for both built-in and custom servers.
         try {
-            Set-PAServer $srvName -ErrorAction Stop
+            Set-PAServer -DirectoryUrl $srvUrl -ErrorAction Stop
         } catch {
-            try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='skip-server'; Server=$srvName; Reason="Set-PAServer failed: $($_.Exception.Message)" } } catch {}
+            try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='skip-server'; Server=$srvName; Url=$srvUrl; Reason="Set-PAServer failed: $($_.Exception.Message)" } } catch {}
             continue
         }
 
@@ -117,9 +124,10 @@
 
     try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='done'; Kept=$all.Count; Skipped=$skipped } } catch {}
 
-    # Restore the active context (best-effort).
-    if ($origServer -and $origServer.Name) {
-        try { Set-PAServer $origServer.Name -ErrorAction SilentlyContinue } catch {}
+    # Restore the active context (best-effort). Always use the
+    # location URL for the same reason as above.
+    if ($origServer -and $origServer.location) {
+        try { Set-PAServer -DirectoryUrl $origServer.location -ErrorAction SilentlyContinue } catch {}
     }
     if ($origAccount -and $origAccount.id) {
         try { Set-PAAccount -ID $origAccount.id -ErrorAction SilentlyContinue } catch {}

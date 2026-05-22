@@ -184,9 +184,11 @@ Describe 'Invoke-CertificateDashboard' -Tag Unit, Certificates {
             BeforeEach {
                 Mock -CommandName 'Get-TUACMEAllCertificates' -MockWith { @() }
             }
-            It 'restores the entry server when leaving the dashboard' {
+            It 'restores the entry server URL when leaving the dashboard' {
                 Invoke-CertificateDashboard
-                Should -Invoke Set-PAServer -ParameterFilter { $DirectoryUrl -eq 'LE_PROD' }
+                Should -Invoke Set-PAServer -ParameterFilter {
+                    $DirectoryUrl -eq 'https://acme-v02.api.letsencrypt.org/directory'
+                }
             }
         }
     }

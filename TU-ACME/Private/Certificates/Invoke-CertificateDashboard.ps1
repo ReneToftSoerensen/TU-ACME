@@ -64,8 +64,10 @@
     } finally {
         # Restore the active server+account that was in effect when the
         # dashboard was entered (renew/delete may have switched it).
-        if ($entryServer -and $entryServer.Name) {
-            try { Set-PAServer $entryServer.Name -ErrorAction SilentlyContinue } catch {}
+        # Always use the location URL — Posh-ACME 4.32 rejects custom
+        # server short names via -DirectoryUrl validation.
+        if ($entryServer -and $entryServer.location) {
+            try { Set-PAServer -DirectoryUrl $entryServer.location -ErrorAction SilentlyContinue } catch {}
         }
         if ($entryAccount -and $entryAccount.id) {
             try { Set-PAAccount -ID $entryAccount.id -ErrorAction SilentlyContinue } catch {}
@@ -198,9 +200,13 @@ function _Switch-PAContext {
     # Switch the active Posh-ACME server+account so that subsequent
     # calls (Submit-Renewal, etc.) target this cert. The dashboard's
     # outer try/finally restores the entry context when the user
-    # exits.
-    if ($Cert.ServerName) {
-        Set-PAServer $Cert.ServerName -ErrorAction SilentlyContinue
+    # exits. Use ServerLocation (URL) not ServerName because
+    # Posh-ACME 4.32 only accepts built-in short names or full
+    # https:// URLs via -DirectoryUrl.
+    if ($Cert.ServerLocation) {
+        Set-PAServer -DirectoryUrl $Cert.ServerLocation -ErrorAction SilentlyContinue
+    } elseif ($Cert.ServerName) {
+        Set-PAServer -DirectoryUrl $Cert.ServerName -ErrorAction SilentlyContinue
     }
     if ($Cert.AccountID) {
         Set-PAAccount -ID $Cert.AccountID -ErrorAction SilentlyContinue
