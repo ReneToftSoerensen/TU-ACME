@@ -33,15 +33,8 @@
                 $days = if ($_.NotAfter) {
                     [int](($_.NotAfter - (Get-Date)).TotalDays)
                 } else { -1 }
-                $domain = if ($_.MainDomain) {
-                    $_.MainDomain
-                } elseif ($_.CertFile) {
-                    Split-Path -Leaf (Split-Path -Parent $_.CertFile)
-                } else {
-                    '(unknown)'
-                }
                 [PSCustomObject]@{
-                    Domain   = $domain
+                    Domain   = _Get-TUACMECertDisplayName -Cert $_
                     Server   = if ($_.ServerName) { $_.ServerName } else { '(unknown)' }
                     Expires  = if ($_.NotAfter) { $_.NotAfter.ToString('yyyy-MM-dd') } else { 'Unknown' }
                     DaysLeft = $days
@@ -87,15 +80,8 @@ function _Show-CertDetail {
     Write-Host '  === Certificate Details ===' -ForegroundColor Cyan
     Write-Host ''
 
-    $displayDomain = if ($Cert.MainDomain) {
-        $Cert.MainDomain
-    } elseif ($Cert.CertFile) {
-        Split-Path -Leaf (Split-Path -Parent $Cert.CertFile)
-    } else {
-        ''
-    }
     $fields = [ordered]@{
-        'Domain (CN)'      = $displayDomain
+        'Domain (CN)'      = _Get-TUACMECertDisplayName -Cert $Cert
         'Server'           = if ($Cert.ServerName) { $Cert.ServerName } else { '(active)' }
         'SAN domains'      = ($Cert.SANs -join ', ')
         'Issuer'           = $Cert.Issuer
@@ -139,13 +125,7 @@ function _Show-CertDetail {
                 # Force a renewal that also rotates the private key —
                 # the typical post-leak recovery. Set-PAOrder -NewKey
                 # flags the order so Submit-Renewal regenerates the key.
-                $displayName = if ($Cert.MainDomain) {
-                    $Cert.MainDomain
-                } elseif ($Cert.CertFile) {
-                    Split-Path -Leaf (Split-Path -Parent $Cert.CertFile)
-                } else {
-                    '(unknown)'
-                }
+                $displayName = _Get-TUACMECertDisplayName -Cert $Cert
                 Write-Host ''
                 Write-Host "  Force renew '$displayName' with a brand-new private key?" -ForegroundColor Yellow
                 Write-Host '  Use this after a key leak — the next renewal will generate' -ForegroundColor DarkGray
@@ -154,14 +134,7 @@ function _Show-CertDetail {
                 if (Confirm-YesNo '  Confirm force renew? (y/N)' -Default $false) {
                     try {
                         _Switch-PAContext -Cert $Cert
-                        $orderParams = @{ NewKey = $true }
-                        if ($Cert.MainDomain) {
-                            $orderParams['MainDomain'] = $Cert.MainDomain
-                        } else {
-                            $orderParams['Name'] = $displayName
-                        }
-                        Set-PAOrder @orderParams
-                        Submit-Renewal -MainDomain $Cert.MainDomain -Force | Out-Null
+                        _Invoke-TUACMEForceRenew -Cert $Cert -DisplayName $displayName
                         Write-Host '  Force renewal completed with new private key.' -ForegroundColor Green
                         Write-EventLogEntry -EventId 1005 -EntryType Information `
                             -Message "TU-ACME: Force-renewed $displayName with new key ($($Cert.ServerName))"
@@ -173,13 +146,7 @@ function _Show-CertDetail {
                 return
             }
             '^[Vv]$' {
-                $displayName = if ($Cert.MainDomain) {
-                    $Cert.MainDomain
-                } elseif ($Cert.CertFile) {
-                    Split-Path -Leaf (Split-Path -Parent $Cert.CertFile)
-                } else {
-                    '(unknown)'
-                }
+                $displayName = _Get-TUACMECertDisplayName -Cert $Cert
                 Write-Host ''
                 Write-Host "  Revoke certificate '$displayName' at the ACME server?" -ForegroundColor Yellow
                 Write-Host '  Sends a revocation request to the issuing CA. The local files' -ForegroundColor DarkGray
@@ -190,17 +157,7 @@ function _Show-CertDetail {
                 if (Confirm-YesNo '  Confirm revoke? (y/N)' -Default $false) {
                     try {
                         _Switch-PAContext -Cert $Cert
-                        $rvParams = @{ Force = $true }
-                        if ($Cert.MainDomain) {
-                            $rvParams['MainDomain'] = $Cert.MainDomain
-                        } else {
-                            # Fall back to the cert folder name when the
-                            # order.json is missing MainDomain (some
-                            # internal ACME CAs). Revoke-PACertificate
-                            # accepts -Name as an alternative key.
-                            $rvParams['Name'] = $displayName
-                        }
-                        Revoke-PACertificate @rvParams
+                        _Invoke-TUACMERevoke -Cert $Cert -DisplayName $displayName
                         Write-Host '  Certificate revoked at the ACME server.' -ForegroundColor Green
                         Write-EventLogEntry -EventId 1004 -EntryType Information `
                             -Message "TU-ACME: Revoked certificate $displayName ($($Cert.ServerName))"
@@ -212,13 +169,7 @@ function _Show-CertDetail {
                 return
             }
             '^[Dd]$' {
-                $displayName = if ($Cert.MainDomain) {
-                    $Cert.MainDomain
-                } elseif ($Cert.CertFile) {
-                    Split-Path -Leaf (Split-Path -Parent $Cert.CertFile)
-                } else {
-                    '(unknown)'
-                }
+                $displayName = _Get-TUACMECertDisplayName -Cert $Cert
                 Write-Host ''
                 Write-Host "  Delete certificate for '$displayName' from the Posh-ACME store?" -ForegroundColor Yellow
                 Write-Host '  This removes the local certificate, key, and renewal config.' -ForegroundColor DarkGray
@@ -253,6 +204,56 @@ function _Switch-PAContext {
     }
     if ($Cert.AccountID) {
         Set-PAAccount -ID $Cert.AccountID -ErrorAction SilentlyContinue
+    }
+}
+
+function _Get-TUACMECertDisplayName {
+    param($Cert)
+
+    if ($Cert.MainDomain) {
+        return $Cert.MainDomain
+    }
+    if ($Cert.CertFile) {
+        return Split-Path -Leaf (Split-Path -Parent $Cert.CertFile)
+    }
+    return '(unknown)'
+}
+
+function _Invoke-TUACMERevoke {
+    # Thin wrapper around Posh-ACME's Revoke-PACertificate so the test
+    # suite can mock this single TU-ACME-defined function rather than
+    # mocking a Posh-ACME cmdlet, which on PS 5.1 + Posh-ACME loaded
+    # interacts awkwardly with our logging proxies.
+    param($Cert, [string] $DisplayName)
+
+    $rvParams = @{ Force = $true }
+    if ($Cert.MainDomain) {
+        $rvParams['MainDomain'] = $Cert.MainDomain
+    } else {
+        # Fall back to the cert folder name when the order.json is
+        # missing MainDomain (some internal ACME CAs).
+        $rvParams['Name'] = $DisplayName
+    }
+    Revoke-PACertificate @rvParams
+}
+
+function _Invoke-TUACMEForceRenew {
+    # Thin wrapper combining Set-PAOrder -NewKey and Submit-Renewal
+    # -Force. Same testability rationale as _Invoke-TUACMERevoke.
+    param($Cert, [string] $DisplayName)
+
+    $orderParams = @{ NewKey = $true }
+    if ($Cert.MainDomain) {
+        $orderParams['MainDomain'] = $Cert.MainDomain
+    } else {
+        $orderParams['Name'] = $DisplayName
+    }
+    Set-PAOrder @orderParams
+
+    if ($Cert.MainDomain) {
+        Submit-Renewal -MainDomain $Cert.MainDomain -Force | Out-Null
+    } else {
+        Submit-Renewal -Force | Out-Null
     }
 }
 

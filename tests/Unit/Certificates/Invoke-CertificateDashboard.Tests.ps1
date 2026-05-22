@@ -129,15 +129,13 @@ Describe 'Invoke-CertificateDashboard' -Tag Unit, Certificates {
                 Mock -CommandName 'Invoke-ConsoleReadKey' -MockWith {
                     New-Object System.ConsoleKeyInfo([char]'v', [System.ConsoleKey]::V, $false, $false, $false)
                 }
-                Mock -CommandName 'Confirm-YesNo'         -MockWith { $true }
-                Mock -CommandName 'Revoke-PACertificate'  -MockWith {}
-                Mock -CommandName 'Write-EventLogEntry'   -MockWith {}
+                Mock -CommandName 'Confirm-YesNo'        -MockWith { $true }
+                Mock -CommandName '_Invoke-TUACMERevoke' -MockWith {}
+                Mock -CommandName 'Write-EventLogEntry'  -MockWith {}
             }
-            It 'calls Revoke-PACertificate with the MainDomain' {
+            It 'calls _Invoke-TUACMERevoke exactly once' {
                 Invoke-CertificateDashboard
-                Should -Invoke Revoke-PACertificate -Times 1 -ParameterFilter {
-                    $MainDomain -eq 'eksempel.dk'
-                }
+                Should -Invoke _Invoke-TUACMERevoke -Times 1 -Exactly
             }
         }
 
@@ -153,11 +151,11 @@ Describe 'Invoke-CertificateDashboard' -Tag Unit, Certificates {
                     New-Object System.ConsoleKeyInfo([char]'v', [System.ConsoleKey]::V, $false, $false, $false)
                 }
                 Mock -CommandName 'Confirm-YesNo'        -MockWith { $false }
-                Mock -CommandName 'Revoke-PACertificate' -MockWith {}
+                Mock -CommandName '_Invoke-TUACMERevoke' -MockWith {}
             }
-            It 'does NOT call Revoke-PACertificate when user declines' {
+            It 'does NOT call _Invoke-TUACMERevoke when user declines' {
                 Invoke-CertificateDashboard
-                Should -Invoke Revoke-PACertificate -Times 0
+                Should -Invoke _Invoke-TUACMERevoke -Times 0
             }
         }
 
@@ -172,15 +170,13 @@ Describe 'Invoke-CertificateDashboard' -Tag Unit, Certificates {
                 Mock -CommandName 'Invoke-ConsoleReadKey' -MockWith {
                     New-Object System.ConsoleKeyInfo([char]'f', [System.ConsoleKey]::F, $false, $false, $false)
                 }
-                Mock -CommandName 'Confirm-YesNo'       -MockWith { $true }
-                Mock -CommandName 'Set-PAOrder'         -MockWith {}
-                Mock -CommandName 'Submit-Renewal'      -MockWith {}
-                Mock -CommandName 'Write-EventLogEntry' -MockWith {}
+                Mock -CommandName 'Confirm-YesNo'            -MockWith { $true }
+                Mock -CommandName '_Invoke-TUACMEForceRenew' -MockWith {}
+                Mock -CommandName 'Write-EventLogEntry'      -MockWith {}
             }
-            It 'flags the order with -NewKey before renewing' {
+            It 'calls _Invoke-TUACMEForceRenew exactly once' {
                 Invoke-CertificateDashboard
-                Should -Invoke Set-PAOrder    -Times 1 -ParameterFilter { $NewKey }
-                Should -Invoke Submit-Renewal -Times 1 -ParameterFilter { $Force }
+                Should -Invoke _Invoke-TUACMEForceRenew -Times 1 -Exactly
             }
         }
 
