@@ -124,7 +124,7 @@ Expected output:
 ```
 ModuleType  Version  Name      ExportedCommands
 ----------  -------  ----      ----------------
-Script      0.10.0   TU-ACME   Start-TUACME
+Script      0.10.1   TU-ACME   Start-TUACME
 ```
 
 ---
@@ -155,7 +155,7 @@ TU-ACME automatically creates these folders on first startup:
 
 The folders are created with standard Windows permissions — accessible to all users and the `SYSTEM` account. The Posh-ACME store gets an explicit ACL granting Administrators + SYSTEM Full Control so a SYSTEM-run renewal task can read and write certs created by the interactive admin.
 
-> **Migration:** if you used a TU-ACME release earlier than 0.10.0, Posh-ACME data lives in `$env:LOCALAPPDATA\Posh-ACME\` under the admin's profile. On first launch of 0.10.0+ TU-ACME offers a one-click copy of that data into the new machine-wide location. The legacy folder is left in place as a rollback.
+> **Upgrading from a release earlier than 0.10.0:** Posh-ACME data previously lived in `$env:LOCALAPPDATA\Posh-ACME\` under the admin's profile and was invisible to a SYSTEM-run renewal task. TU-ACME 0.10.0+ writes to the machine-wide `$env:ProgramData\TU-ACME\Posh-ACME\` instead. There is no in-tool migration — re-create accounts and re-order any certs in the new location. The legacy user-profile folder can be deleted manually once you've confirmed the new store works.
 
 ### Create manually (optional)
 

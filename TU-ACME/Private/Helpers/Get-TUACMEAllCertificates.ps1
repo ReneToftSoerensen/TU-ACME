@@ -79,25 +79,29 @@
 
                 # Skip non-actionable cert objects. Posh-ACME's
                 # Get-PACertificate -List sometimes surfaces partial
-                # entries (a pending order whose validation failed; a
-                # half-deleted folder; an in-progress New-PACertificate
-                # that the parent process abandoned) where neither the
-                # MainDomain field nor the CertFile path is populated.
-                # Without those two there is no name to show in the
-                # table, no folder to delete, no order to renew - the
-                # row is useless and confusing. Skip it.
-                $hasName = [bool] $c.MainDomain
+                # entries (pending orders, half-deleted folders,
+                # in-progress New-PACertificate that the parent
+                # process abandoned, or orphan current-order.txt
+                # pointers that survive a folder delete). The keep-
+                # rule is "cert.cer must physically exist on disk" -
+                # without it there is no cert to act on, no thumbprint
+                # to compare, no usable Days-Left calculation.
+                # MainDomain alone is not enough: Posh-ACME will
+                # synthesise it from current-order.txt even after the
+                # cert folder is gone, which is exactly the dashboard-
+                # ghost case the user hit on 2026-05-22.
                 $hasFile = $false
                 if ($c.CertFile) {
                     try { $hasFile = Test-Path -LiteralPath $c.CertFile } catch {}
                 }
-                if (-not $hasName -and -not $hasFile) {
+                if (-not $hasFile) {
                     $skipped++
                     try {
                         Write-PALog -Cmdlet '[helper]' -BoundArgs @{
-                            Stage     = 'skip-empty-cert'
+                            Stage     = 'skip-no-certfile'
                             Server    = $srvName
                             Account   = $acc.id
+                            MainDomain= "$($c.MainDomain)"
                             CertFile  = "$($c.CertFile)"
                             Thumbprint= "$($c.Thumbprint)"
                             NotAfter  = "$($c.NotAfter)"

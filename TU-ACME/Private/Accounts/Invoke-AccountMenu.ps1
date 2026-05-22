@@ -7,10 +7,19 @@ function Invoke-AccountMenu {
     }
 
     while ($true) {
-        $accounts   = @(Get-PAAccount -List 2>$null)
-        $activeId   = ''
-        try { $activeId = (Get-PAAccount 2>$null).id } catch {}
-        $nameMap    = _Get-AccountNameMap
+        # Posh-ACME throws a terminating "No ACME server configured.
+        # Run Set-PAServer first." when the active store has no
+        # saved server yet (fresh install, fresh POSHACME_HOME).
+        # 2>$null only redirects the error stream; it does not catch
+        # terminating exceptions. Wrap in try/catch so the menu still
+        # opens and lets the user create their first account.
+        $accounts = @()
+        try {
+            $accounts = @(Get-PAAccount -List -ErrorAction SilentlyContinue)
+        } catch {}
+        $activeId = ''
+        try { $activeId = (Get-PAAccount -ErrorAction SilentlyContinue).id } catch {}
+        $nameMap = _Get-AccountNameMap
 
         Invoke-ConsoleClear
         Write-Host '  === Account Management ===' -ForegroundColor Cyan

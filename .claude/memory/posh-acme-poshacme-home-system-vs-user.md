@@ -33,8 +33,8 @@ Order matters: Posh-ACME caches the resolved store path on first cmdlet call, so
 ## Caveat — plugin args still DPAPI-bound
 The cert files, account keys, and order metadata are plain JSON/PEM and cross the user boundary fine once the folder ACL allows both principals. **Plugin args** (DNS API tokens etc.) are DPAPI-encrypted to the calling user by default — SYSTEM still can't decrypt what the admin saved. Fix is `Set-PAAccount -ID <id> -UseAltPluginEncryption $true` per account: switches plugin-arg encryption to an AES key file inside the account folder, which both principals can read because the folder is ACL'd. TU-ACME does **not** force this automatically (per user preference: ACME account data is not critical enough to need encryption gymnastics). Internal-CA / HTTP-01 setups without credentialed plugins skip the issue entirely.
 
-## Migration
-`Invoke-TUACMEStoreMigration` runs at `Start-TUACME` startup. Triggers only when the legacy `$env:LOCALAPPDATA\Posh-ACME` has at least one `cert.cer` and the new store is empty. Copies (not moves) the tree into the new location and leaves the legacy folder as a rollback.
+## No in-tool migration
+0.10.0 originally shipped a `Invoke-TUACMEStoreMigration` prompt that copied legacy `$env:LOCALAPPDATA\Posh-ACME` data into the new store. **Removed in 0.10.1** at user request — the migration trigger required at least one `cert.cer` in the source, so users who'd deleted their certs (or only had accounts) got no prompt and were left wondering why the new store was empty. Cleaner UX is: re-create accounts and orders in the new location, manually delete the legacy folder when satisfied.
 
 ## See also
 - `posh-acme-current-order-orphan.md`
