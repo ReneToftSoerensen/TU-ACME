@@ -28,6 +28,13 @@
     $servers = @()
     try { $servers = @(Get-PAServer -List -ErrorAction SilentlyContinue) } catch {}
 
+    # Fallback: if -List returned nothing (older Posh-ACME, or a fresh
+    # install with no saved servers), at least try the currently
+    # active one. Better one row than an empty dashboard.
+    if ($servers.Count -eq 0 -and $origServer) {
+        $servers = @($origServer)
+    }
+
     try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='enum-servers'; Count=$servers.Count } } catch {}
 
     foreach ($srv in $servers) {
@@ -63,21 +70,32 @@
             foreach ($c in $certs) {
                 if (-not $c) { continue }
 
-                # Skip phantom / half-formed cert objects. Posh-ACME's
+                # Skip non-actionable cert objects. Posh-ACME's
                 # Get-PACertificate -List sometimes surfaces partial
-                # entries (e.g. a pending order whose validation
-                # failed) with no MainDomain, no CertFile, no
-                # Thumbprint — there is nothing useful to show or act
-                # on. Without this guard the dashboard renders an
-                # all-"(unknown)" row that confuses the user and any
-                # attempted delete/renew fails immediately.
-                $isEmpty = (-not $c.MainDomain) -and
-                           (-not $c.CertFile)   -and
-                           (-not $c.Thumbprint) -and
-                           (-not $c.NotAfter)
-                if ($isEmpty) {
+                # entries (a pending order whose validation failed; a
+                # half-deleted folder; an in-progress New-PACertificate
+                # that the parent process abandoned) where neither the
+                # MainDomain field nor the CertFile path is populated.
+                # Without those two there is no name to show in the
+                # table, no folder to delete, no order to renew - the
+                # row is useless and confusing. Skip it.
+                $hasName = [bool] $c.MainDomain
+                $hasFile = $false
+                if ($c.CertFile) {
+                    try { $hasFile = Test-Path -LiteralPath $c.CertFile } catch {}
+                }
+                if (-not $hasName -and -not $hasFile) {
                     $skipped++
-                    try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='skip-empty-cert'; Server=$srvName; Account=$acc.id } } catch {}
+                    try {
+                        Write-PALog -Cmdlet '[helper]' -BoundArgs @{
+                            Stage     = 'skip-empty-cert'
+                            Server    = $srvName
+                            Account   = $acc.id
+                            CertFile  = "$($c.CertFile)"
+                            Thumbprint= "$($c.Thumbprint)"
+                            NotAfter  = "$($c.NotAfter)"
+                        }
+                    } catch {}
                     continue
                 }
 
