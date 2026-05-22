@@ -51,8 +51,14 @@
         # ("acme", "acme.fragt.root.local") get rejected if we pass
         # their short Name. Always pass the location URL — it works
         # for both built-in and custom servers.
+        # Out-Null matters here: Set-PAServer emits the server object
+        # by default. Without suppression that object leaks into the
+        # function's pipeline output, sails past the per-cert filter
+        # below, and renders as a ghost "(unknown)" row in the
+        # dashboard because the leaked server has no MainDomain /
+        # CertFile.
         try {
-            Set-PAServer -DirectoryUrl $srvUrl -ErrorAction Stop
+            Set-PAServer -DirectoryUrl $srvUrl -ErrorAction Stop | Out-Null
         } catch {
             try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='skip-server'; Server=$srvName; Url=$srvUrl; Reason="Set-PAServer failed: $($_.Exception.Message)" } } catch {}
             continue
@@ -63,8 +69,11 @@
 
         foreach ($acc in $accounts) {
             if (-not $acc -or -not $acc.id) { continue }
+            # Same reason as Set-PAServer above: Set-PAAccount emits
+            # the account object; pipe to Out-Null so it does not
+            # leak into our function output.
             try {
-                Set-PAAccount -ID $acc.id -ErrorAction Stop
+                Set-PAAccount -ID $acc.id -ErrorAction Stop | Out-Null
             } catch {
                 continue
             }
@@ -129,15 +138,26 @@
     try { Write-PALog -Cmdlet '[helper]' -BoundArgs @{ Stage='done'; Kept=$all.Count; Skipped=$skipped } } catch {}
 
     # Restore the active context (best-effort). Always use the
-    # location URL for the same reason as above.
+    # location URL for the same reason as above. Out-Null on both
+    # so the restored objects don't leak into our return value.
     if ($origServer -and $origServer.location) {
-        try { Set-PAServer -DirectoryUrl $origServer.location -ErrorAction SilentlyContinue } catch {}
+        try { Set-PAServer -DirectoryUrl $origServer.location -ErrorAction SilentlyContinue | Out-Null } catch {}
     }
     if ($origAccount -and $origAccount.id) {
-        try { Set-PAAccount -ID $origAccount.id -ErrorAction SilentlyContinue } catch {}
+        try { Set-PAAccount -ID $origAccount.id -ErrorAction SilentlyContinue | Out-Null } catch {}
     }
 
-    return ,$all.ToArray()
+    # No leading comma here. The unary-comma "force-array" trick
+    # over-wraps an empty ArrayList: ,@() is a 1-element array whose
+    # sole element is @(). When the function returns that, the
+    # pipeline unrolls the outer wrapper and emits the empty inner
+    # @() as one pipeline item; the dashboard's @(Get-TUACMEAll...)
+    # then sees Count=1 and renders a null-shaped row as the
+    # "(unknown) (unknown) Unknown -1 EXPIRED" dashboard ghost.
+    # Plain $all.ToArray() returns Object[N]; when N=0 the pipeline
+    # emits nothing and the caller sees an empty array. The caller
+    # already wraps with @() so single-item arrays survive too.
+    return $all.ToArray()
 }
 
 function _Enrich-TUACMECertFromFile {
