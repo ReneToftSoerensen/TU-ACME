@@ -57,7 +57,7 @@ Describe 'UC-1.08 - Create prod ACME account' -Tag 'Unit' {
             Initialize-TUACMEEnvironment
 
             Assert-MockCalled Set-PAServer -ParameterFilter { $DirectoryUrl -eq 'https://prod.example/dir' } -Times 1 -Scope It
-            Assert-MockCalled New-PAAccount -ParameterFilter { $Contact -eq 'ops@example.com' -and $AcceptTOS } -AtLeast 1 -Scope It
+            Assert-MockCalled New-PAAccount -ParameterFilter { $Contact -eq 'ops@example.com' -and $AcceptTOS } -Times 1 -Scope It
         }
     }
 }

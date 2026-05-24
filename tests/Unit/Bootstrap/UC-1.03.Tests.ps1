@@ -44,7 +44,7 @@ Describe 'UC-1.03 - Force re-init bypasses initialized flag' -Tag 'Unit' {
 
             Initialize-TUACMEEnvironment -Force
 
-            Assert-MockCalled Read-Host -AtLeast 1 -Scope It
+            Assert-MockCalled Read-Host -Times 1 -Scope It
         }
     }
 }

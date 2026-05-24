@@ -46,7 +46,7 @@ Describe 'UC-1.01 - Detect uninitialized config triggers wizard' -Tag 'Unit' {
 
             Initialize-TUACMEEnvironment
 
-            Assert-MockCalled Read-Host -AtLeast 1 -Scope It
+            Assert-MockCalled Read-Host -Times 1 -Scope It
         }
     }
 }
