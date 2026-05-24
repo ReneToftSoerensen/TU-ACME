@@ -91,13 +91,20 @@ function Start-PebbleServer {
     # the callback, hence the per-runtime split.)
     $useSkipParam  = $PSVersionTable.PSEdition -eq 'Core'
     $prevCallback  = $null
+    $prevProtocol  = $null
     if (-not $useSkipParam) {
+        # Windows PowerShell 5.1: cert callback to accept Pebble's self-signed cert,
+        # AND force TLS 1.2 because the .NET Framework default on stock Windows
+        # Server can still be SSL3/TLS1.0 which Pebble rejects.
         $prevCallback = [System.Net.ServicePointManager]::ServerCertificateValidationCallback
         [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+        $prevProtocol = [System.Net.ServicePointManager]::SecurityProtocol
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
     }
 
     $deadline = (Get-Date).AddSeconds($ReadyTimeoutSeconds)
     $ready = $false
+    $lastErr = $null
     try {
         while ((Get-Date) -lt $deadline) {
             try {
@@ -105,18 +112,32 @@ function Start-PebbleServer {
                 if ($useSkipParam) { $params['SkipCertificateCheck'] = $true }
                 $resp = Invoke-WebRequest @params
                 if ($resp.StatusCode -eq 200) { $ready = $true; break }
-            } catch { Start-Sleep -Milliseconds 250 }
+            } catch {
+                $lastErr = $_.Exception.Message
+                Start-Sleep -Milliseconds 250
+            }
         }
     } finally {
         if (-not $useSkipParam) {
             [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $prevCallback
+            if ($null -ne $prevProtocol) {
+                [System.Net.ServicePointManager]::SecurityProtocol = $prevProtocol
+            }
         }
     }
 
     if (-not $ready) {
-        $tail = if (Test-Path $logPath) { (Get-Content $logPath -Tail 20) -join [Environment]::NewLine } else { '(no log)' }
+        $tail = if (Test-Path $logPath) { (Get-Content $logPath -Tail 30) -join [Environment]::NewLine } else { '(no log)' }
+        $errTail = if (Test-Path ($logPath + '.err')) { (Get-Content ($logPath + '.err') -Tail 30) -join [Environment]::NewLine } else { '' }
         try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch {}
-        throw "Pebble ($Role) did not become ready within $ReadyTimeoutSeconds s.`n--- log tail ---`n$tail"
+        Write-Host "[Pebble] Probe last error: $lastErr" -ForegroundColor Yellow
+        Write-Host "[Pebble] stdout tail ($logPath):" -ForegroundColor Yellow
+        Write-Host $tail
+        if ($errTail) {
+            Write-Host "[Pebble] stderr tail:" -ForegroundColor Yellow
+            Write-Host $errTail
+        }
+        throw "Pebble ($Role) did not become ready within $ReadyTimeoutSeconds s. Last probe error: $lastErr"
     }
 
     $trustInfo = $null
