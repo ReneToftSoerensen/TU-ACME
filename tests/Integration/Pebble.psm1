@@ -95,29 +95,41 @@ function Start-PebbleServer {
         throw "Pebble ($Role) failed to launch (exit $($proc.ExitCode))."
     }
 
-    # On Windows, install Pebble's static cert into Cert:\CurrentUser\Root BEFORE
-    # the readiness probe so .NET Framework's HttpWebRequest can complete the TLS
-    # handshake via the regular trust chain — no thread-unsafe scriptblock
-    # callback, no compiled delegate, no SecurityProtocol gymnastics needed
-    # beyond TLS 1.2 enforcement.
-    $trustInfo = $null
-    if ($IsWindows -or $env:OS -eq 'Windows_NT') {
-        try {
-            $trustInfo = Install-TrustedPebbleRoot -DirectoryCertPath (Join-Path $repoRoot 'tests/.pebble/cert.pem')
-            Write-Host "[Pebble:$Role] Trusted pebble.test cert (thumbprint $($trustInfo.Thumbprint))" -ForegroundColor DarkGray
-        } catch {
-            [Console]::Error.WriteLine("[Pebble:$Role] Failed to import cert into Cert:\CurrentUser\Root: $($_.Exception.Message)")
-            throw
-        }
-    }
-
     $directoryUrl = "https://localhost:$port/dir"
 
-    # Force TLS 1.2 on Windows PowerShell 5.1 (stock .NET Framework can default
-    # to SSL3/TLS1.0). On pwsh 7+ the default already includes TLS 1.2+.
+    # Probe trust handling:
+    # - pwsh 7+: use -SkipCertificateCheck on Invoke-WebRequest.
+    # - Windows PowerShell 5.1: install a compiled .NET delegate as the
+    #   certificate callback for the probe (scriptblock callbacks can execute on
+    #   non-PS threads and fail unpredictably), and force TLS 1.2.
     $useSkipParam = $PSVersionTable.PSEdition -eq 'Core'
+    $prevCallback = $null
     $prevProtocol = $null
     if (-not $useSkipParam) {
+        if (-not ('TuAcme.TrustAllCerts' -as [type])) {
+            Add-Type -TypeDefinition @"
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+namespace TuAcme {
+    public static class TrustAllCerts {
+        public static bool Validator(object sender, X509Certificate cert,
+                                     X509Chain chain, SslPolicyErrors errors) {
+            return true;
+        }
+    }
+}
+"@
+        }
+
+        $flags = [System.Reflection.BindingFlags]::Public -bor [System.Reflection.BindingFlags]::Static
+        $method = [TuAcme.TrustAllCerts].GetMethod('Validator', $flags)
+        if (-not $method) { throw 'Could not bind TuAcme.TrustAllCerts.Validator.' }
+
+        $prevCallback = [System.Net.ServicePointManager]::ServerCertificateValidationCallback
+        $trustAllCallback = [System.Delegate]::CreateDelegate([System.Net.Security.RemoteCertificateValidationCallback], $method)
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $trustAllCallback
+
         $prevProtocol = [System.Net.ServicePointManager]::SecurityProtocol
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
     }
@@ -138,8 +150,11 @@ function Start-PebbleServer {
             }
         }
     } finally {
-        if (-not $useSkipParam -and $null -ne $prevProtocol) {
-            [System.Net.ServicePointManager]::SecurityProtocol = $prevProtocol
+        if (-not $useSkipParam) {
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $prevCallback
+            if ($null -ne $prevProtocol) {
+                [System.Net.ServicePointManager]::SecurityProtocol = $prevProtocol
+            }
         }
     }
 
@@ -172,6 +187,17 @@ function Start-PebbleServer {
 
         try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch {}
         throw "Pebble ($Role) did not become ready within $ReadyTimeoutSeconds s. proc=$procState port=$portState lastErr=$lastErr"
+    }
+
+    $trustInfo = $null
+    if ($IsWindows -or $env:OS -eq 'Windows_NT') {
+        try {
+            $trustInfo = Install-TrustedPebbleRoot -DirectoryCertPath (Join-Path $repoRoot 'tests/.pebble/cert.pem')
+            Write-Host "[Pebble:$Role] Trusted pebble.test cert (thumbprint $($trustInfo.Thumbprint))" -ForegroundColor DarkGray
+        } catch {
+            [Console]::Error.WriteLine("[Pebble:$Role] Failed to import cert into Cert:\CurrentUser\Root: $($_.Exception.Message)")
+            throw
+        }
     }
 
     return [PSCustomObject]@{
