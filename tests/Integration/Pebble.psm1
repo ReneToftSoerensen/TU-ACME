@@ -89,46 +89,35 @@ function Start-PebbleServer {
     if ($proc.HasExited) {
         $tail    = if (Test-Path $logPath)         { (Get-Content $logPath         -Tail 30) -join [Environment]::NewLine } else { '(no log)' }
         $errTail = if (Test-Path ($logPath+'.err')) { (Get-Content ($logPath+'.err') -Tail 30) -join [Environment]::NewLine } else { '' }
-        Write-Host "[Pebble:$Role] Process exited immediately. ExitCode=$($proc.ExitCode)" -ForegroundColor Yellow
-        Write-Host "[Pebble:$Role] stdout: $tail"
-        if ($errTail) { Write-Host "[Pebble:$Role] stderr: $errTail" }
+        [Console]::Error.WriteLine("[Pebble:$Role] Process exited immediately. ExitCode=$($proc.ExitCode)")
+        [Console]::Error.WriteLine("[Pebble:$Role] stdout: $tail")
+        if ($errTail) { [Console]::Error.WriteLine("[Pebble:$Role] stderr: $errTail") }
         throw "Pebble ($Role) failed to launch (exit $($proc.ExitCode))."
+    }
+
+    # On Windows, install Pebble's static cert into Cert:\CurrentUser\Root BEFORE
+    # the readiness probe so .NET Framework's HttpWebRequest can complete the TLS
+    # handshake via the regular trust chain — no thread-unsafe scriptblock
+    # callback, no compiled delegate, no SecurityProtocol gymnastics needed
+    # beyond TLS 1.2 enforcement.
+    $trustInfo = $null
+    if ($IsWindows -or $env:OS -eq 'Windows_NT') {
+        try {
+            $trustInfo = Install-TrustedPebbleRoot -DirectoryCertPath (Join-Path $repoRoot 'tests/.pebble/cert.pem')
+            Write-Host "[Pebble:$Role] Trusted pebble.test cert (thumbprint $($trustInfo.Thumbprint))" -ForegroundColor DarkGray
+        } catch {
+            [Console]::Error.WriteLine("[Pebble:$Role] Failed to import cert into Cert:\CurrentUser\Root: $($_.Exception.Message)")
+            throw
+        }
     }
 
     $directoryUrl = "https://localhost:$port/dir"
 
-    # The readiness probe needs to ignore the untrusted self-signed cert
-    # Pebble serves. pwsh 7+ accepts -SkipCertificateCheck on Invoke-WebRequest;
-    # Windows PowerShell 5.1 has no such parameter, so we set the legacy
-    # ServicePointManager callback there. (.NET HttpClient on pwsh 7 ignores
-    # the callback, hence the per-runtime split.)
-    $useSkipParam  = $PSVersionTable.PSEdition -eq 'Core'
-    $prevCallback  = $null
-    $prevProtocol  = $null
+    # Force TLS 1.2 on Windows PowerShell 5.1 (stock .NET Framework can default
+    # to SSL3/TLS1.0). On pwsh 7+ the default already includes TLS 1.2+.
+    $useSkipParam = $PSVersionTable.PSEdition -eq 'Core'
+    $prevProtocol = $null
     if (-not $useSkipParam) {
-        # Windows PowerShell 5.1: trust Pebble's self-signed cert by
-        # installing a real .NET delegate (NOT a scriptblock — those fire
-        # on non-PS threads and can return $null/false unpredictably,
-        # silently dropping the TLS handshake mid-stream).
-        if (-not ('TuAcme.TrustAllCerts' -as [type])) {
-            Add-Type -TypeDefinition @"
-using System.Net;
-using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
-namespace TuAcme {
-    public static class TrustAllCerts {
-        public static bool Validator(object sender, X509Certificate cert,
-                                     X509Chain chain, SslPolicyErrors errors) {
-            return true;
-        }
-    }
-}
-"@
-        }
-        $prevCallback = [System.Net.ServicePointManager]::ServerCertificateValidationCallback
-        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = [TuAcme.TrustAllCerts]::Validator
-        # Force TLS 1.2 — stock Windows Server may still default to SSL3/TLS1.0,
-        # which Pebble rejects.
         $prevProtocol = [System.Net.ServicePointManager]::SecurityProtocol
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
     }
@@ -149,11 +138,8 @@ namespace TuAcme {
             }
         }
     } finally {
-        if (-not $useSkipParam) {
-            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $prevCallback
-            if ($null -ne $prevProtocol) {
-                [System.Net.ServicePointManager]::SecurityProtocol = $prevProtocol
-            }
+        if (-not $useSkipParam -and $null -ne $prevProtocol) {
+            [System.Net.ServicePointManager]::SecurityProtocol = $prevProtocol
         }
     }
 
@@ -171,24 +157,21 @@ namespace TuAcme {
 
         $procState = if ($proc.HasExited) { "exited (ExitCode=$($proc.ExitCode))" } else { 'running' }
 
-        Write-Host "[Pebble:$Role] PROBE FAILED" -ForegroundColor Yellow
-        Write-Host "[Pebble:$Role]   process: $procState"
-        Write-Host "[Pebble:$Role]   port $port`: $portState"
-        Write-Host "[Pebble:$Role]   last probe error: $lastErr"
-        Write-Host "[Pebble:$Role]   stdout tail ($logPath):"
-        Write-Host $tail
+        # Pester 5 buffers Write-Host from BeforeAll; bypass by writing straight
+        # to the runner's stderr stream via the underlying Console API.
+        [Console]::Error.WriteLine("[Pebble:$Role] PROBE FAILED")
+        [Console]::Error.WriteLine("[Pebble:$Role]   process: $procState")
+        [Console]::Error.WriteLine("[Pebble:$Role]   port $port`: $portState")
+        [Console]::Error.WriteLine("[Pebble:$Role]   last probe error: $lastErr")
+        [Console]::Error.WriteLine("[Pebble:$Role]   stdout tail ($logPath):")
+        [Console]::Error.WriteLine($tail)
         if ($errTail) {
-            Write-Host "[Pebble:$Role]   stderr tail:"
-            Write-Host $errTail
+            [Console]::Error.WriteLine("[Pebble:$Role]   stderr tail:")
+            [Console]::Error.WriteLine($errTail)
         }
 
         try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch {}
         throw "Pebble ($Role) did not become ready within $ReadyTimeoutSeconds s. proc=$procState port=$portState lastErr=$lastErr"
-    }
-
-    $trustInfo = $null
-    if ($IsWindows -or $env:OS -eq 'Windows_NT') {
-        $trustInfo = Install-TrustedPebbleRoot -DirectoryCertPath (Join-Path $repoRoot 'tests/.pebble/cert.pem')
     }
 
     return [PSCustomObject]@{
