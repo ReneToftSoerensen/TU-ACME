@@ -84,17 +84,37 @@ function Start-PebbleServer {
 
     $directoryUrl = "https://localhost:$port/dir"
 
+    # The readiness probe needs to ignore the untrusted self-signed cert
+    # Pebble serves. pwsh 7+ accepts -SkipCertificateCheck on Invoke-WebRequest;
+    # Windows PowerShell 5.1 has no such parameter, so we set the legacy
+    # ServicePointManager callback there. (.NET HttpClient on pwsh 7 ignores
+    # the callback, hence the per-runtime split.)
+    $useSkipParam  = $PSVersionTable.PSEdition -eq 'Core'
+    $prevCallback  = $null
+    if (-not $useSkipParam) {
+        $prevCallback = [System.Net.ServicePointManager]::ServerCertificateValidationCallback
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+    }
+
     $deadline = (Get-Date).AddSeconds($ReadyTimeoutSeconds)
     $ready = $false
-    while ((Get-Date) -lt $deadline) {
-        try {
-            $resp = Invoke-WebRequest -Uri $directoryUrl -Method Get -UseBasicParsing -SkipCertificateCheck -TimeoutSec 2 -ErrorAction Stop
-            if ($resp.StatusCode -eq 200) { $ready = $true; break }
-        } catch { Start-Sleep -Milliseconds 250 }
+    try {
+        while ((Get-Date) -lt $deadline) {
+            try {
+                $params = @{ Uri = $directoryUrl; Method = 'Get'; UseBasicParsing = $true; TimeoutSec = 2; ErrorAction = 'Stop' }
+                if ($useSkipParam) { $params['SkipCertificateCheck'] = $true }
+                $resp = Invoke-WebRequest @params
+                if ($resp.StatusCode -eq 200) { $ready = $true; break }
+            } catch { Start-Sleep -Milliseconds 250 }
+        }
+    } finally {
+        if (-not $useSkipParam) {
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $prevCallback
+        }
     }
 
     if (-not $ready) {
-        $tail = if (Test-Path $logPath) { Get-Content $logPath -Tail 20 -Raw } else { '(no log)' }
+        $tail = if (Test-Path $logPath) { (Get-Content $logPath -Tail 20) -join [Environment]::NewLine } else { '(no log)' }
         try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch {}
         throw "Pebble ($Role) did not become ready within $ReadyTimeoutSeconds s.`n--- log tail ---`n$tail"
     }
