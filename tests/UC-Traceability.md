@@ -17,3 +17,11 @@ This file tracks every atomic use case in `Usecases/` together with the implemen
 | 2.01 | Use-TUACMEProdAccount switches server and account | TU-ACME/Private/Bootstrap/Use-TUACMEProdAccount.ps1 | tests/Unit/Bootstrap/UC-2.01.Tests.ps1 | Implemented |
 | 2.02 | Use-TUACMEStagingAccount switches server and account | TU-ACME/Private/Bootstrap/Use-TUACMEStagingAccount.ps1 | tests/Unit/Bootstrap/UC-2.02.Tests.ps1 | Implemented |
 | 2.03 | Use-TUACME*Account throws when config not initialized | TU-ACME/Private/Bootstrap/Use-TUACME{Prod,Staging}Account.ps1 | tests/Unit/Bootstrap/UC-2.03.Tests.ps1 | Implemented |
+| 3.01 | Order calls Use-TUACMEProdAccount first | TU-ACME/Private/Certificates/Invoke-OrderCertificate.ps1 | tests/Unit/Certificates/UC-3.01.Tests.ps1 | Implemented |
+| 3.02 | Order prompts for and validates domain | TU-ACME/Private/Certificates/Invoke-OrderCertificate.ps1 | tests/Unit/Certificates/UC-3.02.Tests.ps1 | Implemented |
+| 3.03 | Order accepts optional SAN list | TU-ACME/Private/Certificates/Invoke-OrderCertificate.ps1 | tests/Unit/Certificates/UC-3.03.Tests.ps1 | Implemented |
+| 3.04 | Order rejects unknown DNS plugin | TU-ACME/Private/Certificates/Invoke-OrderCertificate.ps1 | tests/Unit/Certificates/UC-3.04.Tests.ps1 | Implemented |
+| 3.05 | Order aborts when plugin args missing | TU-ACME/Private/Certificates/Invoke-OrderCertificate.ps1 | tests/Unit/Certificates/UC-3.05.Tests.ps1 | Implemented |
+| 3.06 | Order confirmation defaults to No | TU-ACME/Private/Certificates/Invoke-OrderCertificate.ps1 | tests/Unit/Certificates/UC-3.06.Tests.ps1 | Implemented |
+| 3.07 | Order surfaces Posh-ACME failure | TU-ACME/Private/Certificates/Invoke-OrderCertificate.ps1 | tests/Unit/Certificates/UC-3.07.Tests.ps1 | Implemented |
+| 3.08 | Order writes Event 1003 on success | TU-ACME/Private/Certificates/Invoke-OrderCertificate.ps1 | tests/Unit/Certificates/UC-3.08.Tests.ps1 | Implemented |
