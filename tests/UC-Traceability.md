@@ -46,3 +46,26 @@ This file tracks every atomic use case in `Usecases/` together with the implemen
 | 11.01 | Log viewer reads TU-ACME provider events | TU-ACME/Private/Logs/Invoke-LogViewer.ps1 | tests/Unit/Logs/UC-11.01.Tests.ps1 | Implemented |
 | 11.02 | Log viewer export prompts before overwriting | TU-ACME/Private/Logs/Invoke-LogViewer.ps1 | tests/Unit/Logs/UC-11.02.Tests.ps1 | Implemented |
 | 11.03 | Log viewer is a no-op on non-Windows | TU-ACME/Private/Logs/Invoke-LogViewer.ps1 | tests/Unit/Logs/UC-11.03.Tests.ps1 | Implemented |
+| 6.01 | DNS plugin menu lists Get-PAPlugin entries | TU-ACME/Private/Certificates/Invoke-DnsPluginConfig.ps1 | tests/Unit/Certificates/UC-6.01.Tests.ps1 | Implemented |
+| 6.02 | DNS plugin prompts mask secret-named parameters | TU-ACME/Private/Certificates/Invoke-DnsPluginConfig.ps1 | tests/Unit/Certificates/UC-6.02.Tests.ps1 | Implemented |
+| 6.03 | DNS plugin save persists via Export-Clixml sidecar | TU-ACME/Private/Certificates/Invoke-DnsPluginConfig.ps1 | tests/Unit/Certificates/UC-6.03.Tests.ps1 | Implemented |
+| 6.04 | DNS plugin Acme-Dns picks dedicated helper | TU-ACME/Private/Certificates/Invoke-DnsPluginConfig.ps1 | tests/Unit/Certificates/UC-6.04.Tests.ps1 | Implemented |
+| 7.01 | SMTP saves config when summary confirmed | TU-ACME/Private/Automation/Invoke-SMTPConfig.ps1 | tests/Unit/Automation/UC-7.01.Tests.ps1 | Implemented |
+| 7.02 | SMTP password persisted DPAPI-encrypted | TU-ACME/Private/Automation/Invoke-SMTPConfig.ps1 | tests/Unit/Automation/UC-7.02.Tests.ps1 | Implemented |
+| 7.03 | Send-Test emits Event 1007 on success | TU-ACME/Private/Automation/Invoke-SMTPConfig.ps1 | tests/Unit/Automation/UC-7.03.Tests.ps1 | Implemented |
+| 8.01 | Scheduled task setup prompts and persists | TU-ACME/Private/Automation/Invoke-ScheduledTaskSetup.ps1 | tests/Unit/Automation/UC-8.01.Tests.ps1 | Implemented |
+| 8.02 | Scheduled task setup prompts before overwriting | TU-ACME/Private/Automation/Invoke-ScheduledTaskSetup.ps1 | tests/Unit/Automation/UC-8.02.Tests.ps1 | Implemented |
+| 8.03 | Scheduled task setup registers via Register-ScheduledTask | TU-ACME/Private/Automation/Invoke-ScheduledTaskSetup.ps1 | tests/Unit/Automation/UC-8.03.Tests.ps1 | Implemented |
+| 8.04 | Scheduled task runs as SYSTEM with highest run level | TU-ACME/Private/Automation/Invoke-ScheduledTaskSetup.ps1 | tests/Unit/Automation/UC-8.04.Tests.ps1 | Implemented |
+| 8.05 | Scheduled task setup writes Event 1008 | TU-ACME/Private/Automation/Invoke-ScheduledTaskSetup.ps1 | tests/Unit/Automation/UC-8.05.Tests.ps1 | Implemented |
+| 8.06 | Renewal script calls Use-TUACMEProdAccount first | TU-ACME/Scripts/Invoke-RenewalBackground.ps1 | tests/Scripts/Invoke-RenewalBackground.Tests.ps1 | Implemented |
+| 8.07 | Renewal script writes Event 1001 per renewed cert | TU-ACME/Scripts/Invoke-RenewalBackground.ps1 | tests/Scripts/Invoke-RenewalBackground.Tests.ps1 | Implemented |
+| 8.08 | Renewal script triggers IIS rebind when helper present | TU-ACME/Scripts/Invoke-RenewalBackground.ps1 | tests/Scripts/Invoke-RenewalBackground.Tests.ps1 | Implemented |
+| 9.01 | IIS menu calls Use-TUACMEProdAccount first | TU-ACME/Private/IIS/Invoke-IISMenu.ps1 | tests/Unit/IIS/UC-9.01.Tests.ps1 | Implemented |
+| 9.02 | IIS menu scans HTTPS bindings | TU-ACME/Private/IIS/Invoke-IISMenu.ps1 | tests/Unit/IIS/UC-9.02.Tests.ps1 | Implemented |
+| 9.03 | IIS menu joins bindings to certs by thumbprint | TU-ACME/Private/IIS/Invoke-IISMenu.ps1 | tests/Unit/IIS/UC-9.03.Tests.ps1 | Implemented |
+| 9.04 | IIS rebind invokes Set-WebBinding with new hash | TU-ACME/Private/IIS/Invoke-IISMenu.ps1 | tests/Unit/IIS/UC-9.04.Tests.ps1 | Implemented |
+| 9.05 | Update-IISBindingForCert continues on per-binding failure | TU-ACME/Scripts/Posh-ACME-IIS-Plugin.ps1 | tests/Scripts/Posh-ACME-IIS-Plugin.Tests.ps1 | Implemented |
+| 10.01 | Export PFX prompts overwrite and calls Export-PfxCertificate | TU-ACME/Private/Export/Invoke-ExportMenu.ps1 | tests/Unit/Export/UC-10.01.Tests.ps1 | Implemented |
+| 10.02 | Export PEM concatenates chain and key | TU-ACME/Private/Export/Invoke-ExportMenu.ps1 | tests/Unit/Export/UC-10.02.Tests.ps1 | Implemented |
+| 10.03 | Import to Windows store calls Import-PfxCertificate | TU-ACME/Private/Export/Invoke-ExportMenu.ps1 | tests/Unit/Export/UC-10.03.Tests.ps1 | Implemented |

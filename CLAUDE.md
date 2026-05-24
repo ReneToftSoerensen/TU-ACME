@@ -96,12 +96,21 @@ TU-ACME writes to a custom Windows Event Log source. Reserve IDs in three bands:
 
 | ID | Level | Meaning |
 |---|---|---|
-| 1010 | Information | Module initialization / first-run wizard completed |
-| 1001 | Information | Scheduled renewal run |
+| 1000 | Information | TU-ACME interactive session started |
+| 1001 | Information | Scheduled renewal run (per renewed cert, or pass complete) |
 | 1002 | Information | IIS binding refreshed with new thumbprint |
+| 1003 | Information | Certificate ordered (prod) |
 | 1004 | Information | Certificate revoked |
 | 1005 | Information | Force-renew with new key requested |
+| 1006 | Information | Dry-run certificate issued (staging) |
+| 1007 | Information | SMTP test mail sent successfully |
+| 1008 | Information | Scheduled renewal task installed |
+| 1009 | Information | Certificate exported to PFX |
+| 1010 | Information | Module initialization / first-run wizard completed |
+| 1011 | Information | Certificate imported into LocalMachine\My |
+| 2001 | Warning | IIS rebind failed for a single binding (renewal continued) |
 | 2xxx | Warning | Recoverable issue (degraded path, retry succeeded) |
+| 3001 | Error | Background renewal job aborted with a terminating error |
 | 3xxx | Error | Unrecoverable failure surfaced to the operator |
 
 When adding a new event source, use the next free ID in the appropriate band and update this table via the `register-event-id` skill.

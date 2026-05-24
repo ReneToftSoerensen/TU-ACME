@@ -26,17 +26,64 @@
         Write-EventLogEntry -EventId 1000 -Message 'TU-ACME started.' -EntryType Information
     }
 
-    # First-run gate — full wizard arrives in Step 4 (UC-1.x).
+    # First-run gate.
     $cfg = Get-TUACMEConfig
     if (-not $cfg.Acme.Initialized) {
-        Write-Host ''
-        Write-Host '  TU-ACME has not been initialized. Run the first-run wizard.' -ForegroundColor Yellow
-        Write-Host '  (Wizard implementation lands in Step 4.)' -ForegroundColor DarkGray
-        Write-Host ''
-        return
+        Initialize-TUACMEEnvironment
+        $cfg = Get-TUACMEConfig
+        if (-not $cfg.Acme.Initialized) { return }
+    }
+
+    $running = $true
+    while ($running) {
+        Invoke-ConsoleClear
+        Show-StatusBar
+
+        $automationLabel = '4. Automation'
+        $iisLabel        = '6. IIS Integration'
+        $disabled        = @()
+
+        if (-not $script:TUACMEIsAdmin) {
+            $automationLabel = '4. Automation       (Requires admin)'
+            $disabled       += 3
+        }
+        if (-not $script:OnWindows) {
+            $iisLabel = '6. IIS Integration  (Windows only)'
+            $disabled += 5
+        } elseif (-not $script:TUACMEIsAdmin) {
+            $iisLabel = '6. IIS Integration  (Requires admin)'
+            $disabled += 5
+        }
+
+        $menuOptions = @(
+            '1. Order new certificate',
+            '2. Dry-run order (staging)',
+            '3. Certificate Dashboard',
+            $automationLabel,
+            '5. Export / Import',
+            $iisLabel,
+            '7. DNS plugin configuration',
+            '8. Troubleshooting / Logs',
+            'Q. Exit'
+        )
+
+        $selection = Show-Menu -Title 'TU-ACME v0.2.0 - Certificate Management' `
+            -Options $menuOptions -DisabledIndices $disabled
+
+        switch ($selection) {
+            -1 { $running = $false }
+            0  { Invoke-OrderCertificate }
+            1  { Invoke-DryRunOrder }
+            2  { Invoke-CertificateDashboard }
+            3  { Invoke-AutomationMenu }
+            4  { Invoke-ExportMenu }
+            5  { Invoke-IISMenu }
+            6  { Invoke-DnsPluginConfig }
+            7  { Invoke-LogViewer }
+            8  { $running = $false }
+        }
     }
 
     Invoke-ConsoleClear
-    Show-StatusBar
-    Write-Host '  TU-ACME v0.1.0 - menu skeleton (Step 3). Full menu arrives in later steps.' -ForegroundColor Cyan
+    Write-Host 'TU-ACME exited.' -ForegroundColor Cyan
 }

@@ -2,7 +2,7 @@
     $configPath = Join-Path $env:ProgramData 'TU-ACME\config.json'
 
     $defaults = [PSCustomObject]@{
-        Version       = '0.1.0'
+        Version       = '0.2.0'
         Acme          = [PSCustomObject]@{
             ProdDirectoryUrl    = ''
             StagingDirectoryUrl = ''
