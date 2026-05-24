@@ -75,12 +75,25 @@ function Start-PebbleServer {
     $env:PEBBLE_VA_NOSLEEP = '1'
     $env:PEBBLE_VA_ALWAYS_VALID = '1'
 
+    Write-Host "[Pebble:$Role] Launching $binary -config $configRel (cwd=$repoRoot)" -ForegroundColor DarkGray
+    Write-Host "[Pebble:$Role] stdout -> $logPath" -ForegroundColor DarkGray
+
     $proc = Start-Process -FilePath $binary `
         -ArgumentList @('-config', $configRel) `
         -WorkingDirectory $repoRoot `
         -RedirectStandardOutput $logPath `
         -RedirectStandardError ($logPath + '.err') `
         -PassThru -NoNewWindow
+
+    Start-Sleep -Milliseconds 750
+    if ($proc.HasExited) {
+        $tail    = if (Test-Path $logPath)         { (Get-Content $logPath         -Tail 30) -join [Environment]::NewLine } else { '(no log)' }
+        $errTail = if (Test-Path ($logPath+'.err')) { (Get-Content ($logPath+'.err') -Tail 30) -join [Environment]::NewLine } else { '' }
+        Write-Host "[Pebble:$Role] Process exited immediately. ExitCode=$($proc.ExitCode)" -ForegroundColor Yellow
+        Write-Host "[Pebble:$Role] stdout: $tail"
+        if ($errTail) { Write-Host "[Pebble:$Role] stderr: $errTail" }
+        throw "Pebble ($Role) failed to launch (exit $($proc.ExitCode))."
+    }
 
     $directoryUrl = "https://localhost:$port/dir"
 
@@ -127,17 +140,32 @@ function Start-PebbleServer {
     }
 
     if (-not $ready) {
-        $tail = if (Test-Path $logPath) { (Get-Content $logPath -Tail 30) -join [Environment]::NewLine } else { '(no log)' }
+        $tail    = if (Test-Path $logPath)           { (Get-Content $logPath          -Tail 30) -join [Environment]::NewLine } else { '(no log)' }
         $errTail = if (Test-Path ($logPath + '.err')) { (Get-Content ($logPath + '.err') -Tail 30) -join [Environment]::NewLine } else { '' }
-        try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch {}
-        Write-Host "[Pebble] Probe last error: $lastErr" -ForegroundColor Yellow
-        Write-Host "[Pebble] stdout tail ($logPath):" -ForegroundColor Yellow
+
+        $portState = 'unknown'
+        try {
+            if (Get-Command Test-NetConnection -ErrorAction SilentlyContinue) {
+                $tnc = Test-NetConnection -ComputerName 'localhost' -Port $port -InformationLevel Quiet -WarningAction SilentlyContinue
+                $portState = if ($tnc) { 'listening' } else { 'closed' }
+            }
+        } catch {}
+
+        $procState = if ($proc.HasExited) { "exited (ExitCode=$($proc.ExitCode))" } else { 'running' }
+
+        Write-Host "[Pebble:$Role] PROBE FAILED" -ForegroundColor Yellow
+        Write-Host "[Pebble:$Role]   process: $procState"
+        Write-Host "[Pebble:$Role]   port $port`: $portState"
+        Write-Host "[Pebble:$Role]   last probe error: $lastErr"
+        Write-Host "[Pebble:$Role]   stdout tail ($logPath):"
         Write-Host $tail
         if ($errTail) {
-            Write-Host "[Pebble] stderr tail:" -ForegroundColor Yellow
+            Write-Host "[Pebble:$Role]   stderr tail:"
             Write-Host $errTail
         }
-        throw "Pebble ($Role) did not become ready within $ReadyTimeoutSeconds s. Last probe error: $lastErr"
+
+        try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch {}
+        throw "Pebble ($Role) did not become ready within $ReadyTimeoutSeconds s. proc=$procState port=$portState lastErr=$lastErr"
     }
 
     $trustInfo = $null
