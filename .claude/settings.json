@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__github__get_commit",
+      "mcp__github__list_pull_requests",
+      "mcp__github__get_file_contents"
+    ]
+  }
+}

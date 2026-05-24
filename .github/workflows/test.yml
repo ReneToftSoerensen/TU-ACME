@@ -1,0 +1,69 @@
+name: TU-ACME Test Suite
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test Suite - ${{ matrix.test-type }}
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        test-type: [Unit, Integration, Scripts]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PowerShell Module Cache
+        id: cache
+        uses: actions/cache@v5
+        with:
+          path: C:\Users\runneradmin\Documents\WindowsPowerShell\Modules
+          key: ps-modules-${{ runner.os }}-${{ hashFiles('**/*.psd1') }}
+          restore-keys: |
+            ps-modules-${{ runner.os }}-
+
+      - name: Display Windows PowerShell Version
+        shell: powershell
+        run: $PSVersionTable.PSVersion | Out-String
+
+      - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        shell: powershell
+        run: |
+          Install-Module -Name Posh-ACME -Scope CurrentUser -Force -SkipPublisherCheck
+          Install-Module -Name Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force -SkipPublisherCheck
+
+      - name: Create TestResults Directory
+        shell: powershell
+        run: New-Item -ItemType Directory -Path TestResults -Force | Out-Null
+
+      - name: Run ${{ matrix.test-type }} Tests
+        shell: powershell
+        run: |
+          $tag = '${{ matrix.test-type }}'
+          $cfg = & ".\tests\pester.config.ps1"
+          $cfg.Filter.Tag = @($tag)
+          if ($tag -eq 'Unit') { $cfg.Filter.ExcludeTag = @('LiveExternal', 'Integration') }
+          $cfg.Run.PassThru = $true
+          $result = Invoke-Pester -Configuration $cfg
+          if ($result.FailedCount -gt 0) { exit 1 }
+
+      - name: Publish Test Results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-${{ matrix.test-type }}
+          path: TestResults/
+
+      - name: Publish Coverage
+        if: success() && matrix.test-type == 'Unit'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: TestResults/coverage.xml

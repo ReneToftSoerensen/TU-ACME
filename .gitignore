@@ -1,0 +1,4 @@
+TestResults/
+*.xml.bak
+.vs/
+*.user
