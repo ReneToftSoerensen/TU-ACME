@@ -1,0 +1,18 @@
+{
+  "pebble": {
+    "listenAddress": "0.0.0.0:14001",
+    "managementListenAddress": "0.0.0.0:15001",
+    "certificate": "tests/.pebble/cert.pem",
+    "privateKey": "tests/.pebble/key.pem",
+    "httpPort": 5012,
+    "tlsPort": 5011,
+    "ocspResponderURL": "",
+    "externalAccountBindingRequired": false,
+    "domainBlocklist": ["blocked-domain.example"],
+    "retryAfter": {
+      "authz": 3,
+      "order": 5
+    },
+    "certificateValidityPeriod": 157766400
+  }
+}

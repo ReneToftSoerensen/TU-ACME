@@ -2,3 +2,11 @@ TestResults/
 *.xml.bak
 .vs/
 *.user
+
+# Pebble integration-test artifacts. The binaries under tests/.tools/<version>/
+# are downloaded by tests/Install-Pebble.ps1 and cached in CI by version key.
+# The trust bundle is generated per-OS by tests/Build-PebbleBundle.ps1 and
+# also lives under tests/.tools/. The static localhost cert/key under
+# tests/.pebble/ ARE checked in — Pebble's TLS material has no real-world
+# value (CN=pebble.test, only ever exposed to test code).
+tests/.tools/

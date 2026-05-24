@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  PEBBLE_VERSION: v2.10.1
+
 jobs:
   test:
     name: Test Suite - ${{ matrix.test-type }}
@@ -38,6 +41,22 @@ jobs:
         run: |
           Install-Module -Name Posh-ACME -Scope CurrentUser -Force -SkipPublisherCheck
           Install-Module -Name Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force -SkipPublisherCheck
+
+      # Pebble is the test ACME server used by the Integration tier. Binaries
+      # are downloaded once per PEBBLE_VERSION and cached. The Scripts tier
+      # also depends on Pebble for the renewal-script tests (added later).
+      - name: Cache Pebble binaries
+        if: matrix.test-type != 'Unit'
+        id: pebble-cache
+        uses: actions/cache@v5
+        with:
+          path: tests/.tools/${{ env.PEBBLE_VERSION }}
+          key: pebble-${{ runner.os }}-${{ env.PEBBLE_VERSION }}
+
+      - name: Install Pebble
+        if: matrix.test-type != 'Unit' && steps.pebble-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: pwsh ./tests/Install-Pebble.ps1 -Version $env:PEBBLE_VERSION
 
       - name: Create TestResults Directory
         shell: powershell
