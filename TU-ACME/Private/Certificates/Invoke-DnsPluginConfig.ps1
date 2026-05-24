@@ -6,8 +6,11 @@
         Lists Posh-ACME DNS plugins via Get-PAPlugin, lets the operator
         pick one, prompts for each parameter the plugin advertises
         (masking secret-named ones via Read-Host -AsSecureString), and
-        persists the result through Set-PAPluginArgs which encrypts
-        values under Posh-ACME's per-machine DPAPI store.
+        persists the hashtable to a DPAPI-encrypted sidecar XML under
+        %ProgramData%\TU-ACME\plugin-args-<plugin>.xml. The order flow
+        merges these into -PluginArgs before calling New-PACertificate,
+        since Posh-ACME 4.x has no Set-PAPluginArgs cmdlet (plugin
+        args only persist via order finalization).
 
         Selecting the 'Acme-Dns' plugin routes to the dedicated
         Invoke-AcmeDnsSetup helper instead of the generic loop, since
@@ -27,7 +30,7 @@
         return
     }
 
-    $names   = $plugins | ForEach-Object { $_.Name }
+    $names   = @($plugins | ForEach-Object { $_.Name })
     $options = @()
     foreach ($name in $names) { $options += "$name" }
     $options += 'B. Back'
@@ -80,7 +83,12 @@
     }
 
     try {
-        Set-PAPluginArgs -Plugin $pluginName -PluginArgs $pluginArgs
+        $sidecarDir = Join-Path $env:ProgramData 'TU-ACME'
+        if (-not (Test-Path $sidecarDir)) {
+            New-Item -ItemType Directory -Path $sidecarDir -Force | Out-Null
+        }
+        $sidecar = Join-Path $sidecarDir ("plugin-args-$pluginName.xml")
+        $pluginArgs | Export-Clixml -Path $sidecar
         Write-Host "  Saved plugin args for $pluginName." -ForegroundColor Green
     } catch {
         Write-Host "  Failed to save: $($_.Exception.Message)" -ForegroundColor Yellow

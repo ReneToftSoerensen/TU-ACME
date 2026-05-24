@@ -32,7 +32,7 @@ Describe 'UC-6.04 - DNS plugin Acme-Dns picks dedicated helper' -Tag 'Unit' {
 
             # Select Acme-Dns (index 1)
             Mock Show-Menu { return 1 }
-            Mock Set-PAPluginArgs {}
+            Mock Export-Clixml {}
             Mock Invoke-AcmeDnsSetup {}
             Mock Read-Host { return '' }
 
@@ -44,7 +44,7 @@ Describe 'UC-6.04 - DNS plugin Acme-Dns picks dedicated helper' -Tag 'Unit' {
                 $Plugin -and $Params
             }
             # And Set-PAPluginArgs must not run either: the helper owns persistence.
-            Assert-MockCalled Set-PAPluginArgs -Times 0 -Scope It -Exactly
+            Assert-MockCalled Export-Clixml -Times 0 -Scope It -Exactly
         }
     }
 }

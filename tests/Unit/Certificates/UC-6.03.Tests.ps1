@@ -21,14 +21,14 @@ Describe 'UC-6.03 - DNS plugin save calls Set-PAPluginArgs' -Tag 'Unit' {
         InModuleScope TU-ACME {
             Mock Invoke-ConsoleClear {}
             Mock Write-Host {}
-            Mock Get-PAPlugin -ParameterFilter { -not $Plugin -and -not $Params } -MockWith {
+            Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { -not $Plugin -and -not $Params } -MockWith {
                 @( [PSCustomObject]@{ Name = 'Foo' } )
             }
-            Mock Get-PAPlugin -ParameterFilter { $Plugin -eq 'Foo' -and $Params } -MockWith {
+            Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { $Plugin -eq 'Foo' -and $Params } -MockWith {
                 @( [PSCustomObject]@{ Name = 'ServerName'; Mandatory = $true } )
             }
             Mock Show-Menu { return 0 }
-            Mock Set-PAPluginArgs {}
+            Mock Export-Clixml {}
             Mock Invoke-AcmeDnsSetup {}
 
             $script:_ans = @('host.example', 'y', '')
@@ -42,10 +42,10 @@ Describe 'UC-6.03 - DNS plugin save calls Set-PAPluginArgs' -Tag 'Unit' {
 
             Invoke-DnsPluginConfig
 
-            Assert-MockCalled Set-PAPluginArgs -Times 1 -Scope It -ParameterFilter {
-                $Plugin -eq 'Foo' -and
-                $PluginArgs -is [hashtable] -and
-                $PluginArgs['ServerName'] -eq 'host.example'
+            Assert-MockCalled Export-Clixml -Times 1 -Scope It -ParameterFilter {
+                $Path -like '*plugin-args-Foo.xml' -and
+                $InputObject -is [hashtable] -and
+                $InputObject['ServerName'] -eq 'host.example'
             }
         }
     }
@@ -54,14 +54,14 @@ Describe 'UC-6.03 - DNS plugin save calls Set-PAPluginArgs' -Tag 'Unit' {
         InModuleScope TU-ACME {
             Mock Invoke-ConsoleClear {}
             Mock Write-Host {}
-            Mock Get-PAPlugin -ParameterFilter { -not $Plugin -and -not $Params } -MockWith {
+            Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { -not $Plugin -and -not $Params } -MockWith {
                 @( [PSCustomObject]@{ Name = 'Foo' } )
             }
-            Mock Get-PAPlugin -ParameterFilter { $Plugin -eq 'Foo' -and $Params } -MockWith {
+            Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { $Plugin -eq 'Foo' -and $Params } -MockWith {
                 @( [PSCustomObject]@{ Name = 'ServerName'; Mandatory = $true } )
             }
             Mock Show-Menu { return 0 }
-            Mock Set-PAPluginArgs {}
+            Mock Export-Clixml {}
             Mock Invoke-AcmeDnsSetup {}
 
             $script:_ans2 = @('host.example', 'n', '')
@@ -75,7 +75,7 @@ Describe 'UC-6.03 - DNS plugin save calls Set-PAPluginArgs' -Tag 'Unit' {
 
             Invoke-DnsPluginConfig
 
-            Assert-MockCalled Set-PAPluginArgs -Times 0 -Scope It -Exactly
+            Assert-MockCalled Export-Clixml -Times 0 -Scope It -Exactly
         }
     }
 }

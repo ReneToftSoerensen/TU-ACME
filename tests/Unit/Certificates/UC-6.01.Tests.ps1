@@ -30,7 +30,7 @@ Describe 'UC-6.01 - DNS plugin menu lists Get-PAPlugin entries' -Tag 'Unit' {
             }
             # Esc -> exit immediately
             Mock Show-Menu { return -1 }
-            Mock Set-PAPluginArgs {}
+            Mock Export-Clixml {}
             Mock Invoke-AcmeDnsSetup {}
             Mock Read-Host { return '' }
 

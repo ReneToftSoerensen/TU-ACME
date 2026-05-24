@@ -21,10 +21,10 @@ Describe 'UC-6.02 - DNS plugin prompts mask secret-named parameters' -Tag 'Unit'
         InModuleScope TU-ACME {
             Mock Invoke-ConsoleClear {}
             Mock Write-Host {}
-            Mock Get-PAPlugin -ParameterFilter { -not $Plugin -and -not $Params } -MockWith {
+            Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { -not $Plugin -and -not $Params } -MockWith {
                 @( [PSCustomObject]@{ Name = 'Foo' } )
             }
-            Mock Get-PAPlugin -ParameterFilter { $Plugin -eq 'Foo' -and $Params } -MockWith {
+            Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { $Plugin -eq 'Foo' -and $Params } -MockWith {
                 @(
                     [PSCustomObject]@{ Name = 'ApiKey';     Mandatory = $true },
                     [PSCustomObject]@{ Name = 'Token';      Mandatory = $true },
@@ -33,7 +33,7 @@ Describe 'UC-6.02 - DNS plugin prompts mask secret-named parameters' -Tag 'Unit'
             }
             # Pick index 0 (Foo)
             Mock Show-Menu { return 0 }
-            Mock Set-PAPluginArgs {}
+            Mock Export-Clixml {}
             Mock Invoke-AcmeDnsSetup {}
 
             # Secret prompts return a secure string; plain prompt returns 'host'; confirm returns 'n' to skip save.
