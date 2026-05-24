@@ -106,11 +106,29 @@ function Start-PebbleServer {
     $prevCallback  = $null
     $prevProtocol  = $null
     if (-not $useSkipParam) {
-        # Windows PowerShell 5.1: cert callback to accept Pebble's self-signed cert,
-        # AND force TLS 1.2 because the .NET Framework default on stock Windows
-        # Server can still be SSL3/TLS1.0 which Pebble rejects.
+        # Windows PowerShell 5.1: trust Pebble's self-signed cert by
+        # installing a real .NET delegate (NOT a scriptblock — those fire
+        # on non-PS threads and can return $null/false unpredictably,
+        # silently dropping the TLS handshake mid-stream).
+        if (-not ('TuAcme.TrustAllCerts' -as [type])) {
+            Add-Type -TypeDefinition @"
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+namespace TuAcme {
+    public static class TrustAllCerts {
+        public static bool Validator(object sender, X509Certificate cert,
+                                     X509Chain chain, SslPolicyErrors errors) {
+            return true;
+        }
+    }
+}
+"@
+        }
         $prevCallback = [System.Net.ServicePointManager]::ServerCertificateValidationCallback
-        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = [TuAcme.TrustAllCerts]::Validator
+        # Force TLS 1.2 — stock Windows Server may still default to SSL3/TLS1.0,
+        # which Pebble rejects.
         $prevProtocol = [System.Net.ServicePointManager]::SecurityProtocol
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
     }
