@@ -4,6 +4,9 @@ Describe 'UC-11.02 - Log viewer export prompts before overwriting' -Tag 'Unit' {
     BeforeAll {
         $ModulePath = "$PSScriptRoot\..\..\..\TU-ACME\TU-ACME.psd1"
         Import-Module $ModulePath -Force
+        if (-not (Get-Command Get-WinEvent -ErrorAction SilentlyContinue)) {
+            & (Get-Module TU-ACME) { function script:Get-WinEvent { param([hashtable]$FilterHashtable,[int]$MaxEvents) } }
+        }
     }
     AfterAll {
         Remove-Module TU-ACME -Force -ErrorAction SilentlyContinue

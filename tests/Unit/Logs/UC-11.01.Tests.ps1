@@ -4,6 +4,11 @@ Describe 'UC-11.01 - Log viewer reads TU-ACME provider events' -Tag 'Unit' {
     BeforeAll {
         $ModulePath = "$PSScriptRoot\..\..\..\TU-ACME\TU-ACME.psd1"
         Import-Module $ModulePath -Force
+        # Get-WinEvent is Windows-only. Inject a stub into the TU-ACME module
+        # scope on non-Windows runners so Pester's Mock has something to bind.
+        if (-not (Get-Command Get-WinEvent -ErrorAction SilentlyContinue)) {
+            & (Get-Module TU-ACME) { function script:Get-WinEvent { param([hashtable]$FilterHashtable,[int]$MaxEvents) } }
+        }
     }
     AfterAll {
         Remove-Module TU-ACME -Force -ErrorAction SilentlyContinue

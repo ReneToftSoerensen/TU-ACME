@@ -31,7 +31,7 @@
     }
 
     # ---- 3. Plugin prompt + validation -----------------------------------
-    $availablePlugins = @(Get-PAPlugin -List)
+    $availablePlugins = @(Get-PAPlugin)
     $pluginNames = @($availablePlugins | ForEach-Object { $_.Name })
     $plugin = ''
     while ($true) {
