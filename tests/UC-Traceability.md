@@ -14,3 +14,6 @@ This file tracks every atomic use case in `Usecases/` together with the implemen
 | 1.08 | Create prod ACME account | TU-ACME/Private/Bootstrap/Initialize-TUACMEEnvironment.ps1 | tests/Unit/Bootstrap/UC-1.08.Tests.ps1 | Implemented |
 | 1.09 | Create staging ACME account | TU-ACME/Private/Bootstrap/Initialize-TUACMEEnvironment.ps1 | tests/Unit/Bootstrap/UC-1.09.Tests.ps1 | Implemented |
 | 1.10 | Persist config and log Event 1010 | TU-ACME/Private/Bootstrap/Initialize-TUACMEEnvironment.ps1 | tests/Unit/Bootstrap/UC-1.10.Tests.ps1 | Implemented |
+| 2.01 | Use-TUACMEProdAccount switches server and account | TU-ACME/Private/Bootstrap/Use-TUACMEProdAccount.ps1 | tests/Unit/Bootstrap/UC-2.01.Tests.ps1 | Implemented |
+| 2.02 | Use-TUACMEStagingAccount switches server and account | TU-ACME/Private/Bootstrap/Use-TUACMEStagingAccount.ps1 | tests/Unit/Bootstrap/UC-2.02.Tests.ps1 | Implemented |
+| 2.03 | Use-TUACME*Account throws when config not initialized | TU-ACME/Private/Bootstrap/Use-TUACME{Prod,Staging}Account.ps1 | tests/Unit/Bootstrap/UC-2.03.Tests.ps1 | Implemented |
