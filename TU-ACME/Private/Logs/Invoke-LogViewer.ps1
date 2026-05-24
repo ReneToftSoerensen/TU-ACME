@@ -23,8 +23,7 @@
 
     while ($true) {
         $events = @(Get-WinEvent `
-            -LogName Application `
-            -FilterHashtable @{ ProviderName = 'TU-ACME' } `
+            -FilterHashtable @{ LogName = 'Application'; ProviderName = 'TU-ACME' } `
             -MaxEvents 50 `
             -ErrorAction SilentlyContinue)
 
