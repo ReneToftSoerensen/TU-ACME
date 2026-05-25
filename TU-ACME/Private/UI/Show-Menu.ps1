@@ -88,11 +88,6 @@
         while ($true) {
             $key = Invoke-ConsoleReadKey
 
-            # F3 — staging-toggle signal
-            if ($key.Key -eq [ConsoleKey]::F3) {
-                return -2
-            }
-
             if ($searching) {
                 if ($key.Key -eq [ConsoleKey]::Escape) {
                     $searching = $false

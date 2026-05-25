@@ -2,7 +2,7 @@
     param(
         [string] $ActiveAccount = '',
         [string] $AdminWarning  = '',
-        [string] $LeftHint      = '[Up/Down] Navigate  [Enter] Select  [F3] Staging  [ESC] Back',
+        [string] $LeftHint      = '[Up/Down] Navigate  [Enter] Select  [ESC] Back',
         [string] $RightHint     = ''
     )
 

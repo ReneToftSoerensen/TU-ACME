@@ -36,7 +36,7 @@ Describe 'UC-5.06 - Dashboard shows empty-state when no certs' -Tag 'Unit' {
             Mock Wait-AnyKey         {}
 
             Mock Write-Host {}
-            Mock Read-Host  { return 'q' }
+            Mock Invoke-ConsoleReadKey { New-Object System.ConsoleKeyInfo([char]0, [System.ConsoleKey]::Escape, $false, $false, $false) }
 
             Invoke-CertificateDashboard
 

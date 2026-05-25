@@ -62,15 +62,8 @@
         # Build the names list for New-PACertificate
         $names = @($Domain) + $Sans
 
-        $cert = $null
-        $orderError = $null
         $cert = Show-Spinner -Message "Ordering dry-run certificate for $Domain ..." -ScriptBlock {
-            try {
-                New-PACertificate -Domain $names -Plugin $Plugin -PluginArgs $PluginArgs -Force
-            } catch {
-                $script:_dryRunOrderError = $_
-                throw
-            }
+            New-PACertificate -Domain $names -Plugin $Plugin -PluginArgs $PluginArgs -Force
         }
 
         if ($null -ne $cert) {

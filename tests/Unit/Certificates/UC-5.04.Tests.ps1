@@ -65,7 +65,7 @@ Describe 'UC-5.04 - Dashboard colors certs by expiry' -Tag 'Unit' {
             Mock Invoke-ConsoleClear {}
             Mock Write-Host          {}
             Mock Wait-AnyKey         {}
-            Mock Read-Host           { return 'q' }
+            Mock Invoke-ConsoleReadKey { New-Object System.ConsoleKeyInfo([char]0, [System.ConsoleKey]::Escape, $false, $false, $false) }
 
             Invoke-CertificateDashboard
 

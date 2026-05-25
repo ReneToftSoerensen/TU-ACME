@@ -42,13 +42,17 @@ Describe 'UC-5.07 - Dashboard e hotkey opens Export menu' -Tag 'Unit' {
             Mock Wait-AnyKey         {}
             Mock Invoke-ExportMenu   {}
 
-            $script:_ans = @('e', 'q')
+            # Send 'e' once to open the export menu, then Escape to exit.
+            $script:_keys = @(
+                (New-Object System.ConsoleKeyInfo([char]'e', [System.ConsoleKey]::E,      $false, $false, $false)),
+                (New-Object System.ConsoleKeyInfo([char]0,   [System.ConsoleKey]::Escape, $false, $false, $false))
+            )
             $script:_idx = 0
-            Mock Read-Host {
+            Mock Invoke-ConsoleReadKey {
                 $i = $script:_idx
                 $script:_idx = $i + 1
-                if ($i -ge $script:_ans.Count) { return 'q' }
-                return $script:_ans[$i]
+                if ($i -ge $script:_keys.Count) { return $script:_keys[$script:_keys.Count - 1] }
+                return $script:_keys[$i]
             }
 
             Invoke-CertificateDashboard

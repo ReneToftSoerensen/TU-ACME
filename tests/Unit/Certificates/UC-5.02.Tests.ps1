@@ -62,7 +62,7 @@ Describe 'UC-5.02 - Dashboard hides dry-run certs by default' -Tag 'Unit' {
             Mock Invoke-ConsoleClear {}
             Mock Write-Host          {}
             Mock Wait-AnyKey         {}
-            Mock Read-Host           { return 'q' }
+            Mock Invoke-ConsoleReadKey { New-Object System.ConsoleKeyInfo([char]0, [System.ConsoleKey]::Escape, $false, $false, $false) }
 
             Invoke-CertificateDashboard
 

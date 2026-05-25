@@ -50,9 +50,9 @@ Describe 'TU-ACME renewal background script' -Tag 'Scripts' {
             Mock Write-EventLogEntry   {}
             Mock Get-PACertificate     {
                 if ($global:_uc807_phase -eq 0) {
-                    @([PSCustomObject]@{ Subject = 'CN=foo.example'; Thumbprint = 'OLD1' })
+                    @([PSCustomObject]@{ MainDomain = 'foo.example'; Thumbprint = 'OLD1' })
                 } else {
-                    @([PSCustomObject]@{ Subject = 'CN=foo.example'; Thumbprint = 'NEW1' })
+                    @([PSCustomObject]@{ MainDomain = 'foo.example'; Thumbprint = 'NEW1' })
                 }
             }
 
@@ -83,9 +83,9 @@ Describe 'TU-ACME renewal background script' -Tag 'Scripts' {
             Mock Update-IISBindingForCert {}
             Mock Get-PACertificate        {
                 if ($global:_uc808_phase -eq 0) {
-                    @([PSCustomObject]@{ Subject = 'CN=bar.example'; Thumbprint = 'OLD2' })
+                    @([PSCustomObject]@{ MainDomain = 'bar.example'; Thumbprint = 'OLD2' })
                 } else {
-                    @([PSCustomObject]@{ Subject = 'CN=bar.example'; Thumbprint = 'NEW2' })
+                    @([PSCustomObject]@{ MainDomain = 'bar.example'; Thumbprint = 'NEW2' })
                 }
             }
 

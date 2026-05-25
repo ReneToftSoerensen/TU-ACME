@@ -62,13 +62,17 @@ Describe 'UC-5.03 - Dashboard d hotkey reveals dry-runs pane' -Tag 'Unit' {
             Mock Write-Host          {}
             Mock Wait-AnyKey         {}
 
-            $script:_ans = @('d', 'q')
+            # Send 'd' once to toggle dry-runs, then Escape to exit.
+            $script:_keys = @(
+                (New-Object System.ConsoleKeyInfo([char]'d', [System.ConsoleKey]::D,      $false, $false, $false)),
+                (New-Object System.ConsoleKeyInfo([char]0,   [System.ConsoleKey]::Escape, $false, $false, $false))
+            )
             $script:_idx = 0
-            Mock Read-Host {
+            Mock Invoke-ConsoleReadKey {
                 $i = $script:_idx
                 $script:_idx = $i + 1
-                if ($i -ge $script:_ans.Count) { return 'q' }
-                return $script:_ans[$i]
+                if ($i -ge $script:_keys.Count) { return $script:_keys[$script:_keys.Count - 1] }
+                return $script:_keys[$i]
             }
 
             Invoke-CertificateDashboard

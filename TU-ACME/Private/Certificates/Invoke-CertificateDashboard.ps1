@@ -9,12 +9,11 @@
         hides dry-runs unless 'd' is pressed, and opens the export menu
         when 'e' is pressed.
 
-        Hotkeys:
+        Hotkeys (read with Invoke-ConsoleReadKey — no Enter required):
           [D]     Toggle dry-runs pane
-          [R]     Renew selected certificate
           [E]     Export menu
           [Enter] Details page for the first cert
-          [Q|B]   Return
+          [Q|B|Esc] Return
     #>
     [CmdletBinding()]
     param()
@@ -119,58 +118,47 @@
         }
 
         Write-Host ''
-        Write-Host '  [D] Toggle dry-runs   [R] Renew selected   [E] Export   [Enter] Details   [Esc] Back' -ForegroundColor DarkCyan
+        Write-Host '  [D] Toggle dry-runs   [E] Export   [Enter] Details   [Esc|Q|B] Back' -ForegroundColor DarkCyan
 
-        $input = Read-Host '  >'
-        if ($null -eq $input) { return }
-        $key = ($input).ToString().Trim().ToLowerInvariant()
+        $key = Invoke-ConsoleReadKey
+        if ($null -eq $key) { return }
 
-        switch ($key) {
-            'd' {
-                $showDryRuns = -not $showDryRuns
-            }
-            'r' {
-                if (Get-Command -Name 'Invoke-RenewSelectedCertificate' -ErrorAction SilentlyContinue) {
-                    Invoke-RenewSelectedCertificate
-                } else {
-                    Write-Host '  Not yet implemented' -ForegroundColor Yellow
-                    Wait-AnyKey
-                }
-            }
-            'e' {
-                if (Get-Command -Name 'Invoke-ExportMenu' -ErrorAction SilentlyContinue) {
-                    Invoke-ExportMenu
-                } else {
-                    Write-Host '  Export menu not available' -ForegroundColor Yellow
-                    Wait-AnyKey
-                }
-            }
-            '' {
-                if ($prodRows.Count -eq 0) {
-                    Write-Host '  No certificates' -ForegroundColor Yellow
-                    Wait-AnyKey
-                } else {
-                    $first = $prodRows[0]
-                    Invoke-ConsoleClear
-                    Write-Host ''
-                    Write-Host '  === Certificate Details ===' -ForegroundColor Cyan
-                    Write-Host ''
-                    Write-Host "  Subject     : $($first.Subject)"
-                    Write-Host "  NotAfter    : $($first.NotAfter)"
-                    Write-Host "  DaysLeft    : $($first.DaysLeft)"
-                    Write-Host "  Thumbprint  : $($first.Thumbprint)"
-                    Write-Host "  FriendlyName: $($first.FriendlyName)"
-                    Write-Host ''
-                    Wait-AnyKey
-                }
-            }
-            'q' { return }
-            'b' { return }
-            'esc' { return }
-            'escape' { return }
-            default {
-                # Unknown key: re-render.
+        $char = if ($null -ne $key.KeyChar) { [string]::new($key.KeyChar).ToLowerInvariant() } else { '' }
+
+        if     ($key.Key -eq [ConsoleKey]::Escape) { return }
+        elseif ($key.Key -eq [ConsoleKey]::Enter) {
+            if ($prodRows.Count -eq 0) {
+                Write-Host '  No certificates' -ForegroundColor Yellow
+                Wait-AnyKey
+            } else {
+                $first = $prodRows[0]
+                Invoke-ConsoleClear
+                Write-Host ''
+                Write-Host '  === Certificate Details ===' -ForegroundColor Cyan
+                Write-Host ''
+                Write-Host "  Subject     : $($first.Subject)"
+                Write-Host "  NotAfter    : $($first.NotAfter)"
+                Write-Host "  DaysLeft    : $($first.DaysLeft)"
+                Write-Host "  Thumbprint  : $($first.Thumbprint)"
+                Write-Host "  FriendlyName: $($first.FriendlyName)"
+                Write-Host ''
+                Wait-AnyKey
             }
         }
+        elseif ($char -eq 'd') {
+            $showDryRuns = -not $showDryRuns
+        }
+        elseif ($char -eq 'e') {
+            if (Get-Command -Name 'Invoke-ExportMenu' -ErrorAction SilentlyContinue) {
+                Invoke-ExportMenu
+            } else {
+                Write-Host '  Export menu not available' -ForegroundColor Yellow
+                Wait-AnyKey
+            }
+        }
+        elseif ($char -eq 'q' -or $char -eq 'b') {
+            return
+        }
+        # Anything else: re-render the dashboard.
     }
 }
