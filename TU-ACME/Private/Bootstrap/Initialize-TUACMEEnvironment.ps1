@@ -61,7 +61,12 @@
     $prodId = ''
     Show-Spinner -Message 'Registering prod account...' -ScriptBlock {
         Set-PAServer -DirectoryUrl $prodUrl
-        $acct = New-PAAccount -Contact $email -AcceptTOS
+        # -Force suppresses Posh-ACME's "wish to duplicate?" prompt when an
+        # account with matching contacts already exists. In v2 we always
+        # create distinct prod + staging accounts even when both URLs point
+        # at the same internal CA (the duplicate gets a different key and
+        # account ID), so the prompt should never block the wizard.
+        $acct = New-PAAccount -Contact $email -AcceptTOS -Force
         if ($null -eq $acct) {
             # Posh-ACME 4.32+ returns nothing on success; recover via Get-PAAccount.
             $acct = Get-PAAccount
@@ -74,7 +79,12 @@
     $stagingId = ''
     Show-Spinner -Message 'Registering staging account...' -ScriptBlock {
         Set-PAServer -DirectoryUrl $stagingUrl
-        $acct = New-PAAccount -Contact $email -AcceptTOS
+        # -Force suppresses Posh-ACME's "wish to duplicate?" prompt when an
+        # account with matching contacts already exists. In v2 we always
+        # create distinct prod + staging accounts even when both URLs point
+        # at the same internal CA (the duplicate gets a different key and
+        # account ID), so the prompt should never block the wizard.
+        $acct = New-PAAccount -Contact $email -AcceptTOS -Force
         if ($null -eq $acct) {
             $acct = Get-PAAccount
         }
