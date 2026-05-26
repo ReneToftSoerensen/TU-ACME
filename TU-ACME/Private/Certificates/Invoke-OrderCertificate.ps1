@@ -41,7 +41,20 @@
     }
 
     # ---- 4. Resolve plugin args ------------------------------------------
-    $pluginArgs = Get-PAPluginArgs $plugin
+    # Try the TU-ACME sidecar XML first (written by Invoke-DnsPluginConfig
+    # via Export-Clixml — Posh-ACME 4.x has no Set-PAPluginArgs). Fall back
+    # to Posh-ACME's Get-PAPluginArgs which only returns anything once an
+    # order already exists, so it's useful for renewal-time calls but not
+    # for the first order of a new cert.
+    $pluginArgs = $null
+    $sidecar = Join-Path $env:ProgramData "TU-ACME\plugin-args-$plugin.xml"
+    if (Test-Path -LiteralPath $sidecar) {
+        try { $pluginArgs = Import-Clixml -Path $sidecar } catch { $pluginArgs = $null }
+    }
+    if ($null -eq $pluginArgs -or
+        ($pluginArgs -is [System.Collections.IDictionary] -and $pluginArgs.Count -eq 0)) {
+        $pluginArgs = Get-PAPluginArgs $plugin
+    }
     if ($null -eq $pluginArgs -or
         ($pluginArgs -is [System.Collections.IDictionary] -and $pluginArgs.Count -eq 0)) {
         Write-Host "  No saved credentials for plugin $plugin. Configure via DNS Plugins menu first." -ForegroundColor Yellow
