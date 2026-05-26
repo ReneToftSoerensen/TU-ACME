@@ -1,11 +1,11 @@
 ﻿#Requires -Modules Pester
-Describe 'UC-6.01 - DNS plugin menu lists Get-PAPlugin entries' -Tag 'Unit' {
+Describe 'UC-6.07 - Plugin menu uses two-tier flow with AllowSearch' -Tag 'Unit' {
     BeforeAll {
         $ModulePath = "$PSScriptRoot\..\..\..\TU-ACME\TU-ACME.psd1"
         Import-Module $ModulePath -Force
 
         $script:OriginalProgramData = $env:ProgramData
-        $env:ProgramData = Join-Path ([System.IO.Path]::GetTempPath()) ("TU-ACME-uc601-" + [guid]::NewGuid().ToString('N'))
+        $env:ProgramData = Join-Path ([System.IO.Path]::GetTempPath()) ("TU-ACME-uc607-" + [guid]::NewGuid().ToString('N'))
         New-Item -ItemType Directory -Path (Join-Path $env:ProgramData 'TU-ACME') -Force | Out-Null
     }
 
@@ -17,23 +17,21 @@ Describe 'UC-6.01 - DNS plugin menu lists Get-PAPlugin entries' -Tag 'Unit' {
         Remove-Module TU-ACME -Force -ErrorAction SilentlyContinue
     }
 
-    It 'renders the second-tier Show-Menu with one option per DNS-01 plugin plus Back' {
+    It 'first tier has exactly four options and second tier is called with AllowSearch' {
         InModuleScope TU-ACME {
             Mock Invoke-ConsoleClear {}
             Mock Write-Host {}
-            Mock Get-PAPlugin {
+            Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { -not $Plugin -and -not $Params } -MockWith {
                 @(
-                    [PSCustomObject]@{ Name = 'Manual';   ChallengeType = 'dns-01' },
-                    [PSCustomObject]@{ Name = 'Route53';  ChallengeType = 'dns-01' },
-                    [PSCustomObject]@{ Name = 'Acme-Dns'; ChallengeType = 'dns-01' }
+                    [PSCustomObject]@{ Name = 'Manual';  ChallengeType = 'dns-01' },
+                    [PSCustomObject]@{ Name = 'Route53'; ChallengeType = 'dns-01' }
                 )
             }
-            # First Show-Menu call (tier picker): pick DNS-01 (index 0).
-            # Second Show-Menu call (plugin picker): -1 to bail out.
-            $script:_uc601_calls = 0
+            # Tier picker -> DNS-01 (0). Second tier: -1 to bail.
+            $script:_uc607_calls = 0
             Mock Show-Menu {
-                $i = $script:_uc601_calls
-                $script:_uc601_calls = $i + 1
+                $i = $script:_uc607_calls
+                $script:_uc607_calls = $i + 1
                 if ($i -eq 0) { return 0 } else { return -1 }
             }
             Mock Export-Clixml {}
@@ -42,18 +40,18 @@ Describe 'UC-6.01 - DNS plugin menu lists Get-PAPlugin entries' -Tag 'Unit' {
 
             Invoke-DnsPluginConfig
 
-            # Tier picker: 3 challenge-type buckets + Back.
+            # First-tier menu: exactly 4 options, three challenge-type buckets + Back.
             Assert-MockCalled Show-Menu -Times 1 -Scope It -ParameterFilter {
                 $Options.Count -eq 4 -and
                 $Options[0] -match 'DNS-01' -and
-                $Options[-1] -eq 'B. Back'
+                $Options[1] -match 'persistent' -and
+                $Options[2] -match 'HTTP-01' -and
+                $Options[-1] -eq 'B. Back' -and
+                -not $AllowSearch
             }
-            # Plugin picker: every plugin name plus Back, ordered alphabetically.
+            # Second-tier menu: AllowSearch is set.
             Assert-MockCalled Show-Menu -Times 1 -Scope It -ParameterFilter {
-                $Options -contains 'Manual' -and
-                $Options -contains 'Route53' -and
-                $Options -contains 'Acme-Dns' -and
-                $Options[-1] -eq 'B. Back'
+                $AllowSearch -eq $true
             }
         }
     }

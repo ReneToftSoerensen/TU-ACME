@@ -22,7 +22,7 @@ Describe 'UC-6.02 - DNS plugin prompts mask secret-named parameters' -Tag 'Unit'
             Mock Invoke-ConsoleClear {}
             Mock Write-Host {}
             Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { -not $Plugin -and -not $Params } -MockWith {
-                @( [PSCustomObject]@{ Name = 'Foo' } )
+                @( [PSCustomObject]@{ Name = 'Foo'; ChallengeType = 'dns-01' } )
             }
             Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { $Plugin -eq 'Foo' -and $Params } -MockWith {
                 @(
@@ -31,7 +31,8 @@ Describe 'UC-6.02 - DNS plugin prompts mask secret-named parameters' -Tag 'Unit'
                     [PSCustomObject]@{ Name = 'ServerName'; Mandatory = $true }
                 )
             }
-            # Pick index 0 (Foo)
+            # First Show-Menu call (tier picker) picks DNS-01 bucket (index 0).
+            # Second Show-Menu call (plugin picker) picks Foo (index 0).
             Mock Show-Menu { return 0 }
             Mock Export-Clixml {}
             Mock Invoke-AcmeDnsSetup {}

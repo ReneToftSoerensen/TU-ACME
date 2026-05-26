@@ -1,41 +1,127 @@
 ﻿function Invoke-DnsPluginConfig {
     <#
     .SYNOPSIS
-        DNS plugin configuration submenu.
+        Posh-ACME plugin configuration submenu.
     .DESCRIPTION
-        Lists Posh-ACME DNS plugins via Get-PAPlugin, lets the operator
-        pick one, prompts for each parameter the plugin advertises
-        (masking secret-named ones via Read-Host -AsSecureString), and
-        persists the hashtable to a DPAPI-encrypted sidecar XML under
-        %ProgramData%\TU-ACME\plugin-args-<plugin>.xml. The order flow
-        merges these into -PluginArgs before calling New-PACertificate,
-        since Posh-ACME 4.x has no Set-PAPluginArgs cmdlet (plugin
-        args only persist via order finalization).
+        Posh-ACME 4.32 ships roughly one hundred plugins. Rendering them
+        as a flat Show-Menu blew past the visible screen and gave no hint
+        about which plugin handled which ACME challenge type. This helper
+        instead drives a two-tier flow:
+
+        1. First tier: pick a challenge type bucket
+           (DNS-01, DNS-01 persistent, HTTP-01, Back).
+        2. Second tier: pick a plugin from the bucket; Show-Menu is
+           invoked with -AllowSearch so the operator can type '/' to
+           filter the long list by name.
+
+        Each plugin's challenge type is sourced from its
+        Get-CurrentPluginType function. We try the ChallengeType property
+        that Posh-ACME 4.x already exposes on Get-PAPlugin, and fall back
+        to a one-shot scan of the Plugins\ directory when an older or
+        forked Posh-ACME doesn't expose it. The cache is built once at
+        function entry; discovery is cheap (~100 small files).
 
         Selecting the 'Acme-Dns' plugin routes to the dedicated
         Invoke-AcmeDnsSetup helper instead of the generic loop, since
-        Acme-Dns needs the CNAME instruction flow.
+        Acme-Dns needs the CNAME instruction flow. All other plugins
+        follow the generic Get-PAPlugin -Params loop and persist a
+        hashtable via Export-Clixml to
+        %ProgramData%\TU-ACME\plugin-args-<plugin>.xml, which the order
+        flow merges into -PluginArgs at New-PACertificate time.
     #>
     [CmdletBinding()]
     param()
 
     Invoke-ConsoleClear
-    Write-Host '  === DNS plugin configuration ===' -ForegroundColor Cyan
+    Write-Host '  === Plugin configuration ===' -ForegroundColor Cyan
     Write-Host ''
 
-    $plugins = @(Get-PAPlugin)
-    if ($plugins.Count -eq 0) {
-        Write-Host '  No DNS plugins are available from Posh-ACME.' -ForegroundColor Yellow
+    $allPlugins = @(Get-PAPlugin)
+    if ($allPlugins.Count -eq 0) {
+        Write-Host '  No plugins are available from Posh-ACME.' -ForegroundColor Yellow
         Read-Host '  Press Enter to continue' | Out-Null
         return
     }
 
-    $names   = @($plugins | ForEach-Object { $_.Name })
+    # Build name -> ChallengeType cache. Prefer the property on the list
+    # object (Posh-ACME 4.x already exposes it); only fall back to a
+    # directory scan when at least one entry is missing the property or
+    # has it empty.
+    $typeByName = @{}
+    foreach ($p in $allPlugins) {
+        $name = $p.Name
+        $ct   = $null
+        if ($p.PSObject.Properties['ChallengeType']) {
+            $ct = $p.ChallengeType
+        }
+        if (-not [string]::IsNullOrEmpty($ct)) {
+            $typeByName[$name] = $ct
+        }
+    }
+    if ($typeByName.Count -lt $allPlugins.Count) {
+        # Fallback: scan Posh-ACME's Plugins directory for the
+        # Get-CurrentPluginType literal each plugin declares.
+        try {
+            $module = Get-Module Posh-ACME
+            if ($null -ne $module) {
+                $pluginsDir = Join-Path $module.ModuleBase 'Plugins'
+                if (Test-Path $pluginsDir) {
+                    $files = @(Get-ChildItem -Path $pluginsDir -Filter '*.ps1' -ErrorAction SilentlyContinue)
+                    foreach ($file in $files) {
+                        $name = $file.BaseName
+                        if ($typeByName.ContainsKey($name)) { continue }
+                        $content = Get-Content -Path $file.FullName -Raw -ErrorAction SilentlyContinue
+                        if ($null -ne $content -and $content -match "function\s+Get-CurrentPluginType\s*\{\s*'([\w\-]+)'\s*\}") {
+                            $typeByName[$name] = $matches[1]
+                        }
+                    }
+                }
+            }
+        } catch {
+            # Discovery is best-effort; plugins without a known type land
+            # nowhere and are simply unreachable from the menu.
+        }
+    }
+
+    # First-tier challenge-type picker.
+    $tierOptions = @(
+        '1. DNS-01 plugins',
+        '2. DNS-01 (persistent) plugins',
+        '3. HTTP-01 plugins',
+        'B. Back'
+    )
+    $tierSel = Show-Menu -Title 'Plugin configuration' -Options $tierOptions
+    if ($tierSel -eq -1 -or $tierSel -eq ($tierOptions.Count - 1)) { return }
+
+    switch ($tierSel) {
+        0 { $wantedType = 'dns-01';         $tierTitle = 'DNS-01 plugins' }
+        1 { $wantedType = 'dns-01-persist'; $tierTitle = 'DNS-01 (persistent) plugins' }
+        2 { $wantedType = 'http-01';        $tierTitle = 'HTTP-01 plugins' }
+        default { return }
+    }
+
+    $names = @(
+        $allPlugins |
+            Where-Object { $typeByName[$_.Name] -eq $wantedType } |
+            ForEach-Object { $_.Name } |
+            Sort-Object
+    )
+
+    if ($names.Count -eq 0) {
+        Invoke-ConsoleClear
+        Write-Host "  === $tierTitle ===" -ForegroundColor Cyan
+        Write-Host ''
+        Write-Host "  No plugins of type '$wantedType' are installed." -ForegroundColor Yellow
+        Read-Host '  Press Enter to continue' | Out-Null
+        return
+    }
+
+    # Second-tier plugin picker, AllowSearch so '/' filters the long list.
     $options = @()
-    foreach ($name in $names) { $options += "$name" }
+    foreach ($n in $names) { $options += "$n" }
     $options += 'B. Back'
 
-    $sel = Show-Menu -Title 'DNS plugin configuration' -Options $options
+    $sel = Show-Menu -Title $tierTitle -Options $options -AllowSearch
     if ($sel -eq -1 -or $sel -eq ($options.Count - 1)) { return }
 
     $pluginName = $names[$sel]

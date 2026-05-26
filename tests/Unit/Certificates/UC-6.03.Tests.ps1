@@ -22,11 +22,12 @@ Describe 'UC-6.03 - DNS plugin save calls Set-PAPluginArgs' -Tag 'Unit' {
             Mock Invoke-ConsoleClear {}
             Mock Write-Host {}
             Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { -not $Plugin -and -not $Params } -MockWith {
-                @( [PSCustomObject]@{ Name = 'Foo' } )
+                @( [PSCustomObject]@{ Name = 'Foo'; ChallengeType = 'dns-01' } )
             }
             Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { $Plugin -eq 'Foo' -and $Params } -MockWith {
                 @( [PSCustomObject]@{ Name = 'ServerName'; Mandatory = $true } )
             }
+            # Tier picker -> DNS-01 (0); plugin picker -> Foo (0).
             Mock Show-Menu { return 0 }
             Mock Export-Clixml {}
             Mock Invoke-AcmeDnsSetup {}
@@ -55,7 +56,7 @@ Describe 'UC-6.03 - DNS plugin save calls Set-PAPluginArgs' -Tag 'Unit' {
             Mock Invoke-ConsoleClear {}
             Mock Write-Host {}
             Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { -not $Plugin -and -not $Params } -MockWith {
-                @( [PSCustomObject]@{ Name = 'Foo' } )
+                @( [PSCustomObject]@{ Name = 'Foo'; ChallengeType = 'dns-01' } )
             }
             Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { $Plugin -eq 'Foo' -and $Params } -MockWith {
                 @( [PSCustomObject]@{ Name = 'ServerName'; Mandatory = $true } )

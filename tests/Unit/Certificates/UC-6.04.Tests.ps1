@@ -23,15 +23,16 @@ Describe 'UC-6.04 - DNS plugin Acme-Dns picks dedicated helper' -Tag 'Unit' {
             Mock Write-Host {}
             Mock Get-PAPlugin -ParameterFilter { -not $Plugin -and -not $Params } -MockWith {
                 @(
-                    [PSCustomObject]@{ Name = 'Manual' },
-                    [PSCustomObject]@{ Name = 'Acme-Dns' }
+                    [PSCustomObject]@{ Name = 'Manual';   ChallengeType = 'dns-01' },
+                    [PSCustomObject]@{ Name = 'Acme-Dns'; ChallengeType = 'dns-01' }
                 )
             }
             # The generic param loop would call Get-PAPlugin -Plugin <name> -Params; track it.
             Mock Get-PAPlugin -ParameterFilter { $Plugin -and $Params } -MockWith { @() }
 
-            # Select Acme-Dns (index 1)
-            Mock Show-Menu { return 1 }
+            # Tier picker -> DNS-01 (0). Plugin picker -> Acme-Dns; after sort
+            # the order is [Acme-Dns, Manual] so Acme-Dns is at index 0.
+            Mock Show-Menu { return 0 }
             Mock Export-Clixml {}
             Mock Invoke-AcmeDnsSetup {}
             Mock Read-Host { return '' }
