@@ -17,7 +17,7 @@ Describe 'UC-6.07 - Plugin menu uses two-tier flow with AllowSearch' -Tag 'Unit'
         Remove-Module TU-ACME -Force -ErrorAction SilentlyContinue
     }
 
-    It 'first tier has exactly four options and second tier is called with AllowSearch' {
+    It 'first tier has exactly three options and second tier is called with AllowSearch' {
         InModuleScope TU-ACME {
             Mock Invoke-ConsoleClear {}
             Mock Write-Host {}
@@ -40,12 +40,12 @@ Describe 'UC-6.07 - Plugin menu uses two-tier flow with AllowSearch' -Tag 'Unit'
 
             Invoke-DnsPluginConfig
 
-            # First-tier menu: exactly 4 options, three challenge-type buckets + Back.
+            # First-tier menu: exactly 3 options, two challenge-type buckets
+            # (DNS-01, HTTP-01 — the only types Posh-ACME 4.32 supports) + Back.
             Assert-MockCalled Show-Menu -Times 1 -Scope It -ParameterFilter {
-                $Options.Count -eq 4 -and
+                $Options.Count -eq 3 -and
                 $Options[0] -match 'DNS-01' -and
-                $Options[1] -match 'persistent' -and
-                $Options[2] -match 'HTTP-01' -and
+                $Options[1] -match 'HTTP-01' -and
                 $Options[-1] -eq 'B. Back' -and
                 -not $AllowSearch
             }

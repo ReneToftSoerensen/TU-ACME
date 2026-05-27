@@ -51,7 +51,6 @@ This file tracks every atomic use case in `Usecases/` together with the implemen
 | 6.03 | DNS plugin save persists via Export-Clixml sidecar | TU-ACME/Private/Certificates/Invoke-DnsPluginConfig.ps1 | tests/Unit/Certificates/UC-6.03.Tests.ps1 | Implemented |
 | 6.04 | DNS plugin Acme-Dns picks dedicated helper | TU-ACME/Private/Certificates/Invoke-DnsPluginConfig.ps1 | tests/Unit/Certificates/UC-6.04.Tests.ps1 | Implemented |
 | 6.05 | Plugin menu offers HTTP-01 filter | TU-ACME/Private/Certificates/Invoke-DnsPluginConfig.ps1 | tests/Unit/Certificates/UC-6.05.Tests.ps1 | Implemented |
-| 6.06 | Plugin menu offers DNS-PERSIST-01 filter | TU-ACME/Private/Certificates/Invoke-DnsPluginConfig.ps1 | tests/Unit/Certificates/UC-6.06.Tests.ps1 | Implemented |
 | 6.07 | Plugin menu uses two-tier flow with AllowSearch | TU-ACME/Private/Certificates/Invoke-DnsPluginConfig.ps1 | tests/Unit/Certificates/UC-6.07.Tests.ps1 | Implemented |
 | 7.01 | SMTP saves config when summary confirmed | TU-ACME/Private/Automation/Invoke-SMTPConfig.ps1 | tests/Unit/Automation/UC-7.01.Tests.ps1 | Implemented |
 | 7.02 | SMTP password persisted DPAPI-encrypted | TU-ACME/Private/Automation/Invoke-SMTPConfig.ps1 | tests/Unit/Automation/UC-7.02.Tests.ps1 | Implemented |

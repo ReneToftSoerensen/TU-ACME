@@ -83,20 +83,23 @@
         }
     }
 
-    # First-tier challenge-type picker.
+    # First-tier challenge-type picker. Posh-ACME 4.32 only accepts
+    # 'dns-01' or 'http-01' as plugin challenge types — anything else
+    # is rejected by Import-PluginDetail. "Persistent" behavior in
+    # DNS-01 plugins (e.g. Cloudflare leaves TXT records via its API)
+    # is a runtime detail of the plugin's implementation, not a
+    # selectable type, so the menu only surfaces the two real buckets.
     $tierOptions = @(
         '1. DNS-01 plugins',
-        '2. DNS-01 (persistent) plugins',
-        '3. HTTP-01 plugins',
+        '2. HTTP-01 plugins',
         'B. Back'
     )
     $tierSel = Show-Menu -Title 'Plugin configuration' -Options $tierOptions
     if ($tierSel -eq -1 -or $tierSel -eq ($tierOptions.Count - 1)) { return }
 
     switch ($tierSel) {
-        0 { $wantedType = 'dns-01';         $tierTitle = 'DNS-01 plugins' }
-        1 { $wantedType = 'dns-01-persist'; $tierTitle = 'DNS-01 (persistent) plugins' }
-        2 { $wantedType = 'http-01';        $tierTitle = 'HTTP-01 plugins' }
+        0 { $wantedType = 'dns-01';  $tierTitle = 'DNS-01 plugins' }
+        1 { $wantedType = 'http-01'; $tierTitle = 'HTTP-01 plugins' }
         default { return }
     }
 
