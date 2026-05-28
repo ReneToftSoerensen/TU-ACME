@@ -10,14 +10,14 @@ The following decisions are locked for v2. Do not relitigate them in code review
 2. **Two-account model owned by TU-ACME.** The module creates and manages exactly one production account and one staging account at first run. There is no Accounts menu and no user-facing account picker.
 3. **Plaintext server URLs and account IDs** are stored in `%ProgramData%\TU-ACME\config.json`. Encryption is reserved for genuine secrets (SMTP password, DNS plugin credentials).
 4. **Prod is the default; Dry-run uses staging.** Every flow that doesn't explicitly mark itself as a dry-run runs against the production account. Dry-run is the single, dedicated path that swaps to staging and swaps back.
-5. **Windows PowerShell 5.1, UTF-8 BOM on every script.** The module targets `$PSVersionTable.PSVersion.Major -eq 5`. No PS7-only syntax.
+5. **Windows PowerShell 5.1 or PowerShell 7+ on Windows, UTF-8 BOM on every script.** The module dual-targets both runtimes; the manifest's `PowerShellVersion = '5.1'` means "5.1 or newer". PS7-only syntax that breaks PS 5.1 (`??`, `?.`, `?[`, ternary `a ? b : c`, top-level `&&` / `||` pipeline chains, `using namespace`, `ConvertFrom-Json -AsHashtable`, `ForEach-Object -Parallel`, etc.) is still banned because the 5.1 floor is preserved. **Linux/macOS are not supported** — TU-ACME relies on IIS, Windows Event Log, DPAPI, and Scheduled Tasks.
 6. **Posh-ACME is the source of truth.** TU-ACME wraps; it does not reimplement orders, accounts, or renewal logic.
 7. **The repo was wiped and rebuilt.** v1 history is still in git for reference, but every file in v2 is new. Do not port v1 code wholesale without a deliberate decision.
 
 ## Platform and minimum requirements
 
 - **OS:** Windows Server 2016+ or Windows 10/11.
-- **PowerShell:** Windows PowerShell 5.1. PS 7 is not a supported runtime.
+- **PowerShell:** Windows PowerShell 5.1 **or** PowerShell 7.2+ on Windows. Both runtimes are first-class and must remain green on CI.
 - **Dependencies:** Posh-ACME (PowerShell Gallery). No graphical libraries; the UI is a console TUI.
 - **Privileges:** Administrator for install, certificate-store import, scheduled-task creation, and IIS rebind. Background renewal runs as SYSTEM.
 
@@ -64,7 +64,7 @@ TU-ACME/
 
 | Concern | Choice |
 |---|---|
-| Runtime | Windows PowerShell 5.1 |
+| Runtime | Windows PowerShell 5.1 or PowerShell 7+ (Windows only) |
 | TUI engine | Custom `Show-Menu` over the host console (Cyan/DarkCyan chrome) |
 | Distribution | PowerShell module copied via `deploy.ps1` |
 | Install path | `$env:ProgramFiles\WindowsPowerShell\Modules\TU-ACME\` |
@@ -127,12 +127,12 @@ Project-specific automation lives under `.claude/`. Each entry is invoked throug
 - `verify-utf8-bom` — walk every PowerShell file and report missing BOMs.
 - `register-event-id` — reserve the next free event ID and update the registry table above.
 - `posh-acme-expert` — Posh-ACME pitfall knowledge ported from v1.
-- `powershell-5.1-expert` — PS 5.1 idioms and limitations ported from v1.
+- `powershell-5.1-expert` — PS 5.1 idioms and limitations; consult before reaching for any PS 7-only construct, because the 5.1 floor still has to hold.
 
 **Agents** (`.claude/agents/`):
 - `posh-acme-wrapper-reviewer` — fires on diffs in `Certificates/`, `Bootstrap/`, or `Scripts/`; flags Posh-ACME reimplementation and stray `Set-PA*` calls.
 - `tui-pattern-checker` — fires on diffs in `Private/UI/` or `Invoke-*Menu.ps1`; enforces `Show-Menu`, 79-char titles, color discipline, `DisabledIndices`, and `/` search.
-- `ps51-compat-linter` — fires pre-commit on any `*.ps1` diff; catches PS7-only syntax and missing UTF-8 BOMs.
+- `ps51-compat-linter` — fires pre-commit on any `*.ps1` diff; catches PS5.1-incompatible syntax (the 5.1 floor of our dual-target runtime) and missing UTF-8 BOMs. The name still references 5.1 because the rules are 5.1-compat rules; rename is a deferred code change.
 
 ## Security guidelines
 
@@ -142,7 +142,7 @@ Project-specific automation lives under `.claude/`. Each entry is invoked throug
 
 ## File encoding
 
-All `*.ps1`, `*.psm1`, and `*.psd1` files **must** be UTF-8 with BOM (first three bytes `EF BB BF`). Windows PowerShell 5.1's default parser expects this for non-ASCII characters and for consistent behavior under the ISE. The `verify-utf8-bom` skill and the `ps51-compat-linter` agent both check this on every diff. Markdown files do not need a BOM.
+All `*.ps1`, `*.psm1`, and `*.psd1` files **must** be UTF-8 with BOM (first three bytes `EF BB BF`). Windows PowerShell 5.1's default parser requires BOM to read non-ASCII as UTF-8 (without it, 5.1 reads files as ANSI). PowerShell 7 reads BOM-less UTF-8 fine, but we keep the BOM mandatory under dual-target so the same source file parses identically on both runtimes. The `verify-utf8-bom` skill and the `ps51-compat-linter` agent both check this on every diff. Markdown files do not need a BOM.
 
 ## Language
 
