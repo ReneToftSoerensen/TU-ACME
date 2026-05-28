@@ -1,5 +1,5 @@
 ﻿#Requires -Modules Pester
-Describe 'Invoke-OrderCertificate against Pebble with dns-01-persist stub (live)' -Tag 'Integration' {
+Describe 'Invoke-OrderCertificate against Pebble with a no-op dns-01 stub plugin (live)' -Tag 'Integration' {
 
     BeforeAll {
         $script:RepoRoot   = Resolve-Path "$PSScriptRoot\..\.."
@@ -22,18 +22,18 @@ Describe 'Invoke-OrderCertificate against Pebble with dns-01-persist stub (live)
             throw "Posh-ACME plugins dir not found at $script:PoshAcmePluginsDir."
         }
 
-        # Install the TUACMETestPersist stub into Posh-ACME's Plugins/ dir
+        # Install the TUACMETestStub stub into Posh-ACME's Plugins/ dir
         # BEFORE TU-ACME is imported. TU-ACME's module load does an
         # "Import-Module Posh-ACME -Force" which re-runs Posh-ACME's
         # plugin enumerator (Private/Import-PluginDetail.ps1) - that's
         # what makes the stub visible to Get-PAPlugin without an explicit
         # second reimport. Track the installed path so AfterAll can
         # delete it cleanly.
-        $script:StubSource = Join-Path $script:RepoRoot 'tests\Fixtures\TUACMETestPersist.ps1'
+        $script:StubSource = Join-Path $script:RepoRoot 'tests\Fixtures\TUACMETestStub.ps1'
         if (-not (Test-Path $script:StubSource)) {
             throw "Stub plugin source not found at $script:StubSource."
         }
-        $script:StubInstalled = Join-Path $script:PoshAcmePluginsDir 'TUACMETestPersist.ps1'
+        $script:StubInstalled = Join-Path $script:PoshAcmePluginsDir 'TUACMETestStub.ps1'
         Copy-Item -Path $script:StubSource -Destination $script:StubInstalled -Force
 
         # Sandbox the TU-ACME config + Posh-ACME store before any module
@@ -41,7 +41,7 @@ Describe 'Invoke-OrderCertificate against Pebble with dns-01-persist stub (live)
         # TU-ACME's own Initialize-TUACMEStore derives from $env:ProgramData.
         $script:OrigProgramData  = $env:ProgramData
         $script:OrigPoshAcmeHome = $env:POSHACME_HOME
-        $env:ProgramData = Join-Path ([System.IO.Path]::GetTempPath()) ("TU-ACME-int-persist-" + [guid]::NewGuid().ToString('N'))
+        $env:ProgramData = Join-Path ([System.IO.Path]::GetTempPath()) ("TU-ACME-int-stub-" + [guid]::NewGuid().ToString('N'))
         New-Item -ItemType Directory -Path (Join-Path $env:ProgramData 'TU-ACME') -Force | Out-Null
 
         # Drop any pre-loaded Posh-ACME so TU-ACME's load triggers a fresh
@@ -69,9 +69,9 @@ Describe 'Invoke-OrderCertificate against Pebble with dns-01-persist stub (live)
         }
 
         # Pre-write the sidecar so Invoke-OrderCertificate finds saved
-        # plugin args for TUACMETestPersist. The stub accepts a single
+        # plugin args for TUACMETestStub. The stub accepts a single
         # -Dummy parameter so any non-empty hashtable passes validation.
-        $script:Sidecar = Join-Path $env:ProgramData 'TU-ACME\plugin-args-TUACMETestPersist.xml'
+        $script:Sidecar = Join-Path $env:ProgramData 'TU-ACME\plugin-args-TUACMETestStub.xml'
         @{ Dummy = 'x' } | Export-Clixml -Path $script:Sidecar
     }
 
@@ -96,7 +96,7 @@ Describe 'Invoke-OrderCertificate against Pebble with dns-01-persist stub (live)
         $env:POSHACME_HOME = $script:OrigPoshAcmeHome
     }
 
-    It 'UC-DNS-PERSIST-01: issues a cert via the installed TUACMETestPersist stub plugin' {
+    It 'issues a prod cert end-to-end via the installed TUACMETestStub plugin' {
         InModuleScope TU-ACME {
             Mock Invoke-ConsoleClear  {}
             Mock Show-Spinner         { param($Message,$ScriptBlock) & $ScriptBlock }
@@ -104,7 +104,7 @@ Describe 'Invoke-OrderCertificate against Pebble with dns-01-persist stub (live)
 
             # Wizard-prompt sequence for Invoke-OrderCertificate:
             #   domain, sans (empty), plugin name, confirm (y), press-enter.
-            $script:_ans = @('persist-test.example', '', 'TUACMETestPersist', 'y', '')
+            $script:_ans = @('stub-test.example', '', 'TUACMETestStub', 'y', '')
             $script:_idx = 0
             Mock Read-Host {
                 $v = $script:_ans[$script:_idx]
@@ -117,10 +117,10 @@ Describe 'Invoke-OrderCertificate against Pebble with dns-01-persist stub (live)
             # Assert: the cert landed in the Posh-ACME store. Pebble (and
             # other internal CAs) return MainDomain='' so we filter via
             # AllSANs, which is reliably populated from -Domain.
-            $newCert = @(Get-PACertificate -List | Where-Object { $_.AllSANs -contains 'persist-test.example' })
+            $newCert = @(Get-PACertificate -List | Where-Object { $_.AllSANs -contains 'stub-test.example' })
             $newCert.Count         | Should -Be 1
             $newCert[0].Thumbprint | Should -Not -BeNullOrEmpty
-            $newCert[0].AllSANs    | Should -Contain 'persist-test.example'
+            $newCert[0].AllSANs    | Should -Contain 'stub-test.example'
         }
     }
 }

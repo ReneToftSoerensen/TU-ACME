@@ -9,7 +9,7 @@
         instead drives a two-tier flow:
 
         1. First tier: pick a challenge type bucket
-           (DNS-01, DNS-01 persistent, HTTP-01, Back).
+           (DNS-01, HTTP-01, Back).
         2. Second tier: pick a plugin from the bucket; Show-Menu is
            invoked with -AllowSearch so the operator can type '/' to
            filter the long list by name.
