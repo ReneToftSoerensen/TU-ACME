@@ -23,6 +23,13 @@
         return
     }
 
+    try {
+        Import-Module WebAdministration -ErrorAction Stop
+    } catch {
+        Write-Host '  IIS integration requires the WebAdministration module (IIS not installed).' -ForegroundColor Yellow
+        return
+    }
+
     Use-TUACMEProdAccount
 
     while ($true) {
