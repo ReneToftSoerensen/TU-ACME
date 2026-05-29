@@ -68,6 +68,45 @@ Describe 'TU-ACME renewal background script' -Tag 'Scripts' {
         }
     }
 
+    It 'UC-8.09: does not -Force re-import the running TU-ACME module' {
+        # Regression: the script previously called `Import-Module TU-ACME -Force`
+        # at the top, which tore down and rebuilt the module object that was
+        # currently executing whenever the renewal was invoked from the
+        # Automation menu's "Run renewal now (foreground)" entry. Once the
+        # in-flight module instance was replaced, the calling function's
+        # private symbols (Show-Menu, Wait-AnyKey, ...) went out of scope and
+        # the very next loop iteration blew up with "term 'Show-Menu' is not
+        # recognized". The body now lives inside `& $module { ... }`, so a
+        # -Force re-import must never happen on the renewal hot path.
+        InModuleScope TU-ACME -Parameters @{ Path = $script:ScriptPath } {
+            param($Path)
+
+            function Submit-Renewal { param([switch]$AllAccounts, $ErrorAction) }
+
+            $global:_uc809_forceCount  = 0
+            $global:_uc809_importCount = 0
+            Mock Import-Module {
+                param($Name, [switch]$Force)
+                $global:_uc809_importCount++
+                if ($Force) { $global:_uc809_forceCount++ }
+            }
+            Mock Use-TUACMEProdAccount {}
+            Mock Submit-Renewal        {}
+            Mock Get-PACertificate     { @() }
+            Mock Write-EventLogEntry   {}
+
+            & $Path -Foreground
+
+            # The module is already loaded in BeforeAll, so the script must
+            # short-circuit the Import-Module branch entirely — neither a
+            # plain import nor (especially) a -Force import.
+            $global:_uc809_forceCount  | Should -Be 0
+            $global:_uc809_importCount | Should -Be 0
+            Remove-Variable -Name _uc809_forceCount  -Scope Global -ErrorAction SilentlyContinue
+            Remove-Variable -Name _uc809_importCount -Scope Global -ErrorAction SilentlyContinue
+        }
+    }
+
     It 'UC-8.08: invokes Update-IISBindingForCert when the helper exists' {
         InModuleScope TU-ACME -Parameters @{ Path = $script:ScriptPath } {
             param($Path)
