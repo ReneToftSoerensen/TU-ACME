@@ -33,6 +33,7 @@ This file tracks every atomic use case in `Usecases/` together with the implemen
 | 3.06 | Order confirmation defaults to No | TU-ACME/Private/Certificates/Invoke-OrderCertificate.ps1 | tests/Unit/Certificates/UC-3.06.Tests.ps1 | Implemented |
 | 3.07 | Order surfaces Posh-ACME failure | TU-ACME/Private/Certificates/Invoke-OrderCertificate.ps1 | tests/Unit/Certificates/UC-3.07.Tests.ps1 | Implemented |
 | 3.08 | Order writes Event 1003 on success | TU-ACME/Private/Certificates/Invoke-OrderCertificate.ps1 | tests/Unit/Certificates/UC-3.08.Tests.ps1 | Implemented |
+| 3.09 | Order cancels on Esc at any prompt | TU-ACME/Private/Certificates/Invoke-OrderCertificate.ps1 | tests/Unit/Certificates/UC-3.09.Tests.ps1 | Implemented |
 | 4.01 | Dry-run uses staging then restores prod | TU-ACME/Private/Certificates/Invoke-DryRunOrder.ps1 | tests/Unit/Certificates/UC-4.01.Tests.ps1 | Implemented |
 | 4.02 | Dry-run restores prod even when ordering fails | TU-ACME/Private/Certificates/Invoke-DryRunOrder.ps1 | tests/Unit/Certificates/UC-4.02.Tests.ps1 | Implemented |
 | 4.03 | Dry-run tags issued cert as TU-ACME-DryRun | TU-ACME/Private/Certificates/Invoke-DryRunOrder.ps1 | tests/Unit/Certificates/UC-4.03.Tests.ps1 | Implemented |

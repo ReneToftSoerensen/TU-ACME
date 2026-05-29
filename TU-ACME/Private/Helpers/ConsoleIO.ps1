@@ -40,6 +40,20 @@ function Set-ConsoleCursorVisible {
     try { [Console]::CursorVisible = $Visible } catch {}
 }
 
+function Test-InteractiveConsole {
+    # True only when a real console is attached AND stdin is not
+    # redirected. Pester runs, CI jobs, and background SYSTEM scripts
+    # all evaluate to false so callers can pick a Read-Host fallback
+    # path. [Console]::CursorLeft throws when no console is attached,
+    # which is the most reliable cross-host detector.
+    try {
+        $null = [Console]::CursorLeft
+        return -not [Console]::IsInputRedirected
+    } catch {
+        return $false
+    }
+}
+
 function Wait-AnyKey {
     Write-Host '  Press any key...' -ForegroundColor DarkGray
     Invoke-ConsoleWaitKey

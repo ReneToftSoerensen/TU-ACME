@@ -9,6 +9,11 @@
         plugin, then wraps New-PACertificate in Show-Spinner. Surfaces
         any Posh-ACME failure as a yellow message and emits Event 1003
         on success.
+
+        Pressing Escape at any interactive prompt (domain, SANs, plugin,
+        confirmation) cancels the order: the function prints
+        "Cancelled (Esc)." and returns without calling New-PACertificate
+        and without writing Event 1003.
     #>
     [CmdletBinding()]
     param()
@@ -18,13 +23,21 @@
     # ---- 1. Domain prompt + validation -----------------------------------
     $domain = ''
     while ($true) {
-        $domain = Read-Host 'Domain'
+        $domain = Read-LineOrEscape -Prompt 'Domain'
+        if ($null -eq $domain) {
+            Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
+            return
+        }
         if ($domain -match '^[a-zA-Z0-9.\-*]+$') { break }
         Write-Host '  Invalid domain. Allowed: letters, digits, dot, dash, asterisk.' -ForegroundColor Yellow
     }
 
     # ---- 2. Optional SAN list --------------------------------------------
-    $sansRaw = Read-Host 'SANs (comma-separated, optional)'
+    $sansRaw = Read-LineOrEscape -Prompt 'SANs (comma-separated, optional)'
+    if ($null -eq $sansRaw) {
+        Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
+        return
+    }
     $sans = @()
     if (-not [string]::IsNullOrWhiteSpace($sansRaw)) {
         $sans = @($sansRaw -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
@@ -35,7 +48,11 @@
     $pluginNames = @($availablePlugins | ForEach-Object { $_.Name })
     $plugin = ''
     while ($true) {
-        $plugin = Read-Host 'DNS plugin name'
+        $plugin = Read-LineOrEscape -Prompt 'DNS plugin name'
+        if ($null -eq $plugin) {
+            Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
+            return
+        }
         if ($pluginNames -contains $plugin) { break }
         Write-Host "  Unknown plugin '$plugin'. Available: $($pluginNames -join ', ')" -ForegroundColor Yellow
     }
@@ -73,7 +90,11 @@
     Write-Host "    Plugin : $plugin"
     Write-Host ''
 
-    $confirm = Read-Host 'Proceed? (y/N)'
+    $confirm = Read-LineOrEscape -Prompt 'Proceed? (y/N)'
+    if ($null -eq $confirm) {
+        Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
+        return
+    }
     if ($confirm -notmatch '^y$') {
         Write-Host '  Cancelled.' -ForegroundColor Yellow
         return
