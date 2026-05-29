@@ -24,7 +24,11 @@ Describe 'TU-ACME renewal background script' -Tag 'Scripts' {
             Mock Import-Module         {}
             Mock Use-TUACMEProdAccount { $global:_uc806_order += 'UseProd' }
             Mock Submit-Renewal        { $global:_uc806_order += 'Submit' }
-            Mock Get-PACertificate     { @() }
+            # Non-empty cert list: UC-8.10 makes the script short-circuit
+            # before Submit-Renewal when Get-PACertificate -List returns
+            # @(), so this UC has to feed it at least one cert to exercise
+            # the use-prod-then-submit ordering it's asserting on.
+            Mock Get-PACertificate     { @([PSCustomObject]@{ MainDomain = 'uc806.example'; Thumbprint = 'T1' }) }
             Mock Write-EventLogEntry   {}
 
             & $Path -Foreground
@@ -134,6 +138,40 @@ Describe 'TU-ACME renewal background script' -Tag 'Scripts' {
                 $OldThumbprint -eq 'OLD2' -and $NewThumbprint -eq 'NEW2'
             }
             Remove-Variable -Name _uc808_phase -Scope Global -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'UC-8.10: no-certs case is benign — Event 1001, never 3001, no Submit-Renewal' {
+        # Regression: when Get-PACertificate -List was empty, the old
+        # script still called Submit-Renewal, which Posh-ACME implements
+        # via `throw "No order found for the specified parameters."`.
+        # That terminating error couldn't be suppressed with
+        # -ErrorAction Continue (Stop-priority + module-internal throw),
+        # so the outer catch wrote bogus Event 3001 and triggered a
+        # "renewal FAILED" mail for what was really nothing-to-do.
+        InModuleScope TU-ACME -Parameters @{ Path = $script:ScriptPath } {
+            param($Path)
+
+            function Submit-Renewal { param([switch]$AllAccounts, $ErrorAction) }
+
+            Mock Import-Module         {}
+            Mock Use-TUACMEProdAccount {}
+            Mock Get-PACertificate     { @() }
+            Mock Submit-Renewal        {}
+            Mock Send-TUACMEMail       { $true }
+            Mock Get-TUACMEConfig      { [PSCustomObject]@{ Email = [PSCustomObject]@{ SmtpServer = 'smtp.example' } } }
+            Mock Write-EventLogEntry   {}
+
+            & $Path -Foreground
+
+            Assert-MockCalled Submit-Renewal -Times 0 -Scope It
+            Assert-MockCalled Send-TUACMEMail -Times 0 -Scope It
+            Assert-MockCalled Write-EventLogEntry -Times 1 -Scope It -ParameterFilter {
+                $EventId -eq 1001 -and $Message -match 'no certs to renew'
+            }
+            Assert-MockCalled Write-EventLogEntry -Times 0 -Scope It -ParameterFilter {
+                $EventId -eq 3001
+            }
         }
     }
 }

@@ -66,6 +66,7 @@ This file tracks every atomic use case in `Usecases/` together with the implemen
 | 8.07 | Renewal script writes Event 1001 per renewed cert | TU-ACME/Scripts/Invoke-RenewalBackground.ps1 | tests/Scripts/Invoke-RenewalBackground.Tests.ps1 | Implemented |
 | 8.08 | Renewal script triggers IIS rebind when helper present | TU-ACME/Scripts/Invoke-RenewalBackground.ps1 | tests/Scripts/Invoke-RenewalBackground.Tests.ps1 | Implemented |
 | 8.09 | Renewal script runs body inside loaded module's scope | TU-ACME/Scripts/Invoke-RenewalBackground.ps1 | tests/Scripts/Invoke-RenewalBackground.Tests.ps1 | Implemented |
+| 8.10 | Renewal handles no-certs case as benign no-op | TU-ACME/Scripts/Invoke-RenewalBackground.ps1 | tests/Scripts/Invoke-RenewalBackground.Tests.ps1 | Implemented |
 | 9.01 | IIS menu calls Use-TUACMEProdAccount first | TU-ACME/Private/IIS/Invoke-IISMenu.ps1 | tests/Unit/IIS/UC-9.01.Tests.ps1 | Implemented |
 | 9.02 | IIS menu scans HTTPS bindings | TU-ACME/Private/IIS/Invoke-IISMenu.ps1 | tests/Unit/IIS/UC-9.02.Tests.ps1 | Implemented |
 | 9.03 | IIS menu joins bindings to certs by thumbprint | TU-ACME/Private/IIS/Invoke-IISMenu.ps1 | tests/Unit/IIS/UC-9.03.Tests.ps1 | Implemented |

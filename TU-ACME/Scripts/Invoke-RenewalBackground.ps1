@@ -50,7 +50,27 @@ if (-not $module) {
             $before[$_.MainDomain] = $_.Thumbprint
         }
 
-        Submit-Renewal -ErrorAction Continue
+        # No certs at all → nothing for Submit-Renewal to do. Posh-ACME's
+        # Submit-Renewal hard-throws "No order found for the specified
+        # parameters" in this case (Stop-priority, not catchable by
+        # -ErrorAction), and our outer catch would mis-report that as
+        # Event 3001 with a "renewal FAILED" notification mail. Short-
+        # circuit benignly with Event 1001 instead.
+        if ($before.Count -eq 0) {
+            Write-EventLogEntry -EventId 1001 -EntryType Information `
+                -Message 'Renewal pass completed; no certs to renew.'
+            return
+        }
+
+        try {
+            Submit-Renewal -ErrorAction Continue
+        } catch {
+            # Defence-in-depth: if Submit-Renewal still throws "No order
+            # found" through some other race (e.g. a cert was deleted
+            # between the snapshot and the call), treat it as benign.
+            # Anything else bubbles to the outer catch as a real failure.
+            if ($_.Exception.Message -notmatch 'No order found') { throw }
+        }
 
         $after   = @{}
         $renewed = @()
@@ -92,7 +112,7 @@ if (-not $module) {
         try {
             $cfg = Get-TUACMEConfig
             if ($cfg.Email.SmtpServer -and (Get-Command Send-TUACMEMail -ErrorAction SilentlyContinue)) {
-                Send-TUACMEMail -Subject 'TU-ACME renewal FAILED' -Body $_.Exception.Message
+                Send-TUACMEMail -Subject 'TU-ACME renewal FAILED' -Body $_.Exception.Message | Out-Null
             }
         } catch {}
         if (-not $Foreground) { exit 1 }
