@@ -10,6 +10,12 @@
         and emits Event 1006 on success. Regardless of outcome, the
         finally block restores the prod account so subsequent flows
         never accidentally hit staging.
+
+        Pressing Escape at any interactive prompt (domain, SANs, plugin,
+        confirmation) cancels the dry-run: the function prints
+        "Cancelled (Esc)." and returns without calling New-PACertificate.
+        The finally block still runs and switches Posh-ACME back to the
+        prod account.
     #>
     [CmdletBinding()]
     param()
@@ -23,15 +29,22 @@
     try {
         # Prompt and validate domain (loop until it matches the allowed shape)
         $Domain = ''
-        while ([string]::IsNullOrWhiteSpace($Domain) -or ($Domain -notmatch '^[a-zA-Z0-9.\-*]+$')) {
-            $Domain = Read-Host '  Domain (e.g. www.example.com)'
-            if ([string]::IsNullOrWhiteSpace($Domain) -or ($Domain -notmatch '^[a-zA-Z0-9.\-*]+$')) {
-                Write-Host '  Invalid domain. Use letters, digits, dot, hyphen or wildcard *.' -ForegroundColor Yellow
+        while ($true) {
+            $Domain = Read-LineOrEscape -Prompt '  Domain (e.g. www.example.com)'
+            if ($null -eq $Domain) {
+                Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
+                return
             }
+            if (-not [string]::IsNullOrWhiteSpace($Domain) -and ($Domain -match '^[a-zA-Z0-9.\-*]+$')) { break }
+            Write-Host '  Invalid domain. Use letters, digits, dot, hyphen or wildcard *.' -ForegroundColor Yellow
         }
 
         # Optional SANs (comma-separated, empty allowed)
-        $sansInput = Read-Host '  Additional SANs (comma-separated, optional)'
+        $sansInput = Read-LineOrEscape -Prompt '  Additional SANs (comma-separated, optional)'
+        if ($null -eq $sansInput) {
+            Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
+            return
+        }
         $Sans = @()
         if (-not [string]::IsNullOrWhiteSpace($sansInput)) {
             $Sans = $sansInput.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
@@ -41,7 +54,11 @@
         # are sourced from Posh-ACME's per-order store (populated by
         # Set-PAPluginArgs / first-time prompts); Get-PAPluginArgs with
         # no arguments returns the active hashtable.
-        $Plugin = Read-Host '  DNS plugin name'
+        $Plugin = Read-LineOrEscape -Prompt '  DNS plugin name'
+        if ($null -eq $Plugin) {
+            Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
+            return
+        }
         $PluginArgs = Get-PAPluginArgs
 
         # Summary and confirmation (default No)
@@ -53,7 +70,11 @@
         }
         Write-Host "    Plugin : $Plugin"
         Write-Host ''
-        $confirm = Read-Host '  Proceed with dry-run order? (y/N)'
+        $confirm = Read-LineOrEscape -Prompt '  Proceed with dry-run order? (y/N)'
+        if ($null -eq $confirm) {
+            Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
+            return
+        }
         if ($confirm -notmatch '^[Yy]') {
             Write-Host '  Dry-run cancelled.' -ForegroundColor Yellow
             return

@@ -37,6 +37,7 @@ This file tracks every atomic use case in `Usecases/` together with the implemen
 | 4.01 | Dry-run uses staging then restores prod | TU-ACME/Private/Certificates/Invoke-DryRunOrder.ps1 | tests/Unit/Certificates/UC-4.01.Tests.ps1 | Implemented |
 | 4.02 | Dry-run restores prod even when ordering fails | TU-ACME/Private/Certificates/Invoke-DryRunOrder.ps1 | tests/Unit/Certificates/UC-4.02.Tests.ps1 | Implemented |
 | 4.03 | Dry-run tags issued cert as TU-ACME-DryRun | TU-ACME/Private/Certificates/Invoke-DryRunOrder.ps1 | tests/Unit/Certificates/UC-4.03.Tests.ps1 | Implemented |
+| 4.04 | Dry-run cancels on Esc and restores prod | TU-ACME/Private/Certificates/Invoke-DryRunOrder.ps1 | tests/Unit/Certificates/UC-4.04.Tests.ps1 | Implemented |
 | 5.01 | Dashboard calls Use-TUACMEProdAccount first | TU-ACME/Private/Certificates/Invoke-CertificateDashboard.ps1 | tests/Unit/Certificates/UC-5.01.Tests.ps1 | Implemented |
 | 5.02 | Dashboard hides dry-run certs by default | TU-ACME/Private/Certificates/Invoke-CertificateDashboard.ps1 | tests/Unit/Certificates/UC-5.02.Tests.ps1 | Implemented |
 | 5.03 | Dashboard d hotkey reveals dry-runs pane | TU-ACME/Private/Certificates/Invoke-CertificateDashboard.ps1 | tests/Unit/Certificates/UC-5.03.Tests.ps1 | Implemented |

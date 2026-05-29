@@ -171,7 +171,7 @@ function Invoke-SMTPSendTest {
     [CmdletBinding()]
     param()
 
-    $body = "Test mail from TU-ACME v0.3.0 at $(Get-Date -Format 's')"
+    $body = "Test mail from TU-ACME v0.3.1 at $(Get-Date -Format 's')"
 
     try {
         $result = Send-TUACMEMail -Subject 'TU-ACME test mail' -Body $body
