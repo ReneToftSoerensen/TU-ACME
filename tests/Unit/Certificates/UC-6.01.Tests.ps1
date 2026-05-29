@@ -30,12 +30,7 @@ Describe 'UC-6.01 - DNS plugin menu lists Get-PAPlugin entries' -Tag 'Unit' {
             }
             # First Show-Menu call (tier picker): pick DNS-01 (index 0).
             # Second Show-Menu call (plugin picker): -1 to bail out.
-            $script:_uc601_calls = 0
-            Mock Show-Menu {
-                $i = $script:_uc601_calls
-                $script:_uc601_calls = $i + 1
-                if ($i -eq 0) { return 0 } else { return -1 }
-            }
+            Mock Show-Menu { return 0 }, { return -1 }
             Mock Export-Clixml {}
             Mock Invoke-AcmeDnsSetup {}
             Mock Read-Host { return '' }

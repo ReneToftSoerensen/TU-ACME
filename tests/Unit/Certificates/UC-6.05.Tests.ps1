@@ -29,13 +29,13 @@ Describe 'UC-6.05 - Plugin menu offers HTTP-01 filter' -Tag 'Unit' {
                     [PSCustomObject]@{ Name = 'WebSelfHost'; ChallengeType = 'http-01' }
                 )
             }
-            # Tier picker -> HTTP-01 (index 2). Second tier: -1 to bail before
+            # Tier picker -> HTTP-01 (index 1). Second tier: -1 to bail before
             # the param loop runs.
             $script:_uc605_calls = 0
             Mock Show-Menu {
                 $i = $script:_uc605_calls
                 $script:_uc605_calls = $i + 1
-                if ($i -eq 0) { return 2 } else { return -1 }
+                if ($i -eq 0) { return 1 } else { return -1 }
             }
             Mock Export-Clixml {}
             Mock Invoke-AcmeDnsSetup {}
