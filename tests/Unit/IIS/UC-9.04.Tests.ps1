@@ -49,22 +49,26 @@ Describe 'UC-9.04 - IIS rebind invokes Set-WebBinding with new hash' -Tag 'Unit'
             Mock Set-WebBinding        {}
             Mock Write-EventLogEntry   {}
 
-            # Menu sequence: pick option 1 (Rebind), then on the next loop
-            # take option 2 (Back).
+            # Menu sequence:
+            #   1. Outer IIS menu      -> 0 (Rebind a site)
+            #   2. Binding picker      -> 0 (the first / only binding)
+            #   3. Outer IIS menu      -> 2 (Back)
             $script:_menuCalls = 0
             Mock Show-Menu {
                 $script:_menuCalls++
-                if ($script:_menuCalls -eq 1) { return 0 }   # Rebind
-                return 2                                     # Back
+                switch ($script:_menuCalls) {
+                    1 { return 0 }   # Rebind
+                    2 { return 0 }   # First binding in the picker
+                    default { return 2 }   # Back
+                }
             }
 
-            # Read-Host sequence: site name, cert number, "press Enter".
+            # Read-Host sequence: cert number, then "press Enter".
             $script:_readCalls = 0
             Mock Read-Host {
                 $script:_readCalls++
                 switch ($script:_readCalls) {
-                    1 { return 'Site1' }
-                    2 { return '1' }
+                    1 { return '1' }
                     default { return '' }
                 }
             }

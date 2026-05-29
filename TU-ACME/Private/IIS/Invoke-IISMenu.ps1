@@ -93,19 +93,28 @@
                     continue
                 }
 
-                $site = Read-Host '  Site name'
-                if ([string]::IsNullOrWhiteSpace($site)) {
-                    Write-Host '  Cancelled (no site name)' -ForegroundColor Yellow
-                    Read-Host 'Press Enter to continue' | Out-Null
+                # Build a picker option per HTTPS binding labeled
+                # "Site - hostname" so the operator can disambiguate
+                # sites that have multiple bindings. Empty hostnames
+                # (catch-all bindings) render as "<no hostname>".
+                $pickerOptions = @()
+                for ($r = 0; $r -lt $rows.Count; $r++) {
+                    $row   = $rows[$r]
+                    $parts = $row.Binding -split ':', 3
+                    $hn    = if ($parts.Count -ge 3) { $parts[2] } else { '' }
+                    if ([string]::IsNullOrWhiteSpace($hn)) { $hn = '<no hostname>' }
+                    $pickerOptions += ('{0}. {1} - {2}' -f ($r + 1), $row.Site, $hn)
+                }
+                $pickerOptions += 'B. Back'
+
+                $pickIdx = Show-Menu -Title 'TU-ACME - Pick a binding to rebind' `
+                                     -Options $pickerOptions -AllowSearch
+                if ($pickIdx -eq -1 -or $pickIdx -eq ($pickerOptions.Count - 1)) {
                     continue
                 }
 
-                $siteRow = $rows | Where-Object { $_.Site -eq $site } | Select-Object -First 1
-                if (-not $siteRow) {
-                    Write-Host "  Unknown site '$site'" -ForegroundColor Yellow
-                    Read-Host 'Press Enter to continue' | Out-Null
-                    continue
-                }
+                $siteRow = $rows[$pickIdx]
+                $site    = $siteRow.Site
 
                 if ($certs.Count -eq 0) {
                     Write-Host '  No Posh-ACME certificates available' -ForegroundColor Yellow

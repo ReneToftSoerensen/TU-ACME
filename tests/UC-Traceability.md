@@ -70,6 +70,7 @@ This file tracks every atomic use case in `Usecases/` together with the implemen
 | 9.03 | IIS menu joins bindings to certs by thumbprint | TU-ACME/Private/IIS/Invoke-IISMenu.ps1 | tests/Unit/IIS/UC-9.03.Tests.ps1 | Implemented |
 | 9.04 | IIS rebind invokes Set-WebBinding with new hash | TU-ACME/Private/IIS/Invoke-IISMenu.ps1 | tests/Unit/IIS/UC-9.04.Tests.ps1 | Implemented |
 | 9.05 | Update-IISBindingForCert continues on per-binding failure | TU-ACME/Scripts/Posh-ACME-IIS-Plugin.ps1 | tests/Scripts/Posh-ACME-IIS-Plugin.Tests.ps1 | Implemented |
+| 9.06 | IIS rebind picker lists sites with their hostnames | TU-ACME/Private/IIS/Invoke-IISMenu.ps1 | tests/Unit/IIS/UC-9.06.Tests.ps1 | Implemented |
 | 10.01 | Export PFX prompts overwrite and calls Export-PfxCertificate | TU-ACME/Private/Export/Invoke-ExportMenu.ps1 | tests/Unit/Export/UC-10.01.Tests.ps1 | Implemented |
 | 10.02 | Export PEM concatenates chain and key | TU-ACME/Private/Export/Invoke-ExportMenu.ps1 | tests/Unit/Export/UC-10.02.Tests.ps1 | Implemented |
 | 10.03 | Import to Windows store calls Import-PfxCertificate | TU-ACME/Private/Export/Invoke-ExportMenu.ps1 | tests/Unit/Export/UC-10.03.Tests.ps1 | Implemented |
