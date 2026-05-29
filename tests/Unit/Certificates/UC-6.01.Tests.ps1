@@ -21,16 +21,15 @@ Describe 'UC-6.01 - DNS plugin menu lists Get-PAPlugin entries' -Tag 'Unit' {
         InModuleScope TU-ACME {
             Mock Invoke-ConsoleClear {}
             Mock Write-Host {}
-            Mock Get-PAPlugin {
+            Mock Get-PAPlugin -RemoveParameterValidation 'Plugin' -ParameterFilter { -not $Plugin -and -not $Params } -MockWith {
                 @(
                     [PSCustomObject]@{ Name = 'Manual';   ChallengeType = 'dns-01' },
                     [PSCustomObject]@{ Name = 'Route53';  ChallengeType = 'dns-01' },
                     [PSCustomObject]@{ Name = 'Acme-Dns'; ChallengeType = 'dns-01' }
                 )
             }
-            # First Show-Menu call (tier picker): pick DNS-01 (index 0).
-            # Second Show-Menu call (plugin picker): -1 to bail out.
-            Mock Show-Menu { return 0 }, { return -1 }
+            # Tier picker -> DNS-01 (0). Tier-2 -> first plugin (0).
+            Mock Show-Menu { return 0 }
             Mock Export-Clixml {}
             Mock Invoke-AcmeDnsSetup {}
             Mock Read-Host { return '' }
@@ -39,8 +38,9 @@ Describe 'UC-6.01 - DNS plugin menu lists Get-PAPlugin entries' -Tag 'Unit' {
 
             # Tier picker: 3 challenge-type buckets + Back.
             Assert-MockCalled Show-Menu -Times 1 -Scope It -ParameterFilter {
-                $Options.Count -eq 4 -and
-                $Options[0] -match 'DNS-01' -and
+                $Options.Count -eq 3 -and
+                $Options[0] -eq '1. DNS-01 plugins' -and
+                $Options[1] -eq '2. HTTP-01 plugins' -and
                 $Options[-1] -eq 'B. Back'
             }
             # Plugin picker: every plugin name plus Back, ordered alphabetically.
