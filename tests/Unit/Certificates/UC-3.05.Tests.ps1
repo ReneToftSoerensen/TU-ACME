@@ -47,7 +47,7 @@ Describe 'UC-3.05 — Order aborts when plugin args missing' -Tag 'Unit' {
             $script:_i = 0
             Mock Read-Host { $v = $script:_ans[$script:_i]; $script:_i++; return $v }
 
-            Invoke-OrderCertificate
+            Invoke-OrderCertificate -ChallengeType 'dns-01'
 
             Assert-MockCalled New-PACertificate  -Times 0 -Scope It
             Assert-MockCalled Write-EventLogEntry -Times 0 -Scope It -ParameterFilter { $EventId -eq 1003 }

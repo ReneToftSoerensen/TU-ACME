@@ -49,7 +49,7 @@ Describe 'UC-3.01 — Order calls Use-TUACMEProdAccount first' -Tag 'Unit' {
             $script:_i = 0
             Mock Read-Host { $v = $script:_ans[$script:_i]; $script:_i++; return $v }
 
-            Invoke-OrderCertificate
+            Invoke-OrderCertificate -ChallengeType 'dns-01'
 
             Assert-MockCalled Use-TUACMEProdAccount -Times 1 -Scope It
             Assert-MockCalled New-PACertificate     -Times 1 -Scope It

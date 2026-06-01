@@ -24,10 +24,38 @@
     [CmdletBinding()]
     param(
         [string]   $Domain,
-        [string[]] $Sans
+        [string[]] $Sans,
+        [ValidateSet('dns-01','http-01')]
+        [string]   $ChallengeType
     )
 
     Use-TUACMEProdAccount
+
+    # ---- 0. Challenge type (DNS-01 vs HTTP-01) ---------------------------
+    # Posh-ACME 4.x plugins expose ChallengeType on each Get-PAPlugin row.
+    # The order flow asks the operator which family to use, then filters
+    # the plugin picker to that family. Callers that already know (e.g.
+    # Invoke-IISOrderFromBindings asks once before dispatching one or
+    # more orders) can pass -ChallengeType and skip the prompt.
+    if (-not $ChallengeType) {
+        while ($true) {
+            $ctAns = Read-LineOrEscape -Prompt 'Challenge type [1=DNS-01, 2=HTTP-01]'
+            if ($null -eq $ctAns) {
+                Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
+                return
+            }
+            switch ($ctAns.Trim().ToLowerInvariant()) {
+                '1'       { $ChallengeType = 'dns-01';  break }
+                'dns-01'  { $ChallengeType = 'dns-01';  break }
+                '2'       { $ChallengeType = 'http-01'; break }
+                'http-01' { $ChallengeType = 'http-01'; break }
+                default   {
+                    Write-Host '  Invalid choice. Enter 1 (DNS-01) or 2 (HTTP-01).' -ForegroundColor Yellow
+                }
+            }
+            if ($ChallengeType) { break }
+        }
+    }
 
     # ---- 1. Domain prompt + validation -----------------------------------
     if ([string]::IsNullOrWhiteSpace($Domain)) {
@@ -59,17 +87,28 @@
     }
 
     # ---- 3. Plugin prompt + validation -----------------------------------
-    $availablePlugins = @(Get-PAPlugin)
+    # Filter by the chosen challenge type. Plugin objects from Posh-ACME
+    # 4.x carry ChallengeType; test fixtures sometimes omit it, so we
+    # treat a missing/empty ChallengeType as matching any type rather
+    # than silently filtering out every fixture-style plugin.
+    $availablePlugins = @(Get-PAPlugin | Where-Object {
+        $ct = if ($_.PSObject.Properties['ChallengeType']) { $_.ChallengeType } else { $null }
+        [string]::IsNullOrEmpty($ct) -or $ct -eq $ChallengeType
+    })
+    if ($availablePlugins.Count -eq 0) {
+        Write-Host "  No plugins available for challenge type $ChallengeType." -ForegroundColor Yellow
+        return
+    }
     $pluginNames = @($availablePlugins | ForEach-Object { $_.Name })
     $plugin = ''
     while ($true) {
-        $plugin = Read-LineOrEscape -Prompt 'DNS plugin name'
+        $plugin = Read-LineOrEscape -Prompt "${ChallengeType} plugin name"
         if ($null -eq $plugin) {
             Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
             return
         }
         if ($pluginNames -contains $plugin) { break }
-        Write-Host "  Unknown plugin '$plugin'. Available: $($pluginNames -join ', ')" -ForegroundColor Yellow
+        Write-Host "  Unknown $ChallengeType plugin '$plugin'. Available: $($pluginNames -join ', ')" -ForegroundColor Yellow
     }
 
     # ---- 4. Resolve plugin args ------------------------------------------

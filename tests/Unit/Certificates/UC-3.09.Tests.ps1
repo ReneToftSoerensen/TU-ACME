@@ -45,7 +45,7 @@ Describe 'UC-3.09 — Order cancels on Esc at any prompt' -Tag 'Unit' {
             Mock Read-Host          { '' }
             Mock Read-LineOrEscape  { $null }
 
-            Invoke-OrderCertificate
+            Invoke-OrderCertificate -ChallengeType 'dns-01'
 
             Assert-MockCalled New-PACertificate -Times 0 -Scope It
             Assert-MockCalled Write-EventLogEntry -Times 0 -Scope It -ParameterFilter { $EventId -eq 1003 }
@@ -71,7 +71,7 @@ Describe 'UC-3.09 — Order cancels on Esc at any prompt' -Tag 'Unit' {
                 return $v
             }
 
-            Invoke-OrderCertificate
+            Invoke-OrderCertificate -ChallengeType 'dns-01'
 
             Assert-MockCalled New-PACertificate -Times 0 -Scope It
         }
@@ -96,7 +96,7 @@ Describe 'UC-3.09 — Order cancels on Esc at any prompt' -Tag 'Unit' {
                 return $v
             }
 
-            Invoke-OrderCertificate
+            Invoke-OrderCertificate -ChallengeType 'dns-01'
 
             Assert-MockCalled New-PACertificate -Times 0 -Scope It
         }
@@ -121,7 +121,7 @@ Describe 'UC-3.09 — Order cancels on Esc at any prompt' -Tag 'Unit' {
                 return $v
             }
 
-            Invoke-OrderCertificate
+            Invoke-OrderCertificate -ChallengeType 'dns-01'
 
             Assert-MockCalled New-PACertificate -Times 0 -Scope It
         }

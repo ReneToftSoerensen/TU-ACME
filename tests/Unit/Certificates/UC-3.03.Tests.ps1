@@ -47,7 +47,7 @@ Describe 'UC-3.03 — Order accepts optional SAN list' -Tag 'Unit' {
             $script:_i = 0
             Mock Read-Host { $v = $script:_ans[$script:_i]; $script:_i++; return $v }
 
-            Invoke-OrderCertificate
+            Invoke-OrderCertificate -ChallengeType 'dns-01'
 
             Assert-MockCalled New-PACertificate -Times 1 -Scope It -ParameterFilter {
                 ($Domain -contains 'example.com') -and
@@ -71,7 +71,7 @@ Describe 'UC-3.03 — Order accepts optional SAN list' -Tag 'Unit' {
             $script:_i = 0
             Mock Read-Host { $v = $script:_ans[$script:_i]; $script:_i++; return $v }
 
-            Invoke-OrderCertificate
+            Invoke-OrderCertificate -ChallengeType 'dns-01'
 
             Assert-MockCalled New-PACertificate -Times 1 -Scope It -ParameterFilter {
                 $Domain.Count -eq 1 -and $Domain[0] -eq 'example.com'

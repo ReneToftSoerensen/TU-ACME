@@ -33,6 +33,29 @@
     Write-Host '  === Order new certificate from IIS bindings ===' -ForegroundColor Cyan
     Write-Host ''
 
+    # Ask challenge type ONCE at the top of this flow. Both the
+    # bundle-into-one-cert and one-cert-per-hostname dispatch paths
+    # pass the chosen type into Invoke-OrderCertificate so the per-
+    # order plugin picker is already filtered to the right family.
+    $challengeType = ''
+    while ($true) {
+        $ctAns = Read-LineOrEscape -Prompt 'Challenge type [1=DNS-01, 2=HTTP-01]'
+        if ($null -eq $ctAns) {
+            Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
+            return
+        }
+        switch ($ctAns.Trim().ToLowerInvariant()) {
+            '1'       { $challengeType = 'dns-01';  break }
+            'dns-01'  { $challengeType = 'dns-01';  break }
+            '2'       { $challengeType = 'http-01'; break }
+            'http-01' { $challengeType = 'http-01'; break }
+            default   {
+                Write-Host '  Invalid choice. Enter 1 (DNS-01) or 2 (HTTP-01).' -ForegroundColor Yellow
+            }
+        }
+        if ($challengeType) { break }
+    }
+
     $bindings = @(Get-WebBinding)
     if ($bindings.Count -eq 0) {
         Write-Host '  No IIS bindings found.' -ForegroundColor Yellow
@@ -149,13 +172,13 @@
         if ($hostnames.Count -gt 1) {
             $sans = @($hostnames | Select-Object -Skip 1)
         }
-        Invoke-OrderCertificate -Domain $primary -Sans $sans
+        Invoke-OrderCertificate -Domain $primary -Sans $sans -ChallengeType $challengeType
     } else {
         for ($i = 0; $i -lt $hostnames.Count; $i++) {
             $hn = $hostnames[$i]
             Write-Host ''
             Write-Host ("  --- Order {0} of {1}: {2} ---" -f ($i + 1), $hostnames.Count, $hn) -ForegroundColor Cyan
-            Invoke-OrderCertificate -Domain $hn -Sans @()
+            Invoke-OrderCertificate -Domain $hn -Sans @() -ChallengeType $challengeType
         }
     }
 }

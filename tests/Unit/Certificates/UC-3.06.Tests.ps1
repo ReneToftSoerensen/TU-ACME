@@ -48,7 +48,7 @@ Describe 'UC-3.06 — Order confirmation defaults to No' -Tag 'Unit' {
             $script:_i = 0
             Mock Read-Host { $v = $script:_ans[$script:_i]; $script:_i++; return $v }
 
-            Invoke-OrderCertificate
+            Invoke-OrderCertificate -ChallengeType 'dns-01'
 
             Assert-MockCalled New-PACertificate -Times 0 -Scope It
         }

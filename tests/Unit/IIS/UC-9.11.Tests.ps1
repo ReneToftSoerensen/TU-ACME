@@ -61,23 +61,26 @@ Describe 'UC-9.11 - IIS order-from-bindings flow' -Tag 'Unit' {
                 param($Prompt)
                 $script:_lineCall++
                 switch ($script:_lineCall) {
-                    1 { return 'all' }
-                    2 { return 'Y'   }
+                    1 { return '1'   }   # challenge type = DNS-01
+                    2 { return 'all' }   # site picker
+                    3 { return 'Y'   }   # bundle question
                     default { return '' }
                 }
             }
             $script:_orderCalls = @()
             Mock Invoke-OrderCertificate {
-                param($Domain, [string[]]$Sans)
+                param($Domain, [string[]]$Sans, $ChallengeType)
                 $script:_orderCalls += [PSCustomObject]@{
-                    Domain = $Domain
-                    Sans   = if ($Sans) { @($Sans) } else { @() }
+                    Domain        = $Domain
+                    Sans          = if ($Sans) { @($Sans) } else { @() }
+                    ChallengeType = $ChallengeType
                 }
             }
 
             Invoke-IISOrderFromBindings
 
             $script:_orderCalls.Count     | Should -Be 1
+            $script:_orderCalls[0].ChallengeType | Should -Be 'dns-01'
             $script:_orderCalls[0].Domain | Should -Be 'ACME01P.fragt.root.local'
             $script:_orderCalls[0].Sans   | Should -Contain 'ACME01P'
             $script:_orderCalls[0].Sans   | Should -Contain 'acmetest.fragt.root.local'
@@ -106,23 +109,26 @@ Describe 'UC-9.11 - IIS order-from-bindings flow' -Tag 'Unit' {
                 param($Prompt)
                 $script:_lineCall++
                 switch ($script:_lineCall) {
-                    1 { return 'all' }
-                    2 { return 'n'   }
+                    1 { return '2'   }   # challenge type = HTTP-01 (exercise the other path)
+                    2 { return 'all' }
+                    3 { return 'n'   }
                     default { return '' }
                 }
             }
             $script:_orderCalls = @()
             Mock Invoke-OrderCertificate {
-                param($Domain, [string[]]$Sans)
+                param($Domain, [string[]]$Sans, $ChallengeType)
                 $script:_orderCalls += [PSCustomObject]@{
-                    Domain = $Domain
-                    Sans   = if ($Sans) { @($Sans) } else { @() }
+                    Domain        = $Domain
+                    Sans          = if ($Sans) { @($Sans) } else { @() }
+                    ChallengeType = $ChallengeType
                 }
             }
 
             Invoke-IISOrderFromBindings
 
             $script:_orderCalls.Count | Should -Be 5
+            ($script:_orderCalls.ChallengeType | Select-Object -Unique) | Should -Be 'http-01'
             foreach ($call in $script:_orderCalls) {
                 $call.Sans.Count | Should -Be 0
             }
@@ -155,6 +161,45 @@ Describe 'UC-9.11 - IIS order-from-bindings flow' -Tag 'Unit' {
         }
     }
 
+    It 'UC-9.13: challenge type prompt routes correctly through to Invoke-OrderCertificate' {
+        # Two passes: '1' -> dns-01, '2' -> http-01. The captured
+        # ChallengeType on the dispatched call is the contract under test.
+        InModuleScope TU-ACME {
+            $script:_bindings = @(
+                [PSCustomObject]@{ ItemXPath="/system.applicationHost/sites/site[@name='Acme']"; protocol='https'; bindingInformation='*:443:acme.example.com' }
+            )
+
+            $script:_captured = New-Object System.Collections.Generic.List[object]
+            Mock Use-TUACMEProdAccount   {}
+            Mock Get-WebBinding          { return $script:_bindings }
+            Mock Write-Host              {}
+            Mock Read-Host               { '' }
+            Mock Invoke-OrderCertificate {
+                param($Domain, [string[]]$Sans, $ChallengeType)
+                $script:_captured.Add($ChallengeType) | Out-Null
+            }
+
+            foreach ($pair in @(@{ Ans='1'; Expect='dns-01' }, @{ Ans='2'; Expect='http-01' })) {
+                $script:_lineCall = 0
+                $script:_chosenAns = $pair.Ans
+                Mock Read-LineOrEscape {
+                    param($Prompt)
+                    $script:_lineCall++
+                    switch ($script:_lineCall) {
+                        1 { return $script:_chosenAns }
+                        2 { return 'all' }
+                        default { return '' }
+                    }
+                }
+                Invoke-IISOrderFromBindings
+            }
+
+            $script:_captured.Count | Should -Be 2
+            $script:_captured[0]    | Should -Be 'dns-01'
+            $script:_captured[1]    | Should -Be 'http-01'
+        }
+    }
+
     It 'non-FQDN hostnames are warned about but not blocked from the order' {
         # The Test-IsFqdnHostname classifier itself is covered by UC-9.12.
         # Here we guard the "warn but continue" contract: a binding fixture
@@ -176,8 +221,9 @@ Describe 'UC-9.11 - IIS order-from-bindings flow' -Tag 'Unit' {
                 param($Prompt)
                 $script:_lineCall++
                 switch ($script:_lineCall) {
-                    1 { return 'all' }
-                    2 { return 'Y'   }
+                    1 { return '1'   }   # challenge type = DNS-01
+                    2 { return 'all' }
+                    3 { return 'Y'   }
                     default { return '' }
                 }
             }

@@ -47,7 +47,7 @@ Describe 'UC-3.08 — Order writes Event 1003 on success' -Tag 'Unit' {
             $script:_i = 0
             Mock Read-Host { $v = $script:_ans[$script:_i]; $script:_i++; return $v }
 
-            Invoke-OrderCertificate
+            Invoke-OrderCertificate -ChallengeType 'dns-01'
 
             Assert-MockCalled Write-EventLogEntry -Times 1 -Scope It -ParameterFilter {
                 $EventId -eq 1003 -and $Message -match 'ABC123'

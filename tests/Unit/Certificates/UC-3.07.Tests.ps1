@@ -47,7 +47,7 @@ Describe 'UC-3.07 — Order surfaces Posh-ACME failure' -Tag 'Unit' {
             $script:_i = 0
             Mock Read-Host { $v = $script:_ans[$script:_i]; $script:_i++; return $v }
 
-            { Invoke-OrderCertificate } | Should -Not -Throw
+            { Invoke-OrderCertificate -ChallengeType 'dns-01' } | Should -Not -Throw
 
             Assert-MockCalled Write-EventLogEntry -Times 0 -Scope It -ParameterFilter { $EventId -eq 1003 }
         }
