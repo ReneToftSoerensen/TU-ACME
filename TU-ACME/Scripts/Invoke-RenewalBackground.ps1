@@ -106,13 +106,54 @@ if (-not $module) {
         }
     }
     catch {
+        $err = $_
+
+        # Diagnostic context for the failure mail (and the event log).
+        # Each lookup is guarded so a probe failure can never mask the
+        # original Submit-Renewal / order error.
+        $fqdn = try {
+            [System.Net.Dns]::GetHostEntry($env:COMPUTERNAME).HostName
+        } catch { $env:COMPUTERNAME }
+
+        $runAs = try {
+            [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+        } catch { $env:USERNAME }
+
+        # Active ACME directory at the moment of failure. After
+        # Use-TUACMEProdAccount this is the prod URL; under dry-run it
+        # would be the staging URL. We surface whatever Posh-ACME
+        # actually has selected so the recipient can tell which CA
+        # the error came from.
+        $acmeDir = try {
+            $srv = Get-PAServer -ErrorAction SilentlyContinue
+            if ($srv) { $srv.location } else { '<unknown>' }
+        } catch { '<unknown>' }
+
+        $body = @"
+TU-ACME renewal FAILED
+
+Host           : $fqdn
+RunAs          : $runAs
+ACME directory : $acmeDir
+Time           : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')
+
+Error          : $($err.Exception.Message)
+Exception type : $($err.Exception.GetType().FullName)
+
+PowerShell stack trace:
+$($err.ScriptStackTrace)
+
+.NET stack trace:
+$($err.Exception.StackTrace)
+"@
+
         Write-EventLogEntry -EventId 3001 -EntryType Error `
-            -Message "Renewal job failed: $($_.Exception.Message)"
+            -Message "Renewal job failed on $fqdn (as $runAs, ACME directory $acmeDir): $($err.Exception.Message)"
         # Best-effort: notify via mail if SMTP configured.
         try {
             $cfg = Get-TUACMEConfig
             if ($cfg.Email.SmtpServer -and (Get-Command Send-TUACMEMail -ErrorAction SilentlyContinue)) {
-                Send-TUACMEMail -Subject 'TU-ACME renewal FAILED' -Body $_.Exception.Message | Out-Null
+                Send-TUACMEMail -Subject "TU-ACME renewal FAILED on $fqdn" -Body $body | Out-Null
             }
         } catch {}
         if (-not $Foreground) { exit 1 }

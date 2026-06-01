@@ -174,4 +174,48 @@ Describe 'TU-ACME renewal background script' -Tag 'Scripts' {
             }
         }
     }
+
+    It 'UC-8.11: renewal FAILED mail body includes host, RunAs, ACME directory, message, and stack trace' {
+        InModuleScope TU-ACME -Parameters @{ Path = $script:ScriptPath } {
+            param($Path)
+
+            function Submit-Renewal { param([switch]$AllAccounts, $ErrorAction) }
+            function Get-PAServer   { param([switch]$ErrorAction) }
+
+            Mock Import-Module         {}
+            Mock Use-TUACMEProdAccount {}
+            Mock Get-PACertificate     { @([PSCustomObject]@{ MainDomain = 'fail.example'; Thumbprint = 'T1' }) }
+            Mock Submit-Renewal        { throw 'Posh-ACME: connection refused' }
+            Mock Get-PAServer          { [PSCustomObject]@{ location = 'https://acme.internal.example/directory' } }
+            Mock Get-TUACMEConfig      {
+                [PSCustomObject]@{
+                    Email = [PSCustomObject]@{ SmtpServer = 'smtp.example' }
+                }
+            }
+            Mock Write-EventLogEntry   {}
+
+            $global:_uc811_subject = $null
+            $global:_uc811_body    = $null
+            Mock Send-TUACMEMail {
+                param($Subject, $Body)
+                $global:_uc811_subject = $Subject
+                $global:_uc811_body    = $Body
+                $true
+            }
+
+            # Foreground re-throws after the catch handler runs; swallow
+            # so the test can inspect what the catch built.
+            try { & $Path -Foreground } catch {}
+
+            $global:_uc811_subject | Should -Match '^TU-ACME renewal FAILED on \S+'
+            $global:_uc811_body    | Should -Match '(?m)^Host\s+:\s*\S'
+            $global:_uc811_body    | Should -Match '(?m)^RunAs\s+:\s*\S'
+            $global:_uc811_body    | Should -Match '(?m)^ACME directory\s+:\s*https://acme\.internal\.example/directory'
+            $global:_uc811_body    | Should -Match 'connection refused'
+            $global:_uc811_body    | Should -Match '(?ms)stack trace'
+
+            Remove-Variable -Name _uc811_subject -Scope Global -ErrorAction SilentlyContinue
+            Remove-Variable -Name _uc811_body    -Scope Global -ErrorAction SilentlyContinue
+        }
+    }
 }
