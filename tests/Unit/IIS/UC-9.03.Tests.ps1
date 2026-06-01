@@ -25,11 +25,13 @@ Describe 'UC-9.03 - IIS menu joins bindings to certs by thumbprint' -Tag 'Unit' 
             $fakeBindings = @(
                 [PSCustomObject]@{
                     ItemXPath          = "/system.applicationHost/sites/site[@name='Site1']"
+                    protocol           = 'https'
                     bindingInformation = '*:443:site1.example.com'
                     certificateHash    = $matchHash
                 },
                 [PSCustomObject]@{
                     ItemXPath          = "/system.applicationHost/sites/site[@name='Site2']"
+                    protocol           = 'https'
                     bindingInformation = '*:443:site2.example.com'
                     certificateHash    = 'ZZZZZZZZZZZZZZZZZZZZ'   # no matching cert
                 }

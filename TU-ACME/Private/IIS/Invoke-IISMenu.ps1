@@ -1,18 +1,25 @@
 ﻿function Invoke-IISMenu {
     <#
     .SYNOPSIS
-        Interactive menu for inspecting and rebinding IIS HTTPS bindings
-        against Posh-ACME-managed certificates.
+        Interactive menu for inspecting and rebinding IIS bindings against
+        Posh-ACME-managed certificates.
     .DESCRIPTION
-        Scans every HTTPS binding via Get-WebBinding -Protocol 'https' and
-        joins each binding's certificateHash to a Posh-ACME certificate
-        Thumbprint so the operator can see at a glance which sites are
-        pinned to which issued cert. Offers an interactive rebind that
-        swaps the current cert for another known Posh-ACME certificate
-        and emits Event 1002 on success.
+        Scans every binding via Get-WebBinding (both HTTP and HTTPS — HTTP
+        rows are listed for operational visibility; only HTTPS rows can be
+        rebound). For each HTTPS binding the cert is looked up in
+        Cert:\LocalMachine\My by Thumbprint and the row is enriched with:
+          * Subject  — from the X509Certificate2
+          * Expires  — NotAfter (yyyy-MM-dd)
+          * Template — AD CS template name (v1 or v2 extension); blank for
+                       certs without an AD-CS template (e.g. Let's Encrypt
+                       or an externally-issued cert).
+
+        The rebind picker filters to HTTPS rows so the operator can't pick
+        an HTTP binding to swap a thumbprint onto (HTTP bindings have no
+        certificateHash to set).
 
         Requires Windows + administrator. Always runs against the prod
-        account (Use-TUACMEProdAccount) - the staging cert store is never
+        account (Use-TUACMEProdAccount); the staging cert store is never
         consulted by this menu.
     #>
     [CmdletBinding()]
@@ -38,8 +45,10 @@
         Write-Host '  === IIS integration ===' -ForegroundColor Cyan
         Write-Host ''
 
+        # No -Protocol filter: surface every binding so the operator can
+        # see HTTP-only sites alongside HTTPS ones.
         $bindings = Show-Spinner -Message 'Scanning IIS bindings...' -ScriptBlock {
-            @(Get-WebBinding -Protocol 'https')
+            @(Get-WebBinding)
         }
         if ($null -eq $bindings) { $bindings = @() }
         $bindings = @($bindings)
@@ -47,32 +56,83 @@
         $certs = @(Get-PACertificate -List)
         if ($null -eq $certs) { $certs = @() }
 
-        # Build the join rows: every binding gets a CertSubject column
-        # resolved by matching certificateHash to a Posh-ACME Thumbprint.
+        # Cache cert lookups within a single render pass so we don't hit
+        # Cert:\LocalMachine\My twice for the same thumbprint when a cert
+        # is bound to several sites.
+        $certCache = @{}
+
         $rows = @($bindings | ForEach-Object {
             $b    = $_
-            $hash = $b.certificateHash
+            $proto = if ($b.protocol) { $b.protocol } else { '' }
+            $hash  = if ($b.certificateHash) { $b.certificateHash } else { '' }
+
             $site = ''
             if ($b.ItemXPath) {
                 $site = ($b.ItemXPath -replace ".*@name='([^']+)'.*", '$1')
             }
-            $subject = '<unknown>'
-            $match   = $certs | Where-Object { $_.Thumbprint -eq $hash } | Select-Object -First 1
-            if ($match) { $subject = $match.Subject }
+
+            $subject  = ''
+            $expires  = ''
+            $template = ''
+
+            if ($proto -eq 'https' -and -not [string]::IsNullOrWhiteSpace($hash)) {
+                # Prefer the Posh-ACME Subject string (cheap, no Cert: hit)
+                # but always look the X509Certificate2 up for NotAfter and
+                # the template extension.
+                $paMatch = $certs | Where-Object { $_.Thumbprint -eq $hash } | Select-Object -First 1
+                if ($paMatch -and $paMatch.Subject) { $subject = $paMatch.Subject }
+
+                if ($certCache.ContainsKey($hash)) {
+                    $x509 = $certCache[$hash]
+                } else {
+                    $x509 = $null
+                    # String concat instead of Join-Path so a host without
+                    # the Cert: provider (Linux PS 7, CI) fails inside the
+                    # silenced Test-Path rather than blowing up on path
+                    # construction. Posh-ACME-managed certs always live in
+                    # LocalMachine\My once deployed, so the path is fixed.
+                    try {
+                        $path = "Cert:\LocalMachine\My\$hash"
+                        if (Test-Path $path -ErrorAction SilentlyContinue) {
+                            $x509 = Get-Item $path -ErrorAction SilentlyContinue
+                        }
+                    } catch { $x509 = $null }
+                    $certCache[$hash] = $x509
+                }
+
+                if ($x509) {
+                    if (-not $subject) { $subject = $x509.Subject }
+                    if ($x509.NotAfter) {
+                        $expires = (Get-Date $x509.NotAfter -Format 'yyyy-MM-dd')
+                    }
+                    $template = Get-CertTemplateName -Certificate $x509
+                }
+
+                if (-not $subject) { $subject = '<unknown>' }
+            }
+
             [PSCustomObject]@{
                 Site        = $site
+                Protocol    = $proto
                 Binding     = $b.bindingInformation
+                # Kept under the old column name so UC-9.03 still passes
+                # and downstream callers don't break — same value, same
+                # rendering role.
                 CertSubject = $subject
+                Expires     = $expires
+                Template    = $template
                 Thumbprint  = $hash
             }
         })
 
         if ($rows.Count -eq 0) {
-            Write-Host '  No HTTPS bindings found' -ForegroundColor Yellow
+            Write-Host '  No bindings found' -ForegroundColor Yellow
         } else {
             Show-Table `
                 -Data    $rows `
-                -Columns @('Site', 'Binding', 'CertSubject', 'Thumbprint')
+                -Columns @('Site', 'Protocol', 'Binding', 'CertSubject', 'Expires', 'Template', 'Thumbprint') `
+                -Headers @('Site', 'Proto',    'Binding', 'Subject',     'Expires', 'Template', 'Thumbprint') `
+                -Widths  @(22,     6,          28,        24,            12,        14,         12)
         }
 
         Write-Host ''
@@ -87,19 +147,18 @@
 
         switch ($selection) {
             0 {
-                if ($rows.Count -eq 0) {
-                    Write-Host '  No bindings available to rebind' -ForegroundColor Yellow
+                # Rebind only operates on HTTPS rows — HTTP bindings have
+                # no certificateHash to set.
+                $httpsRows = @($rows | Where-Object { $_.Protocol -eq 'https' })
+                if ($httpsRows.Count -eq 0) {
+                    Write-Host '  No HTTPS bindings available to rebind' -ForegroundColor Yellow
                     Read-Host 'Press Enter to continue' | Out-Null
                     continue
                 }
 
-                # Build a picker option per HTTPS binding labeled
-                # "Site - hostname" so the operator can disambiguate
-                # sites that have multiple bindings. Empty hostnames
-                # (catch-all bindings) render as "<no hostname>".
                 $pickerOptions = @()
-                for ($r = 0; $r -lt $rows.Count; $r++) {
-                    $row   = $rows[$r]
+                for ($r = 0; $r -lt $httpsRows.Count; $r++) {
+                    $row   = $httpsRows[$r]
                     $parts = $row.Binding -split ':', 3
                     $hn    = if ($parts.Count -ge 3) { $parts[2] } else { '' }
                     if ([string]::IsNullOrWhiteSpace($hn)) { $hn = '<no hostname>' }
@@ -113,7 +172,7 @@
                     continue
                 }
 
-                $siteRow = $rows[$pickIdx]
+                $siteRow = $httpsRows[$pickIdx]
                 $site    = $siteRow.Site
 
                 if ($certs.Count -eq 0) {

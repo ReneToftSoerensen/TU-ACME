@@ -1,6 +1,6 @@
 ﻿#Requires -Modules Pester
 
-Describe 'UC-9.02 - IIS menu scans HTTPS bindings' -Tag 'Unit' {
+Describe 'UC-9.02 - IIS menu scans every binding (HTTP and HTTPS)' -Tag 'Unit' {
     BeforeAll {
         $ModulePath = "$PSScriptRoot\..\..\..\TU-ACME\TU-ACME.psd1"
         Import-Module $ModulePath -Force
@@ -17,7 +17,7 @@ Describe 'UC-9.02 - IIS menu scans HTTPS bindings' -Tag 'Unit' {
         Remove-Module TU-ACME -Force -ErrorAction SilentlyContinue
     }
 
-    It 'calls Get-WebBinding -Protocol https exactly once per render pass' {
+    It 'calls Get-WebBinding without a Protocol filter so HTTP rows render too' {
         InModuleScope TU-ACME {
             $script:OnWindows = $true
 
@@ -34,8 +34,12 @@ Describe 'UC-9.02 - IIS menu scans HTTPS bindings' -Tag 'Unit' {
 
             Invoke-IISMenu
 
+            # Operationally the menu has to show every binding so HTTP-
+            # only sites are visible alongside HTTPS ones; the -Protocol
+            # 'https' filter that the v0.3.x menu had been passing would
+            # silently drop them. The assertion guards that regression.
             Assert-MockCalled Get-WebBinding -ParameterFilter {
-                $Protocol -eq 'https'
+                -not $PSBoundParameters.ContainsKey('Protocol')
             } -Times 1 -Scope It
         }
     }

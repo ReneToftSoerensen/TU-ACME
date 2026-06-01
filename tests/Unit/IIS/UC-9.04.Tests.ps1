@@ -27,6 +27,7 @@ Describe 'UC-9.04 - IIS rebind invokes Set-WebBinding with new hash' -Tag 'Unit'
             $fakeBindings = @(
                 [PSCustomObject]@{
                     ItemXPath          = "/system.applicationHost/sites/site[@name='Site1']"
+                    protocol           = 'https'
                     bindingInformation = '*:443:site1.example.com'
                     certificateHash    = $oldHash
                 }

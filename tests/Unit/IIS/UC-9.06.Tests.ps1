@@ -28,16 +28,19 @@ Describe 'UC-9.06 - IIS rebind picker lists sites with their hostnames' -Tag 'Un
             $fakeBindings = @(
                 [PSCustomObject]@{
                     ItemXPath          = "/system.applicationHost/sites/site[@name='Default Web Site']"
+                    protocol           = 'https'
                     bindingInformation = '*:443:example.com'
                     certificateHash    = 'AAA'
                 },
                 [PSCustomObject]@{
                     ItemXPath          = "/system.applicationHost/sites/site[@name='Default Web Site']"
+                    protocol           = 'https'
                     bindingInformation = '*:443:www.example.com'
                     certificateHash    = 'AAA'
                 },
                 [PSCustomObject]@{
                     ItemXPath          = "/system.applicationHost/sites/site[@name='Intranet']"
+                    protocol           = 'https'
                     bindingInformation = '*:443:'
                     certificateHash    = 'BBB'
                 }

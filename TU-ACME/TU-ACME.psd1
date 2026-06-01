@@ -1,6 +1,6 @@
 ﻿@{
     RootModule           = 'TU-ACME.psm1'
-    ModuleVersion        = '0.3.5'
+    ModuleVersion        = '0.4.0'
     GUID                 = 'c8dde9f1-e457-4c98-a951-b85ba5750826'
     Author               = 'TU-ACME'
     CompanyName          = 'TU-ACME'
