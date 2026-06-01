@@ -76,7 +76,7 @@ Describe 'UC-9.06 - IIS rebind picker lists sites with their hostnames' -Tag 'Un
                     # cert picker.
                     return ($Options.Count - 1)
                 }
-                return 2   # Outer Back
+                return 3   # Outer Back (UC-9.11 added an Order entry; Back moved from 2 to 3)
             }
 
             Mock Read-Host { '' }

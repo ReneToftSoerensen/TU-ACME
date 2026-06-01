@@ -78,6 +78,8 @@ This file tracks every atomic use case in `Usecases/` together with the implemen
 | 9.08 | IIS table shows certificate expiry on HTTPS rows | TU-ACME/Private/IIS/Invoke-IISMenu.ps1 | tests/Unit/IIS/UC-9.07.Tests.ps1 | Implemented |
 | 9.09 | IIS table shows AD CS template name on HTTPS rows | TU-ACME/Private/IIS/Invoke-IISMenu.ps1 | tests/Unit/IIS/UC-9.07.Tests.ps1 | Implemented |
 | 9.10 | Get-CertTemplateName parses AD CS v1/v2 template extensions | TU-ACME/Private/Helpers/Get-CertTemplateName.ps1 | tests/Unit/Helpers/Get-CertTemplateName.Tests.ps1 | Implemented |
+| 9.11 | IIS menu orders new cert from site bindings (bundle / split, warn on non-FQDN) | TU-ACME/Private/IIS/Invoke-IISOrderFromBindings.ps1 | tests/Unit/IIS/UC-9.11.Tests.ps1 | Implemented |
+| 9.12 | Test-IsFqdnHostname classifies FQDN vs single-label / IP / wildcard | TU-ACME/Private/Helpers/Test-IsFqdnHostname.ps1 | tests/Unit/Helpers/Test-IsFqdnHostname.Tests.ps1 | Implemented |
 | 10.01 | Export PFX prompts overwrite and calls Export-PfxCertificate | TU-ACME/Private/Export/Invoke-ExportMenu.ps1 | tests/Unit/Export/UC-10.01.Tests.ps1 | Implemented |
 | 10.02 | Export PEM concatenates chain and key | TU-ACME/Private/Export/Invoke-ExportMenu.ps1 | tests/Unit/Export/UC-10.02.Tests.ps1 | Implemented |
 | 10.03 | Import to Windows store calls Import-PfxCertificate | TU-ACME/Private/Export/Invoke-ExportMenu.ps1 | tests/Unit/Export/UC-10.03.Tests.ps1 | Implemented |

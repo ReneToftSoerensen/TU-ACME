@@ -14,33 +14,48 @@
         confirmation) cancels the order: the function prints
         "Cancelled (Esc)." and returns without calling New-PACertificate
         and without writing Event 1003.
+
+        Callers that already know the domain and SAN set (e.g.
+        Invoke-IISOrderFromBindings, which collects hostnames from a
+        site's bindings) can pass -Domain and -Sans to skip those
+        prompts; the plugin prompt, plugin-args resolution, summary,
+        and confirmation still run.
     #>
     [CmdletBinding()]
-    param()
+    param(
+        [string]   $Domain,
+        [string[]] $Sans
+    )
 
     Use-TUACMEProdAccount
 
     # ---- 1. Domain prompt + validation -----------------------------------
-    $domain = ''
-    while ($true) {
-        $domain = Read-LineOrEscape -Prompt 'Domain'
-        if ($null -eq $domain) {
-            Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
-            return
+    if ([string]::IsNullOrWhiteSpace($Domain)) {
+        $Domain = ''
+        while ($true) {
+            $Domain = Read-LineOrEscape -Prompt 'Domain'
+            if ($null -eq $Domain) {
+                Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
+                return
+            }
+            if ($Domain -match '^[a-zA-Z0-9.\-*]+$') { break }
+            Write-Host '  Invalid domain. Allowed: letters, digits, dot, dash, asterisk.' -ForegroundColor Yellow
         }
-        if ($domain -match '^[a-zA-Z0-9.\-*]+$') { break }
-        Write-Host '  Invalid domain. Allowed: letters, digits, dot, dash, asterisk.' -ForegroundColor Yellow
     }
 
     # ---- 2. Optional SAN list --------------------------------------------
-    $sansRaw = Read-LineOrEscape -Prompt 'SANs (comma-separated, optional)'
-    if ($null -eq $sansRaw) {
-        Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
-        return
-    }
-    $sans = @()
-    if (-not [string]::IsNullOrWhiteSpace($sansRaw)) {
-        $sans = @($sansRaw -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+    if ($null -eq $Sans) {
+        $sansRaw = Read-LineOrEscape -Prompt 'SANs (comma-separated, optional)'
+        if ($null -eq $sansRaw) {
+            Write-Host '  Cancelled (Esc).' -ForegroundColor Yellow
+            return
+        }
+        $Sans = @()
+        if (-not [string]::IsNullOrWhiteSpace($sansRaw)) {
+            $Sans = @($sansRaw -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+        }
+    } else {
+        $Sans = @($Sans)
     }
 
     # ---- 3. Plugin prompt + validation -----------------------------------

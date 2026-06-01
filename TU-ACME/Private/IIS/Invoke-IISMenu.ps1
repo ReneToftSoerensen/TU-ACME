@@ -139,13 +139,19 @@
 
         $options = @(
             '1. Rebind a site',
-            '2. Refresh',
+            '2. Order new cert from site bindings',
+            '3. Refresh',
             'B. Back'
         )
 
         $selection = Show-Menu -Title 'TU-ACME - IIS integration' -Options $options
 
         switch ($selection) {
+            1 {
+                Invoke-IISOrderFromBindings
+                Read-Host 'Press Enter to continue' | Out-Null
+                continue
+            }
             0 {
                 # Rebind only operates on HTTPS rows — HTTP bindings have
                 # no certificateHash to set.
@@ -217,11 +223,11 @@
                 Write-Host "  Rebound $site to $newThumbprint" -ForegroundColor Green
                 Read-Host 'Press Enter to continue' | Out-Null
             }
-            1 {
+            2 {
                 # Refresh: just loop.
                 continue
             }
-            2       { return }
+            3       { return }
             -1      { return }
             default { return }
         }

@@ -53,14 +53,15 @@ Describe 'UC-9.04 - IIS rebind invokes Set-WebBinding with new hash' -Tag 'Unit'
             # Menu sequence:
             #   1. Outer IIS menu      -> 0 (Rebind a site)
             #   2. Binding picker      -> 0 (the first / only binding)
-            #   3. Outer IIS menu      -> 2 (Back)
+            #   3. Outer IIS menu      -> 3 (Back; UC-9.11 added an Order entry
+            #                            so Back is now index 3 instead of 2)
             $script:_menuCalls = 0
             Mock Show-Menu {
                 $script:_menuCalls++
                 switch ($script:_menuCalls) {
                     1 { return 0 }   # Rebind
                     2 { return 0 }   # First binding in the picker
-                    default { return 2 }   # Back
+                    default { return 3 }   # Back
                 }
             }
 
