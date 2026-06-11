@@ -84,4 +84,5 @@ When the user requests a durable behavior change, record it here or in the relev
 - **ACCEPTANCE_CRITERIA.md** — 39 acceptance criteria across 10 feature areas with traceability matrix
 - **CLAUDE.md** — Development framework, workflow, standards (this scope)
 - **README.md** — Overview, phasing, usecase index, development checklist
-- **Usecases/** — 25 atomic usecase files (UC-*.md), each with narrative, AC, implementation notes, test coverage
+- **Usecases/AGENTS.md** — 25 atomic usecase files (UC-*.md), each with narrative, AC, implementation notes, test coverage
+- **.claude/AGENTS.md** — Claude Code infrastructure, configuration, agents, and skills
