@@ -31,8 +31,8 @@ When the user requests a durable behavior change, record it here or in the relev
 
 - **SPEC.md** — Specification, design principles, platform requirements, architecture
 - **ACCEPTANCE_CRITERIA.md** — 39 acceptance criteria across 10 feature areas with traceability matrix
-- **CLAUDE.md** — Development framework, workflow, standards (this scope)
+- **CLAUDE.md** — Root documentation map pointing into `docs/` (framework, workflow, and standards live there)
 - **README.md** — Overview, phasing, usecase index, development checklist
 - **docs/AGENTS.md** — Documentation navigation, DOX methodology reference, derived content
-- **Usecases/AGENTS.md** — 25 atomic usecase files (UC-*.md), each with narrative, AC, implementation notes, test coverage
+- **Usecases/AGENTS.md** — Atomic usecase files (UC-*.md), each with narrative, AC, implementation notes, test coverage
 - **.claude/AGENTS.md** — Claude Code infrastructure, configuration, agents, and skills

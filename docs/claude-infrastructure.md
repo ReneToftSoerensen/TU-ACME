@@ -16,7 +16,7 @@ Claude Code harness configuration for the TU-ACME project. Contains:
 - **Hooks** — Shell commands that run before/after events (e.g., pre-commit validation).
 - **Harness behavior** — Preferred model, timeout, output mode.
 
-Changes to `settings.json` must align with locked decisions in `CLAUDE.md`.
+Changes to `settings.json` must align with the locked decisions in [overview.md](overview.md).
 
 ### **agents/** — Specialized Agent Definitions
 
@@ -74,7 +74,7 @@ Reference documentation for common pitfalls, edge cases, and workarounds. Create
 1. **Read the DOX chain** (see [DOX.md](DOX.md)) — Follow the path from root to your target folder, reading all AGENTS.md files along the way.
 2. **Read the relevant UC** — Understand narrative, AC, and implementation hints.
 3. **Write tests first** — Follow UC test guidance (Unit, Integration, or Scripts).
-4. **Implement** — Follow PS 5.1 compatibility and UTF-8 BOM rules (see `CLAUDE.md`).
+4. **Implement** — Follow PS 5.1 compatibility and UTF-8 BOM rules (see [development-standards.md](development-standards.md)).
 5. **Run verification** — Use `/verify-utf8-bom`, `/run-pester`, and `/code-review` as needed.
 6. **Check specialized agents** — If changes touch:
    - PowerShell code → **ps51-compat-linter**
@@ -101,4 +101,6 @@ Reference documentation for common pitfalls, edge cases, and workarounds. Create
 - **`.claude/agents/AGENTS.md`** — Specialized agent definitions.
 - **`.claude/skills/AGENTS.md`** — Project automation skills.
 - **`Usecases/AGENTS.md`** — Usecase files and traceability.
-- **`CLAUDE.md`** — Development standards and locked decisions.
+- **`CLAUDE.md`** — Root documentation map pointing into `docs/`.
+- **[development-standards.md](development-standards.md)** — Development standards.
+- **[overview.md](overview.md)** — Locked decisions.
