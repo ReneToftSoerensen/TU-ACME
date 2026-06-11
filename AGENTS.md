@@ -80,8 +80,6 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Child DOX Index
 
-### clean/
-
 - **SPEC.md** — Specification, design principles, platform requirements, architecture
 - **ACCEPTANCE_CRITERIA.md** — 39 acceptance criteria across 10 feature areas with traceability matrix
 - **CLAUDE.md** — Development framework, workflow, standards (this scope)
