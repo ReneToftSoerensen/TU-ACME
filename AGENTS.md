@@ -3,6 +3,20 @@
 - DOX is highly performant AGENTS.md hierarchy installed here
 - Agent must follow DOX instructions across any edits
 
+## Project Overview
+
+- TU-ACME is a Windows PowerShell 5.1/7 TUI wrapper around Posh-ACME targeting a custom ACME certificate authority.
+- TU-ACME is not a general-purpose ACME client.
+- TU-ACME is focused on IIS server certificates and certificate renewal workflows.
+
+## Tech Stack
+
+- Windows PowerShell 5.1 and PowerShell 7
+- Text-based user interface (TUI)
+- Posh-ACME integration
+- Custom ACME certificate authority
+- IIS certificate deployment and renewal workflows
+
 ## Core Contract
 
 - AGENTS.md files are binding work contracts for their subtrees
