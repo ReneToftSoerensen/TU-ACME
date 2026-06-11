@@ -1,4 +1,4 @@
-# TU-ACME v2 — Documentation Index
+# TU-ACME — Documentation Index
 
 This directory reorganizes the specification-driven development framework from the root `CLAUDE.md` into smaller documents that work better in monorepos.
 
