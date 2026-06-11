@@ -6,7 +6,7 @@ This documentation set contains the **specification-driven development framework
 
 1. **Read `SPEC.md`** — Project scope, design principles, platform requirements, architecture.
 2. **Review `ACCEPTANCE_CRITERIA.md`** — 39 acceptance criteria across 10 feature areas (A–J); traceability matrix.
-3. **Browse `Usecases/`** — 25 atomic UC files; each contains narrative, acceptance criteria, implementation notes, and test coverage.
+3. **Browse `Usecases/`** — atomic UC files; each contains narrative, acceptance criteria, implementation notes, and test coverage.
 4. **Reference `README.md`** — Workflow guide, phasing (P0–P2), use case index, development checklist.
 
 ## Development Model

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This folder contains 25 atomic usecase (UC) files that define feature requirements, acceptance criteria, implementation guidance, and test coverage for TU-ACME v2.
+This folder contains atomic usecase (UC) files that define feature requirements, acceptance criteria, implementation guidance, and test coverage for TU-ACME v2.
 
 ## Ownership
 
@@ -10,7 +10,7 @@ Owned by the project specification and development workflow. Each UC describes a
 
 ## Local Contracts
 
-- **Naming**: All usecase files follow the pattern `UC-<area>.<sequence>.md` (e.g., `UC-1.01.md`, `UC-4.03.md`).
+- **Naming**: All usecase files follow the pattern `UC-<area>.<sequence>-<slug>.md` (e.g., `UC-1.01-module-import.md`, `UC-3.01-dry-run.md`).
 - **Structure**: Each UC contains:
   - **Narrative** — Problem statement and context
   - **Acceptance Criteria** — Numbered AC statements (linked to ACCEPTANCE_CRITERIA.md)
@@ -23,14 +23,14 @@ Owned by the project specification and development workflow. Each UC describes a
 
 1. **Before implementing**: Read the UC end-to-end.
 2. **Write tests first**: Unit tests (mocked) or Integration tests (real store) per UC guidance.
-3. **Implement**: Make tests pass; follow PS 5.1 compat and UTF-8 BOM rules from CLAUDE.md.
+3. **Implement**: Make tests pass; follow PS 5.1 compat and UTF-8 BOM rules from docs/development-standards.md.
 4. **Verify**: Run the Pester suite (Unit, Integration, Scripts tags).
 5. **Commit**: Reference the UC(s) implemented (e.g., "Implement UC-1.01 (module import)").
 6. **Update README.md**: Mark the UC as complete in the development checklist.
 
 ## Verification
 
-- All 25 UC files exist and are named correctly.
+- All UC files exist and are named correctly.
 - Each UC maps to one or more ACs in ACCEPTANCE_CRITERIA.md.
 - All completed UCs are marked done in README.md development checklist.
 - Tests for each UC pass (Unit, Integration, or Scripts).

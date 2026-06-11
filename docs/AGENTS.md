@@ -35,5 +35,6 @@ Owned by the project specification and development workflow. Documentation here 
 - **architecture.md** — Architecture, platform requirements, module structure
 - **development-standards.md** — Code quality, security, TUI standards, testing strategy
 - **planning-and-traceability.md** — Phases, feature areas, acceptance criteria mapping, development checklist
+- **development-checklist.md** — Phase-level development checklist (plan through deploy)
 - **operations-and-references.md** — Event IDs, usage guidance, references, FAQ
-- **agents.md** — DOX hierarchy, .claude/ directory, specialized agents, automation skills
+- **claude-infrastructure.md** — .claude/ directory, specialized agents, automation skills, development workflow

@@ -42,7 +42,7 @@ TU-ACME logs to a custom Windows Event Log source. IDs are reserved in three ban
 - **`SPEC.md`** — Full specification and design principles.
 - **`ACCEPTANCE_CRITERIA.md`** — 39 ACs with traceability matrix.
 - **`README.md`** — Overview, phasing, workflow, next steps.
-- **`Usecases/`** — 25 atomic UC files (implementation guides).
+- **`Usecases/`** — Atomic UC files (implementation guides).
 - **`.claude/memory/`** — PS 5.1 and Posh-ACME pitfall notes.
 - **`.claude/skills/`** — Project automation (`verify-utf8-bom`, `bump-version`, etc.).
 - **`.claude/agents/`** — Specialized reviewers (`ps51-compat-linter`, `posh-acme-wrapper-reviewer`, `tui-pattern-checker`).
