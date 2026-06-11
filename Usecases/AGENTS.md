@@ -11,6 +11,7 @@ Owned by the project specification and development workflow. Each UC describes a
 ## Local Contracts
 
 - **Naming**: All usecase files follow the pattern `UC-<area>.<sequence>-<slug>.md` (e.g., `UC-1.01-module-import.md`, `UC-3.01-dry-run.md`).
+- **Area numbering**: UC areas 1–12 map to feature areas A–J in ACCEPTANCE_CRITERIA.md via the traceability matrix; some letter areas span two UC areas.
 - **Structure**: Each UC contains:
   - **Narrative** — Problem statement and context
   - **Acceptance Criteria** — Numbered AC statements (linked to ACCEPTANCE_CRITERIA.md)
@@ -30,8 +31,7 @@ Owned by the project specification and development workflow. Each UC describes a
 
 ## Verification
 
-- All UC files exist and are named correctly.
-- Each UC maps to one or more ACs in ACCEPTANCE_CRITERIA.md.
+- Every UC referenced in the ACCEPTANCE_CRITERIA.md traceability matrix has a corresponding file here, and every UC file here is referenced in the matrix.
 - All completed UCs are marked done in README.md development checklist.
 - Tests for each UC pass (Unit, Integration, or Scripts).
 

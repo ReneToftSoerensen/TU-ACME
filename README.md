@@ -109,7 +109,6 @@ This folder contains the specification, acceptance criteria, and atomic use case
 | UC-11.04 | Integration Tests | [ ] |
 | UC-11.05 | Script Tests | [ ] |
 | UC-12.01 | Dashboard | [ ] |
-| UC-12.02 | Renewal Status | [ ] |
 
 ### Phase 3: Operations
 
@@ -117,7 +116,7 @@ This folder contains the specification, acceptance criteria, and atomic use case
 |----|-------|--------|
 | UC-6.02 | Revoke Certificate | [ ] |
 | UC-6.03 | Force-Renew with New Key | [ ] |
-| UC-J.4 | Renewal Status (menu) | [ ] |
+| UC-12.02 | Renewal Status | [ ] |
 
 ## Development Checklist
 
