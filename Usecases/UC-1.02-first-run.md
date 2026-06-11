@@ -6,14 +6,14 @@ As an **administrator**, I want to **run the first-run wizard when `config.json`
 
 ## Acceptance Criteria
 
-- [ ] First-run wizard triggers automatically on module import if `%ProgramData%\TU-ACME\config.json` is absent
-- [ ] Wizard prompts for contact email
-- [ ] Wizard prompts for production ACME directory URL
-- [ ] Wizard prompts for staging ACME directory URL
-- [ ] Wizard creates exactly two accounts (prod + staging) in the Posh-ACME store
-- [ ] Wizard persists config to `%ProgramData%\TU-ACME\config.json` with plaintext URLs, account IDs, and email
-- [ ] Event Log entry ID 1010 is written on completion
-- [ ] On reimport, the wizard does not trigger and config is loaded
+- [x] First-run wizard triggers automatically on `Start-TUACME` if `%ProgramData%\TU-ACME\config.json` is absent; module import warns instead of prompting so import never blocks non-interactive sessions (AC-A.1)
+- [x] Wizard prompts for contact email
+- [x] Wizard prompts for production ACME directory URL
+- [x] Wizard prompts for staging ACME directory URL
+- [x] Wizard creates exactly two accounts (prod + staging) in the Posh-ACME store
+- [x] Wizard persists config to `%ProgramData%\TU-ACME\config.json` with plaintext URLs, account IDs, and email
+- [x] Event Log entry ID 1010 is written on completion
+- [x] On reimport, the wizard does not trigger and config is loaded
 
 ## Implementation Notes
 
