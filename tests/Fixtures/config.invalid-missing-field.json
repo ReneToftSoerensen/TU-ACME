@@ -1,0 +1,6 @@
+{
+  "ContactEmail": "certs@example.com",
+  "ProdDirectoryUrl": "https://acme.example.com/prod/directory",
+  "ProdAccountId": "prod-account-1",
+  "StagingAccountId": "staging-account-1"
+}

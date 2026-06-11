@@ -1,0 +1,40 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pester:
+    name: Pester (${{ matrix.os }}, ${{ matrix.shell }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            shell: pwsh
+          - os: windows-latest
+            shell: pwsh
+          - os: windows-latest
+            shell: powershell
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Pester
+        run: |
+          if ($PSVersionTable.PSEdition -eq 'Desktop') {
+            $null = Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+          }
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name Pester -MinimumVersion 5.5 -Force -Scope CurrentUser -SkipPublisherCheck
+
+      - name: Run unit tests
+        run: |
+          Import-Module Pester -MinimumVersion 5.5
+          $configuration = & ./tests/pester.config.ps1
+          $configuration.Run.Exit = $true
+          Invoke-Pester -Configuration $configuration
