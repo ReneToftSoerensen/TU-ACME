@@ -9,6 +9,7 @@ This directory reorganizes the specification-driven development framework from t
 3. [Development Standards](development-standards.md) — code quality, security, TUI standards, testing strategy.
 4. [Planning and Traceability](planning-and-traceability.md) — phases, feature areas, acceptance criteria mapping, development checklist.
 5. [Operations and References](operations-and-references.md) — event IDs, usage guidance, references, FAQ.
+6. [Development Infrastructure (DOX & Agents)](agents.md) — DOX hierarchy, `.claude/` directory, specialized agents, automation skills.
 
 ## Existing Root Documents
 
