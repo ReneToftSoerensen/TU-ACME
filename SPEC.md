@@ -1,4 +1,4 @@
-# TU-ACME v2 — Specification
+# TU-ACME — Specification
 
 ## Project Overview
 
