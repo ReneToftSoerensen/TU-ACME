@@ -1,7 +1,3 @@
-# DOX framework
-
-- DOX is highly performant AGENTS.md hierarchy installed here
-- Agent must follow DOX instructions across any edits
 
 ## Project Overview
 
@@ -16,6 +12,11 @@
 - Posh-ACME integration
 - Custom ACME certificate authority
 - IIS certificate deployment and renewal workflows
+
+# DOX framework
+
+- DOX is highly performant AGENTS.md hierarchy installed here
+- Agent must follow DOX instructions across any edits
 
 ## Core Contract
 
