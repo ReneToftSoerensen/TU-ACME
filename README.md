@@ -1,4 +1,4 @@
-# TU-ACME v2 — Clean Implementation
+# TU-ACME — Clean Implementation
 
 This folder contains the specification, acceptance criteria, and atomic use cases for a clean, spec-driven implementation of TU-ACME v2.
 
