@@ -1,5 +1,7 @@
 # DOX framework
 
+TU-ACME v2 is a Windows PowerShell 5.1 TUI wrapper around Posh-ACME targeting an internal corporate ACME certificate authority.
+
 - DOX is highly performant AGENTS.md hierarchy installed here
 - Agent must follow DOX instructions across any edits
 
