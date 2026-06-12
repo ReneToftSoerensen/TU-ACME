@@ -22,6 +22,8 @@ As an **operator**, I want to **see all TU-ACME operations logged to Windows Eve
 - [ ] ID 2001: IIS rebind failed (Warning, operation continues)
 - [ ] ID 2xxx: Other recoverable issues (Warning)
 - [ ] ID 3001: Background renewal job aborted (Error)
+- [ ] ID 3002: Certificate order failed (Error)
+- [ ] ID 3003: Certificate renewal failed (Error)
 - [ ] ID 3xxx: Unrecoverable failures (Error)
 - [ ] Each log entry includes sufficient context (domain, thumbprint, error details)
 

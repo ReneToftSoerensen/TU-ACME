@@ -3,7 +3,9 @@
     [OutputType([object])]
     param(
         [Parameter(Mandatory = $true)]
-        [scriptblock]$Operation
+        [scriptblock]$Operation,
+
+        [object[]]$ArgumentList = @()
     )
 
     # The only staging entry point in the codebase: everything dry-run flows
@@ -11,7 +13,7 @@
     # staging, even when the operation throws (AC-B.3, AC-B.4).
     $null = Use-TUACMEStagingAccount
     try {
-        $result = & $Operation
+        $result = & $Operation @ArgumentList
         Write-TUACMEEventLog -EventId 1006 -EntryType Information -Message 'Dry-run operation completed against the staging account.'
         return $result
     }
