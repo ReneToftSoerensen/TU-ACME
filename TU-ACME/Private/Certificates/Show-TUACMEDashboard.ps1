@@ -5,6 +5,7 @@
     )
 
     $data = Get-TUACMEDashboardData
+    $bindings = @(Get-TUACMEIISBinding)
 
     $offset = 0
     while ($true) {
@@ -34,6 +35,22 @@
         }
 
         Write-Host ('Total: {0}  Valid: {1}  Renew soon: {2}  Expired: {3}' -f $data.Total, $data.Valid, $data.RenewSoon, $data.Expired) -ForegroundColor Cyan
+
+        # All IIS bindings, including ones whose certificate is not in the
+        # Posh-ACME store (AC-G.1); blanks mean the thumbprint did not
+        # resolve in WebHosting or My.
+        if ($bindings.Count -gt 0) {
+            Write-Host 'IIS bindings' -ForegroundColor DarkCyan
+            Write-Host ('{0,-24} {1,-7} {2,-28} {3,-42} {4,-12} {5}' -f 'Site', 'Proto', 'Host', 'Thumbprint', 'Expires', 'Template') -ForegroundColor DarkCyan
+            foreach ($binding in $bindings) {
+                $bindingExpiry = ''
+                if ($null -ne $binding.NotAfter) {
+                    $bindingExpiry = ([datetime]$binding.NotAfter).ToString('yyyy-MM-dd')
+                }
+                Write-Host ('{0,-24} {1,-7} {2,-28} {3,-42} {4,-12} {5}' -f $binding.SiteName, $binding.Protocol, $binding.HostHeader, $binding.Thumbprint, $bindingExpiry, $binding.Template) -ForegroundColor Cyan
+            }
+        }
+
         Write-Host 'Up/Down scroll, Esc closes.' -ForegroundColor DarkCyan
 
         $key = Read-TUACMEKey

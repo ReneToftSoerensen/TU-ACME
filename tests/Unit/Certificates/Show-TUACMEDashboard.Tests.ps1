@@ -119,4 +119,38 @@ Describe 'Show-TUACMEDashboard (UC-12.01 / AC-J.1, AC-C.4)' -Tag 'Unit' {
 
         Should -Invoke -ModuleName 'TU-ACME' Write-Host -ParameterFilter { $Object -like 'No certificates*' }
     }
+
+    It 'lists every IIS binding with its certificate details (AC-G.1)' {
+        Mock -ModuleName 'TU-ACME' Get-TUACMEIISBinding {
+            @(
+                [pscustomobject]@{
+                    SiteName           = 'Default Web Site'
+                    Protocol           = 'https'
+                    BindingInformation = '*:443:www.example.com'
+                    HostHeader         = 'www.example.com'
+                    Thumbprint         = 'NOT-IN-STORE'
+                    NotAfter           = (Get-Date).AddDays(42)
+                    Template           = 'WebServerV2'
+                },
+                [pscustomobject]@{
+                    SiteName           = 'Default Web Site'
+                    Protocol           = 'http'
+                    BindingInformation = '*:80:'
+                    HostHeader         = ''
+                    Thumbprint         = ''
+                    NotAfter           = $null
+                    Template           = ''
+                }
+            )
+        }
+
+        InModuleScope 'TU-ACME' { Show-TUACMEDashboard }
+
+        Should -Invoke -ModuleName 'TU-ACME' Write-Host -ParameterFilter {
+            $Object -like '*www.example.com*NOT-IN-STORE*WebServerV2*'
+        }
+        Should -Invoke -ModuleName 'TU-ACME' Write-Host -ParameterFilter {
+            $Object -like '*http *'
+        }
+    }
 }
