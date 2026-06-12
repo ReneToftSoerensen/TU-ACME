@@ -10,6 +10,7 @@ Describe 'Set-TUACMEDNSConfig (UC-10.03 / AC-H.3)' -Tag 'Unit' {
         Copy-Item -Path (Join-Path $fixturesPath 'config.valid.json') -Destination (Join-Path $env:TUACME_DATA_DIR 'config.json')
 
         Mock -ModuleName 'TU-ACME' ConvertFrom-SecureString { 'ENCRYPTED-BLOB' }
+        Mock -ModuleName 'TU-ACME' Use-TUACMEProdAccount { 'https://previous.example/dir' }
     }
 
     It 'stores ciphertext for every plugin argument, never plaintext' {
@@ -51,6 +52,16 @@ Describe 'Set-TUACMEDNSConfig (UC-10.03 / AC-H.3)' -Tag 'Unit' {
             $null -eq $Key -or $Key.Count -eq 0
         }
     }
+
+    It 'enables alt plugin encryption so the SYSTEM renewal task can decrypt plugin args' {
+        InModuleScope 'TU-ACME' {
+            Set-TUACMEDNSConfig -PluginName 'Cloudflare' -PluginArgs @{ CFToken = 'secret' }
+        }
+
+        Should -Invoke -ModuleName 'TU-ACME' Use-TUACMEProdAccount -Times 1 -Exactly -ParameterFilter {
+            $UseAltPluginEncryption -eq $true
+        }
+    }
 }
 
 Describe 'Get-TUACMEDNSConfig (UC-10.03 / AC-H.3)' -Tag 'Unit' {
@@ -58,6 +69,7 @@ Describe 'Get-TUACMEDNSConfig (UC-10.03 / AC-H.3)' -Tag 'Unit' {
         $env:TUACME_DATA_DIR = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         $null = New-Item -ItemType Directory -Path $env:TUACME_DATA_DIR -Force
         Copy-Item -Path (Join-Path $fixturesPath 'config.valid.json') -Destination (Join-Path $env:TUACME_DATA_DIR 'config.json')
+        Mock -ModuleName 'TU-ACME' Use-TUACMEProdAccount { 'https://previous.example/dir' }
     }
 
     It 'returns null while DNS is not configured' {

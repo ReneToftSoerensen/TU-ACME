@@ -53,6 +53,20 @@ Describe 'Invoke-TUACMEDryRun (UC-3.01 / AC-B.3, AC-B.4)' -Tag 'Unit' {
         }
     }
 
+    It 'restores prod even when the staging swap itself fails half-way' {
+        # Set-PAServer can succeed and Set-PAAccount then throw (stale
+        # staging account id); the session must still be restored to prod.
+        Mock -ModuleName 'TU-ACME' Use-TUACMEStagingAccount { throw 'stale staging account id' }
+
+        {
+            InModuleScope 'TU-ACME' {
+                Invoke-TUACMEDryRun -Operation { 'never reached' }
+            }
+        } | Should -Throw '*stale staging account id*'
+
+        Should -Invoke -ModuleName 'TU-ACME' Use-TUACMEProdAccount -Times 1 -Exactly
+    }
+
     It 'does not log event 1006 when the operation fails' {
         {
             InModuleScope 'TU-ACME' {

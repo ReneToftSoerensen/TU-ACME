@@ -17,12 +17,16 @@
             Where-Object { $_.Thumbprint -eq $thumbprint } |
             ForEach-Object { ('{0} ({1})' -f $_.SiteName, $_.BindingInformation) })
 
+        # A null NotAfter compares as less-than any date; it means unknown,
+        # not expired, so leave the status blank.
         $status = ''
-        if ($certificate.NotAfter -lt $now) {
-            $status = 'Expired'
-        }
-        elseif ($certificate.NotAfter -lt $now.AddDays($RenewSoonDays)) {
-            $status = 'Renew Soon'
+        if ($null -ne $certificate.NotAfter) {
+            if ($certificate.NotAfter -lt $now) {
+                $status = 'Expired'
+            }
+            elseif ($certificate.NotAfter -lt $now.AddDays($RenewSoonDays)) {
+                $status = 'Renew Soon'
+            }
         }
 
         $rows += [pscustomobject]@{

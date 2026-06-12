@@ -48,6 +48,25 @@ Describe 'Import-TUACMECertificate (UC-6.01, UC-7.02 / AC-E.3)' -Tag 'Unit' {
         $result | Should -Be 'IMPORTED1234'
     }
 
+    It 'returns the leaf thumbprint when a full-chain PFX imports multiple certs' {
+        Mock -ModuleName 'TU-ACME' Import-PfxCertificate {
+            @(
+                [pscustomobject]@{ Thumbprint = 'ROOT0000'; HasPrivateKey = $false },
+                [pscustomobject]@{ Thumbprint = 'LEAF1111'; HasPrivateKey = $true }
+            )
+        }
+
+        $result = InModuleScope 'TU-ACME' -Parameters @{ PfxPath = $script:pfxPath } {
+            param($PfxPath)
+            Import-TUACMECertificate -Certificate ([pscustomobject]@{
+                    PfxFullChain = $PfxPath
+                    MainDomain   = 'www.example.com'
+                })
+        }
+
+        $result | Should -Be 'LEAF1111'
+    }
+
     It 'logs event 1011 on successful import' {
         $null = InModuleScope 'TU-ACME' -Parameters @{ PfxPath = $script:pfxPath } {
             param($PfxPath)

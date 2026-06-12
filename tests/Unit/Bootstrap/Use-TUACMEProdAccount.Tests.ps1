@@ -50,6 +50,22 @@ Describe 'Use-TUACMEProdAccount (UC-2.01 / AC-B.1)' -Tag 'Unit' {
         $result | Should -BeNullOrEmpty
     }
 
+    It 'passes -UseAltPluginEncryption through to Set-PAAccount when requested' {
+        $null = InModuleScope 'TU-ACME' { Use-TUACMEProdAccount -UseAltPluginEncryption }
+
+        Should -Invoke -ModuleName 'TU-ACME' Set-PAAccount -Times 1 -Exactly -ParameterFilter {
+            $ID -eq 'prod-account-1' -and $UseAltPluginEncryption -eq $true
+        }
+    }
+
+    It 'does not enable alt plugin encryption by default' {
+        $null = InModuleScope 'TU-ACME' { Use-TUACMEProdAccount }
+
+        Should -Invoke -ModuleName 'TU-ACME' Set-PAAccount -Times 1 -Exactly -ParameterFilter {
+            $UseAltPluginEncryption -ne $true
+        }
+    }
+
     It 'skips Set-PAAccount while the account id is still empty' {
         Mock -ModuleName 'TU-ACME' Get-TUACMEConfig {
             [pscustomobject]@{

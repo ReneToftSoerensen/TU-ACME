@@ -17,14 +17,17 @@ function Set-PAServer {
 
 function Get-PAAccount {
     [CmdletBinding()]
-    param()
+    param(
+        [switch]$List
+    )
     throw 'Stub Get-PAAccount called without a Pester mock.'
 }
 
 function Set-PAAccount {
     [CmdletBinding()]
     param(
-        [string]$ID
+        [string]$ID,
+        [switch]$UseAltPluginEncryption
     )
     throw 'Stub Set-PAAccount called without a Pester mock.'
 }

@@ -11,7 +11,7 @@
 ## Security
 
 - **Read-Host -AsSecureString** for SMTP password and DNS credentials only.
-- **DPAPI encryption** (per-machine, no key) for credentials stored in `config.json`.
+- **DPAPI encryption** (keyless, scoped to the writing user on this machine) for credentials stored in `config.json`.
 - **Plaintext URLs and account IDs** — Deliberate and non-sensitive; do not encrypt.
 - **No credential logging** — Log presence and result only; never log credential bodies.
 

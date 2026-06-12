@@ -26,8 +26,14 @@
         $importParams['Password'] = $Certificate.PfxPass
     }
 
-    $imported = Import-PfxCertificate @importParams
-    $thumbprint = [string]$imported.Thumbprint
+    # A full-chain PFX can import multiple certs; the leaf is the one with
+    # the private key, and its thumbprint is what bindings reference.
+    $imported = @(Import-PfxCertificate @importParams)
+    $leaf = @($imported | Where-Object { $_.HasPrivateKey })
+    if ($leaf.Count -eq 0) {
+        $leaf = $imported
+    }
+    $thumbprint = [string]$leaf[0].Thumbprint
 
     Write-TUACMEEventLog -EventId 1011 -EntryType Information -Message ('Certificate for {0} imported to LocalMachine\My (thumbprint {1}).' -f $Certificate.MainDomain, $thumbprint)
     return $thumbprint

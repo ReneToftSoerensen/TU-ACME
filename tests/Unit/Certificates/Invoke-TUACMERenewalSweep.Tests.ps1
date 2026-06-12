@@ -57,6 +57,20 @@ Describe 'Invoke-TUACMERenewalSweep (UC-7.02 / AC-E.2, AC-E.3)' -Tag 'Unit' {
         @($result.Failed).Count | Should -Be 0
     }
 
+    It 'skips entries with no expiry date or no resolvable domain' {
+        Mock -ModuleName 'TU-ACME' Get-TUACMECertificate {
+            @(
+                [pscustomobject]@{ MainDomain = 'no-expiry.example.com'; Thumbprint = 'DDD'; NotAfter = $null },
+                [pscustomobject]@{ MainDomain = ''; Thumbprint = 'EEE'; NotAfter = (Get-Date).AddDays(-5) }
+            )
+        }
+
+        $result = InModuleScope 'TU-ACME' { Invoke-TUACMERenewalSweep }
+
+        Should -Invoke -ModuleName 'TU-ACME' Invoke-TUACMERenewCertificate -Times 0 -Exactly
+        @($result.Failed).Count | Should -Be 0
+    }
+
     It 'does nothing when every certificate is still valid' {
         Mock -ModuleName 'TU-ACME' Get-TUACMECertificate {
             @([pscustomobject]@{ MainDomain = 'valid.example.com'; Thumbprint = 'CCC'; NotAfter = (Get-Date).AddDays(60) })

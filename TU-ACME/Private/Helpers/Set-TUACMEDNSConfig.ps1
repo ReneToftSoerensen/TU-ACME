@@ -11,8 +11,9 @@
     $config = Get-TUACMEConfig
 
     # Every plugin argument is treated as a credential and stored as keyless
-    # ConvertFrom-SecureString (DPAPI, machine-bound) ciphertext (AC-H.3);
-    # only the plugin name stays plaintext.
+    # ConvertFrom-SecureString (DPAPI, bound to this user on this machine)
+    # ciphertext (AC-H.3); only the plugin name stays plaintext. These are
+    # read interactively at order time by the same user that wrote them.
     $encryptedArgs = @()
     foreach ($name in ($PluginArgs.Keys | Sort-Object)) {
         $value = $PluginArgs[$name]
@@ -38,4 +39,10 @@
     }
 
     Save-TUACMEConfig -Config $config
+
+    # Posh-ACME re-encrypts plugin args itself when ordering; by default
+    # that DPAPI blob is bound to the ordering admin and the SYSTEM renewal
+    # task can never decrypt it. Alt plugin encryption (account-key based)
+    # keeps unattended renewals working.
+    $null = Use-TUACMEProdAccount -UseAltPluginEncryption
 }

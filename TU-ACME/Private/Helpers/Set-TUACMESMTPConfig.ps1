@@ -15,7 +15,7 @@
     $config = Get-TUACMEConfig
 
     # ConvertFrom-SecureString without -Key uses DPAPI, so the stored
-    # ciphertext is machine-bound by design (AC-H.2).
+    # ciphertext is bound to this user on this machine by design (AC-H.2).
     $encryptedPassword = ConvertFrom-SecureString -SecureString $Password
 
     $smtp = [pscustomobject]@{

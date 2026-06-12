@@ -46,6 +46,19 @@ Describe 'Get-TUACMEDashboardData (UC-12.01 / AC-J.1)' -Tag 'Unit' {
         $data.Expired | Should -Be 1
     }
 
+    It 'leaves the status blank when the expiry date is unknown' {
+        # $null NotAfter compares as less-than any date; it must not be
+        # presented as Expired.
+        Mock -ModuleName 'TU-ACME' Get-TUACMECertificate {
+            @([pscustomobject]@{ MainDomain = 'odd.example.com'; Thumbprint = 'DDD'; NotAfter = $null })
+        }
+
+        $data = InModuleScope 'TU-ACME' { Get-TUACMEDashboardData }
+
+        $data.Rows[0].Status | Should -Be ''
+        $data.Expired | Should -Be 0
+    }
+
     It 'joins IIS bindings to certificates by thumbprint' {
         Mock -ModuleName 'TU-ACME' Get-TUACMEIISBinding {
             @([pscustomobject]@{
