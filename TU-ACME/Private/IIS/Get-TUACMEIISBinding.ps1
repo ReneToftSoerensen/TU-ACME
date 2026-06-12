@@ -46,7 +46,17 @@
             $siteName = $Matches[1]
         }
 
-        $thumbprint = [string]$binding.certificateHash
+        # WebAdministration can return certificateHash as a byte[] or a string
+        # depending on the IIS/OS version. Normalise to uppercase hex so the
+        # value matches the Thumbprint property of X509Certificate2 objects.
+        $certHashRaw = $binding.certificateHash
+        $thumbprint = ''
+        if ($certHashRaw -is [byte[]] -and $certHashRaw.Count -gt 0) {
+            $thumbprint = ($certHashRaw | ForEach-Object { $_.ToString('X2') }) -join ''
+        }
+        elseif ($null -ne $certHashRaw) {
+            $thumbprint = (([string]$certHashRaw) -replace '[\s\-]', '').ToUpperInvariant()
+        }
         $notAfter = $null
         $template = ''
 

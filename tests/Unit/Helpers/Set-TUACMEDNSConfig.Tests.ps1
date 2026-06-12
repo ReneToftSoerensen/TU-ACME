@@ -43,7 +43,7 @@ Describe 'Set-TUACMEDNSConfig (UC-10.03 / AC-H.3)' -Tag 'Unit' {
         $saved.Dns.PluginName | Should -Be 'Cloudflare'
     }
 
-    It 'encrypts each argument via keyless ConvertFrom-SecureString (DPAPI per-machine)' {
+    It 'encrypts each argument via keyless ConvertFrom-SecureString (DPAPI per-user-on-this-machine)' {
         InModuleScope 'TU-ACME' {
             Set-TUACMEDNSConfig -PluginName 'Cloudflare' -PluginArgs @{ A = 'one'; B = 'two' }
         }

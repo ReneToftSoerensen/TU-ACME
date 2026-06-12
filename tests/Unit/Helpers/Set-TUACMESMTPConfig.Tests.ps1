@@ -23,7 +23,7 @@ Describe 'Set-TUACMESMTPConfig (UC-10.02 / AC-H.2)' -Tag 'Unit' {
         $raw | Should -Not -Match 'hunter2-plaintext'
     }
 
-    It 'encrypts via ConvertFrom-SecureString without a key (DPAPI per-machine)' {
+    It 'encrypts via ConvertFrom-SecureString without a key (DPAPI per-user-on-this-machine)' {
         InModuleScope 'TU-ACME' {
             $password = ConvertTo-SecureString -String 'secret' -AsPlainText -Force
             Set-TUACMESMTPConfig -Server 'smtp.example.com' -Password $password

@@ -117,6 +117,27 @@ Describe 'Get-TUACMEIISBinding (UC-9.01 / AC-G.1)' -Tag 'Unit' {
         $result[0].Template | Should -Be ''
     }
 
+    It 'normalises a byte[] certificateHash to uppercase hex for the cert store lookup' {
+        # WebAdministration returns certificateHash as byte[] on some OS versions.
+        $hashBytes = [byte[]]@(0xAA, 0xBB, 0xCC)
+        $fakeBinding = [pscustomobject]@{
+            protocol           = 'https'
+            bindingInformation = '*:443:bytes.example.com'
+            certificateHash    = $hashBytes
+            ItemXPath          = "/system.applicationHost/sites/site[@name='S' and @id='1']"
+        }
+        Mock -ModuleName 'TU-ACME' Get-WebBinding { @($fakeBinding) }
+        $expectedExpiry = (Get-Date).AddDays(42)
+        Mock -ModuleName 'TU-ACME' Get-ChildItem {
+            @([pscustomobject]@{ Thumbprint = 'AABBCC'; NotAfter = $expectedExpiry; Extensions = @() })
+        } -ParameterFilter { $Path -like '*WebHosting*' }
+
+        $result = @(InModuleScope 'TU-ACME' { Get-TUACMEIISBinding })
+
+        $result[0].Thumbprint | Should -Be 'AABBCC'
+        $result[0].NotAfter | Should -Be $expectedExpiry
+    }
+
     It 'extracts the AD CS template name from the certificate extension' {
         Mock -ModuleName 'TU-ACME' Get-WebBinding {
             @((New-FakeBinding -Site 'S' -Protocol 'https' -BindingInformation '*:443:a.example.com' -Thumbprint 'AABBCC'))
