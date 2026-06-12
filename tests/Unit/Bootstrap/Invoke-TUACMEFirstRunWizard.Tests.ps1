@@ -103,6 +103,27 @@ Describe 'Invoke-TUACMEFirstRunWizard (UC-1.02)' -Tag 'Unit' {
         { InModuleScope 'TU-ACME' { Invoke-TUACMEFirstRunWizard } } | Should -Throw '*account id*'
     }
 
+    It 'trims whitespace from entered values before validating and persisting' {
+        Mock -ModuleName 'TU-ACME' Read-Host { '  certs@example.com  ' } -ParameterFilter {
+            $Prompt -like '*email*'
+        }
+        Mock -ModuleName 'TU-ACME' Read-Host { ' https://acme.example.com/prod/directory ' } -ParameterFilter {
+            $Prompt -like 'Production*'
+        }
+        Mock -ModuleName 'TU-ACME' Read-Host { " https://acme.example.com/staging/directory`t" } -ParameterFilter {
+            $Prompt -like 'Staging*'
+        }
+
+        $result = InModuleScope 'TU-ACME' { Invoke-TUACMEFirstRunWizard }
+
+        $result.ContactEmail | Should -Be 'certs@example.com'
+        $result.ProdDirectoryUrl | Should -Be 'https://acme.example.com/prod/directory'
+        $result.StagingDirectoryUrl | Should -Be 'https://acme.example.com/staging/directory'
+        Should -Invoke -ModuleName 'TU-ACME' New-PAAccount -Times 2 -Exactly -ParameterFilter {
+            $Contact -contains 'certs@example.com'
+        }
+    }
+
     It 'fails fast with a clear error when Posh-ACME is unavailable' {
         Mock -ModuleName 'TU-ACME' Import-TUACMEPoshACME { $false }
 

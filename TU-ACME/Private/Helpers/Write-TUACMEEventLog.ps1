@@ -20,11 +20,21 @@
     # Logging must never break the caller (AC-A.1), so every failure here is
     # downgraded to a warning. Write-EventLog is unavailable on PowerShell 7;
     # the .NET EventLog type works on both editions.
+    $source = 'TU-ACME'
     try {
-        $source = 'TU-ACME'
+        # SourceExists/CreateEventSource need elevation. Events stay under the
+        # TU-ACME source (never a borrowed one) so operators can filter on it;
+        # without elevation the warning tells the operator how to register it.
         if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
             [System.Diagnostics.EventLog]::CreateEventSource($source, 'Application')
         }
+    }
+    catch {
+        Write-Warning ('Could not register the "{0}" event source (requires elevation; run PowerShell as Administrator once). Event {1} was not written: {2}' -f $source, $EventId, $Message)
+        return
+    }
+
+    try {
         [System.Diagnostics.EventLog]::WriteEntry($source, $Message, $EntryType, $EventId)
     }
     catch {
