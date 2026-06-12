@@ -34,6 +34,7 @@ Describe 'Start-TUACME (UC-1.02 entry point)' -Tag 'Unit' {
         $env:TUACME_DATA_DIR = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         Mock -ModuleName 'TU-ACME' Invoke-TUACMEFirstRunWizard { [pscustomobject]@{} }
         Mock -ModuleName 'TU-ACME' Write-Host { }
+        Mock -ModuleName 'TU-ACME' Write-TUACMEEventLog { }
     }
 
     It 'runs the first-run wizard when config is missing' {
@@ -58,5 +59,24 @@ Describe 'Start-TUACME (UC-1.02 entry point)' -Tag 'Unit' {
 
         Should -Invoke -ModuleName 'TU-ACME' Invoke-TUACMEFirstRunWizard -Times 0 -Exactly
         Should -Invoke -ModuleName 'TU-ACME' Write-Host -ParameterFilter { $Object -like '*certs@example.com*' }
+    }
+
+    It 'logs session start (event 1000) when a configured session begins (UC-8.01 / AC-F)' {
+        $null = New-Item -ItemType Directory -Path $env:TUACME_DATA_DIR -Force
+        Copy-Item -Path (Join-Path $fixturesPath 'config.valid.json') -Destination (Join-Path $env:TUACME_DATA_DIR 'config.json')
+
+        Start-TUACME
+
+        Should -Invoke -ModuleName 'TU-ACME' Write-TUACMEEventLog -Times 1 -Exactly -ParameterFilter {
+            $EventId -eq 1000 -and $EntryType -eq 'Information'
+        }
+    }
+
+    It 'does not log session start while unconfigured (wizard path)' {
+        Start-TUACME
+
+        Should -Invoke -ModuleName 'TU-ACME' Write-TUACMEEventLog -Times 0 -Exactly -ParameterFilter {
+            $EventId -eq 1000
+        }
     }
 }

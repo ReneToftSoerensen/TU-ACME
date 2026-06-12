@@ -36,6 +36,8 @@
         $version = $module.Version.ToString()
     }
 
+    Write-TUACMEEventLog -EventId 1000 -EntryType Information -Message ('TU-ACME session started (version {0}).' -f $version)
+
     Write-Host ('TU-ACME {0}' -f $version) -ForegroundColor Cyan
     Write-Host ('Contact email : {0}' -f $config.ContactEmail) -ForegroundColor DarkCyan
     Write-Host ('Production    : {0}' -f $config.ProdDirectoryUrl) -ForegroundColor DarkCyan
