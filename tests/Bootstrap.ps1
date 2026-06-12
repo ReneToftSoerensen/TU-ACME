@@ -10,4 +10,5 @@ if ([string]::IsNullOrEmpty($env:TUACME_DATA_DIR)) {
 Get-Module -Name 'TU-ACME' | Remove-Module -Force
 
 Import-Module (Join-Path (Join-Path $testsRoot 'Fixtures') 'PoshACME.Stubs.psm1') -Global -Force
+Import-Module (Join-Path (Join-Path $testsRoot 'Fixtures') 'WindowsCmdlets.Stubs.psm1') -Global -Force
 Import-Module (Join-Path (Join-Path $repoRoot 'TU-ACME') 'TU-ACME.psd1') -ArgumentList $true -Force
