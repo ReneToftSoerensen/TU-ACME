@@ -6,7 +6,7 @@
 
         [Parameter(Mandatory = $true)]
         [ValidateSet('Information', 'Warning', 'Error')]
-        [string]$EntryType,
+        [System.Diagnostics.EventLogEntryType]$EntryType,
 
         [Parameter(Mandatory = $true)]
         [string]$Message

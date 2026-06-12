@@ -2,8 +2,8 @@
     [bool]$SkipInitialize = $false
 )
 
-$privateScripts = @(Get-ChildItem -Path (Join-Path $PSScriptRoot 'Private') -Filter '*.ps1' -Recurse -File)
-$publicScripts = @(Get-ChildItem -Path (Join-Path $PSScriptRoot 'Public') -Filter '*.ps1' -File)
+$privateScripts = @(Get-ChildItem -Path (Join-Path $PSScriptRoot 'Private') -Filter '*.ps1' -Recurse -File | Sort-Object -Property FullName)
+$publicScripts = @(Get-ChildItem -Path (Join-Path $PSScriptRoot 'Public') -Filter '*.ps1' -File | Sort-Object -Property FullName)
 
 foreach ($script in ($privateScripts + $publicScripts)) {
     . $script.FullName

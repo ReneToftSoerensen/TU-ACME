@@ -41,6 +41,15 @@ Describe 'Start-TUACME (UC-1.02 entry point)' -Tag 'Unit' {
         Should -Invoke -ModuleName 'TU-ACME' Invoke-TUACMEFirstRunWizard -Times 1 -Exactly
     }
 
+    It 're-runs the wizard when the existing config is incomplete' {
+        $null = New-Item -ItemType Directory -Path $env:TUACME_DATA_DIR -Force
+        Set-Content -Path (Join-Path $env:TUACME_DATA_DIR 'config.json') -Value '{ "ContactEmail": "certs@example.com" }'
+
+        Start-TUACME 3>$null
+
+        Should -Invoke -ModuleName 'TU-ACME' Invoke-TUACMEFirstRunWizard -Times 1 -Exactly
+    }
+
     It 'shows the configuration summary when config exists' {
         $null = New-Item -ItemType Directory -Path $env:TUACME_DATA_DIR -Force
         Copy-Item -Path (Join-Path $fixturesPath 'config.valid.json') -Destination (Join-Path $env:TUACME_DATA_DIR 'config.json')

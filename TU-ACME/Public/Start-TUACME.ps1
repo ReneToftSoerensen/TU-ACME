@@ -17,7 +17,18 @@
         return
     }
 
-    $config = Get-TUACMEConfig -Path $configPath
+    # A failed first run can leave a partial config behind; re-running the
+    # wizard is the recovery path rather than leaving the operator stuck.
+    $config = $null
+    try {
+        $config = Get-TUACMEConfig -Path $configPath
+    }
+    catch {
+        Write-Warning ('Existing configuration is incomplete or invalid: {0}' -f $_.Exception.Message)
+        Write-Warning 'Restarting first-run setup.'
+        $null = Invoke-TUACMEFirstRunWizard
+        return
+    }
 
     $version = ''
     $module = Get-Module -Name 'TU-ACME'
