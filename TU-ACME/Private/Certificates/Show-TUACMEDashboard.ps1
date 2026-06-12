@@ -5,8 +5,8 @@
         [int]$PageSize = 15
     )
 
-    $data = Get-TUACMEDashboardData
     $bindings = @(Get-TUACMEIISBinding)
+    $data = Get-TUACMEDashboardData -Bindings $bindings
 
     $offset = 0
     while ($true) {

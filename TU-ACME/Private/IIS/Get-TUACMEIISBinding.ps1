@@ -15,15 +15,30 @@
     # No -Protocol filter: HTTP rows are listed alongside HTTPS (UC-9.01).
     $bindings = @(Get-WebBinding)
 
+    # Build thumbprint→cert lookup maps once; avoids O(bindings×certs) cost.
+    $storeCertMap = @{}
+    foreach ($storeName in @('WebHosting', 'My')) {
+        $map = @{}
+        try {
+            Get-ChildItem -Path ('Cert:\LocalMachine\{0}' -f $storeName) -ErrorAction Stop |
+                ForEach-Object { $map[$_.Thumbprint] = $_ }
+        }
+        catch { }
+        $storeCertMap[$storeName] = $map
+    }
+
     $results = @()
     foreach ($binding in $bindings) {
         $protocol = [string]$binding.protocol
         $bindingInformation = [string]$binding.bindingInformation
 
+        # IIS format is ip:port:hostheader; IPv6 addresses contain extra ':'
+        # so a simple split on ':' misidentifies the host segment. Greedy
+        # regex matches the last port:hostheader pair correctly for both
+        # IPv4 (*:443:host) and IPv6 ([::1]:443:host).
         $hostHeader = ''
-        $parts = $bindingInformation -split ':'
-        if ($parts.Count -ge 3) {
-            $hostHeader = $parts[2]
+        if ($bindingInformation -match '^(.*):(\d{1,5}):(.*)$') {
+            $hostHeader = $Matches[3]
         }
 
         $siteName = ''
@@ -41,15 +56,8 @@
             # rather than throwing (UC-9.01).
             $certificate = $null
             foreach ($storeName in @('WebHosting', 'My')) {
-                $storeCerts = @()
-                try {
-                    $storeCerts = @(Get-ChildItem -Path ('Cert:\LocalMachine\{0}' -f $storeName) -ErrorAction Stop)
-                }
-                catch {
-                    $storeCerts = @()
-                }
-                $certificate = @($storeCerts | Where-Object { $_.Thumbprint -eq $thumbprint })[0]
-                if ($null -ne $certificate) {
+                if ($storeCertMap[$storeName].ContainsKey($thumbprint)) {
+                    $certificate = $storeCertMap[$storeName][$thumbprint]
                     break
                 }
             }

@@ -4,6 +4,7 @@
     param(
         [string]$TaskName = 'TU-ACME-Renewal',
 
+        [ValidateRange(1, [int]::MaxValue)]
         [int]$IntervalHours = 1
     )
 

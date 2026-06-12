@@ -29,6 +29,9 @@
     # A full-chain PFX can import multiple certs; the leaf is the one with
     # the private key, and its thumbprint is what bindings reference.
     $imported = @(Import-PfxCertificate @importParams)
+    if ($imported.Count -eq 0) {
+        throw 'Import-PfxCertificate returned no certificates; the PFX may be corrupt or access was denied.'
+    }
     $leaf = @($imported | Where-Object { $_.HasPrivateKey })
     if ($leaf.Count -eq 0) {
         $leaf = $imported

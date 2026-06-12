@@ -61,7 +61,7 @@ Describe 'Get-TUACMEIISBinding (UC-9.01 / AC-G.1)' -Tag 'Unit' {
         $result[0].Thumbprint | Should -Be 'AABBCC'
     }
 
-    It 'resolves the certificate from WebHosting first' {
+    It 'resolves the certificate from WebHosting and returns the correct expiry' {
         Mock -ModuleName 'TU-ACME' Get-WebBinding {
             @((New-FakeBinding -Site 'S' -Protocol 'https' -BindingInformation '*:443:a.example.com' -Thumbprint 'AABBCC'))
         }
@@ -73,9 +73,23 @@ Describe 'Get-TUACMEIISBinding (UC-9.01 / AC-G.1)' -Tag 'Unit' {
         $result = @(InModuleScope 'TU-ACME' { Get-TUACMEIISBinding })
 
         $result[0].NotAfter | Should -Be $expectedExpiry
-        Should -Invoke -ModuleName 'TU-ACME' Get-ChildItem -Times 0 -Exactly -ParameterFilter {
+        # Both stores are enumerated once upfront for the cache (O(stores) not
+        # O(bindings×stores)); the My store returns nothing so the lookup still
+        # resolves to the WebHosting cert.
+        Should -Invoke -ModuleName 'TU-ACME' Get-ChildItem -Times 1 -Exactly -ParameterFilter {
             $Path -like '*LocalMachine\My*'
         }
+    }
+
+    It 'parses host header correctly for IPv6 binding information' {
+        Mock -ModuleName 'TU-ACME' Get-WebBinding {
+            @((New-FakeBinding -Site 'S' -Protocol 'https' -BindingInformation '[::1]:443:ipv6.example.com' -Thumbprint ''))
+        }
+
+        $result = @(InModuleScope 'TU-ACME' { Get-TUACMEIISBinding })
+
+        $result[0].HostHeader | Should -Be 'ipv6.example.com'
+        $result[0].BindingInformation | Should -Be '[::1]:443:ipv6.example.com'
     }
 
     It 'falls back to the My store when WebHosting has no match' {

@@ -67,6 +67,20 @@ Describe 'Import-TUACMECertificate (UC-6.01, UC-7.02 / AC-E.3)' -Tag 'Unit' {
         $result | Should -Be 'LEAF1111'
     }
 
+    It 'throws a clear error when Import-PfxCertificate returns no certificates' {
+        Mock -ModuleName 'TU-ACME' Import-PfxCertificate { @() }
+
+        {
+            InModuleScope 'TU-ACME' -Parameters @{ PfxPath = $script:pfxPath } {
+                param($PfxPath)
+                Import-TUACMECertificate -Certificate ([pscustomobject]@{
+                        PfxFullChain = $PfxPath
+                        MainDomain   = 'www.example.com'
+                    })
+            }
+        } | Should -Throw '*no certificates*'
+    }
+
     It 'logs event 1011 on successful import' {
         $null = InModuleScope 'TU-ACME' -Parameters @{ PfxPath = $script:pfxPath } {
             param($PfxPath)

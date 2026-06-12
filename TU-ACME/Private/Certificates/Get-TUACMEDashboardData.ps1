@@ -2,11 +2,15 @@
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
-        [int]$RenewSoonDays = 30
+        [int]$RenewSoonDays = 30,
+        [object[]]$Bindings = $null
     )
 
     $certificates = @(Get-TUACMECertificate)
-    $bindings = @(Get-TUACMEIISBinding)
+    if ($null -eq $Bindings) {
+        $Bindings = @(Get-TUACMEIISBinding)
+    }
+    $bindings = @($Bindings)
 
     $now = Get-Date
     $rows = @()
