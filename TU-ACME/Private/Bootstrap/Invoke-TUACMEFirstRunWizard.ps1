@@ -14,10 +14,11 @@
 
     # Input is trimmed before validation: stray whitespace would survive the
     # prefix checks but later break Set-PAServer / New-PAAccount.
+    # Validation errors render in Cyan, not Write-Warning yellow (UC-4.03).
     $contactEmail = ''
     while ($contactEmail -notmatch '@') {
         if (-not [string]::IsNullOrEmpty($contactEmail)) {
-            Write-Warning 'The contact email must contain "@".'
+            Write-Host 'The contact email must contain "@".' -ForegroundColor Cyan
         }
         $contactEmail = ([string](Read-Host 'Contact email for ACME accounts')).Trim()
     }
@@ -25,7 +26,7 @@
     $prodUrl = ''
     while ($prodUrl -notlike 'https://*') {
         if (-not [string]::IsNullOrEmpty($prodUrl)) {
-            Write-Warning 'The directory URL must start with https:// (forward slashes).'
+            Write-Host 'The directory URL must start with https:// (forward slashes).' -ForegroundColor Cyan
         }
         $prodUrl = ([string](Read-Host 'Production ACME directory URL')).Trim()
     }
@@ -33,7 +34,7 @@
     $stagingUrl = ''
     while ($stagingUrl -notlike 'https://*') {
         if (-not [string]::IsNullOrEmpty($stagingUrl)) {
-            Write-Warning 'The directory URL must start with https:// (forward slashes).'
+            Write-Host 'The directory URL must start with https:// (forward slashes).' -ForegroundColor Cyan
         }
         $stagingUrl = ([string](Read-Host 'Staging ACME directory URL')).Trim()
     }

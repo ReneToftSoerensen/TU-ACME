@@ -179,6 +179,41 @@ Describe 'Start-TUACME main menu dispatch (UC-4.01, UC-12.01 / AC-J.1, AC-J.2, A
         Should -Invoke -ModuleName 'TU-ACME' Install-TUACMEScheduledTask -Times 1 -Exactly
     }
 
+    It 'clamps the menu title to 79 chars when the contact email is long (AC-C.3)' {
+        $config = Get-Content -LiteralPath (Join-Path $env:TUACME_DATA_DIR 'config.json') -Raw | ConvertFrom-Json
+        $config.ContactEmail = ('very-long-certificate-operations-mailbox-{0}@example.com' -f ('x' * 60))
+        $config | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $env:TUACME_DATA_DIR 'config.json')
+        Mock -ModuleName 'TU-ACME' Show-TUACMEMenu { -1 }
+
+        { Start-TUACME } | Should -Not -Throw
+
+        Should -Invoke -ModuleName 'TU-ACME' Show-TUACMEMenu -Times 1 -Exactly -ParameterFilter {
+            $Title.Length -le 79
+        }
+    }
+
+    It 'disables the scheduled-task item without an elevated session (UC-7.01)' {
+        Mock -ModuleName 'TU-ACME' Show-TUACMEMenu { -1 }
+        Mock -ModuleName 'TU-ACME' Test-TUACMEIsAdministrator { $false }
+
+        Start-TUACME
+
+        Should -Invoke -ModuleName 'TU-ACME' Show-TUACMEMenu -Times 1 -Exactly -ParameterFilter {
+            $DisabledIndices -contains 4
+        }
+    }
+
+    It 'enables the scheduled-task item in an elevated session (UC-7.01)' {
+        Mock -ModuleName 'TU-ACME' Show-TUACMEMenu { -1 }
+        Mock -ModuleName 'TU-ACME' Test-TUACMEIsAdministrator { $true }
+
+        Start-TUACME
+
+        Should -Invoke -ModuleName 'TU-ACME' Show-TUACMEMenu -Times 1 -Exactly -ParameterFilter {
+            @($DisabledIndices).Count -eq 0
+        }
+    }
+
     It 'reports operation failures in Cyan and keeps the menu loop alive (AC-C.4)' {
         $script:menuQueue = New-Object System.Collections.Queue
         $script:menuQueue.Enqueue(1)

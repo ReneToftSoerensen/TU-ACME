@@ -23,8 +23,9 @@
         $config = Get-TUACMEConfig -Path $configPath
     }
     catch {
-        Write-Warning ('Existing configuration is incomplete or invalid: {0}' -f $_.Exception.Message)
-        Write-Warning 'Restarting first-run setup.'
+        # DarkCyan, not Write-Warning: the TUI palette is locked (AC-C.4).
+        Write-Host ('Existing configuration is incomplete or invalid: {0}' -f $_.Exception.Message) -ForegroundColor DarkCyan
+        Write-Host 'Restarting first-run setup.' -ForegroundColor DarkCyan
         $null = Invoke-TUACMEFirstRunWizard
         return
     }
@@ -48,8 +49,20 @@
         'Exit'
     )
 
+    # The contact email is operator-supplied and unbounded; clamp the
+    # composed title to the 79-char cap Show-TUACMEMenu enforces (AC-C.3).
+    $menuTitle = 'TU-ACME {0} - {1}' -f $version, $config.ContactEmail
+    if ($menuTitle.Length -gt 79) {
+        $menuTitle = $menuTitle.Substring(0, 79)
+    }
+
+    $disabledIndices = @()
+    if (-not (Test-TUACMEIsAdministrator)) {
+        $disabledIndices += [array]::IndexOf($menuItems, 'Install scheduled renewal task')
+    }
+
     while ($true) {
-        $selection = Show-TUACMEMenu -Title ('TU-ACME {0} - {1}' -f $version, $config.ContactEmail) -Items $menuItems
+        $selection = Show-TUACMEMenu -Title $menuTitle -Items $menuItems -DisabledIndices $disabledIndices
         if ($selection -lt 0 -or $menuItems[$selection] -eq 'Exit') {
             return
         }

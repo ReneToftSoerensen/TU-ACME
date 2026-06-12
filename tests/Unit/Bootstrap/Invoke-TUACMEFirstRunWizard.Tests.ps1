@@ -139,13 +139,12 @@ Describe 'Invoke-TUACMEFirstRunWizard (UC-1.02)' -Tag 'Unit' {
             if ($global:TUACMETestProdPrompts -eq 1) { 'https:\\acme.example.com' }
             else { 'https://acme.example.com/prod/directory' }
         } -ParameterFilter { $Prompt -like 'Production*' }
-        Mock -ModuleName 'TU-ACME' Write-Warning { }
 
         $result = InModuleScope 'TU-ACME' { Invoke-TUACMEFirstRunWizard }
 
         $result.ProdDirectoryUrl | Should -Be 'https://acme.example.com/prod/directory'
-        Should -Invoke -ModuleName 'TU-ACME' Write-Warning -Times 1 -Exactly -ParameterFilter {
-            $Message -like '*https://*'
+        Should -Invoke -ModuleName 'TU-ACME' Write-Host -Times 1 -Exactly -ParameterFilter {
+            $Object -like '*https://*' -and [string]$ForegroundColor -eq 'Cyan'
         }
         Remove-Variable -Name 'TUACMETestProdPrompts' -Scope Global -ErrorAction SilentlyContinue
     }

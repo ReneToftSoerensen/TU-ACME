@@ -12,6 +12,18 @@
         [int[]]$DisabledIndices = @()
     )
 
+    function Test-ItemMatch {
+        param([string]$Item, [string]$Filter)
+
+        if ([string]::IsNullOrEmpty($Filter)) {
+            return $true
+        }
+        # Plain case-insensitive substring match: -like would treat the
+        # operator-typed *, ?, and [ as wildcard metacharacters, and an
+        # unbalanced [ would throw out of the menu loop (UC-4.02).
+        return ($Item.IndexOf($Filter, [System.StringComparison]::OrdinalIgnoreCase) -ge 0)
+    }
+
     function Get-SelectableIndices {
         param([string]$Filter)
 
@@ -20,7 +32,7 @@
             if ($DisabledIndices -contains $i) {
                 continue
             }
-            if (-not [string]::IsNullOrEmpty($Filter) -and $Items[$i] -notlike ('*{0}*' -f $Filter)) {
+            if (-not (Test-ItemMatch -Item $Items[$i] -Filter $Filter)) {
                 continue
             }
             $indices += $i
@@ -63,9 +75,7 @@
         }
 
         for ($i = 0; $i -lt $Items.Count; $i++) {
-            $isVisible = ($null -eq $searchText) -or
-                [string]::IsNullOrEmpty($searchText) -or
-                ($Items[$i] -like ('*{0}*' -f $searchText))
+            $isVisible = ($null -eq $searchText) -or (Test-ItemMatch -Item $Items[$i] -Filter $searchText)
             if (-not $isVisible) {
                 continue
             }

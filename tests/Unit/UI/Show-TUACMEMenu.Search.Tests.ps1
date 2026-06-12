@@ -106,4 +106,27 @@ Describe 'Show-TUACMEMenu search (UC-4.02 / AC-C.2)' -Tag 'Unit' {
 
         $result | Should -Be 0
     }
+
+    It 'treats wildcard metacharacters in the search buffer as literals' {
+        # An unbalanced [ would throw from -like; plain substring match
+        # must survive it and simply match nothing.
+        Set-KeyQueue @((New-CharKey '/'), (New-CharKey '['), (New-NamedKey Backspace), (New-NamedKey Enter))
+
+        $result = InModuleScope 'TU-ACME' -Parameters @{ Items = $script:menuItems } {
+            param($Items)
+            Show-TUACMEMenu -Title 'Main' -Items $Items
+        }
+
+        $result | Should -Be 0
+    }
+
+    It 'matches a literal * in item text instead of treating it as a wildcard' {
+        Set-KeyQueue @((New-CharKey '/'), (New-CharKey '*'), (New-NamedKey Enter))
+
+        $result = InModuleScope 'TU-ACME' {
+            Show-TUACMEMenu -Title 'Main' -Items @('Plain item', 'Starred * item')
+        }
+
+        $result | Should -Be 1
+    }
 }

@@ -1,6 +1,7 @@
 ﻿function Show-TUACMEDashboard {
     [CmdletBinding()]
     param(
+        [ValidateRange(1, [int]::MaxValue)]
         [int]$PageSize = 15
     )
 
@@ -51,7 +52,7 @@
             }
         }
 
-        Write-Host 'Up/Down scroll, Esc closes.' -ForegroundColor DarkCyan
+        Write-Host 'Up/Down scroll, Esc/Enter/Q closes.' -ForegroundColor DarkCyan
 
         $key = Read-TUACMEKey
         switch ([string]$key.Key) {
