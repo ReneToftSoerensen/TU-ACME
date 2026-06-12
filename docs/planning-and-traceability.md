@@ -14,7 +14,7 @@
 
 | Area | UCs | ACs | Status |
 |------|-----|-----|--------|
-| **A. Module Initialization** | UC-1.01–02 | 4 | [ ] |
+| **A. Module Initialization** | UC-1.01–02 | 4 | [x] |
 | **B. Two-Account Model** | UC-2.01, 3.01 | 4 | [ ] |
 | **C. TUI Menu** | UC-4.01–03 | 4 | [ ] |
 | **D. Cert Operations** | UC-5–6 | 5 | [ ] |
@@ -29,11 +29,11 @@ See `ACCEPTANCE_CRITERIA.md` for the full traceability matrix.
 
 ## Development Checklist
 
-- [ ] **Phase 1** — Foundation (UC-1, 2, 11.01–03)
-  - [ ] UC-1.01 — Module import
-  - [ ] UC-1.02 — First-run wizard
-  - [ ] UC-2.01 — Account bootstrap
-  - [ ] UC-11.01–03 — UTF-8 BOM, PS 5.1 compat, unit tests
+- [x] **Phase 1** — Foundation (UC-1, 2, 11.01–03)
+  - [x] UC-1.01 — Module import
+  - [x] UC-1.02 — First-run wizard
+  - [x] UC-2.01 — Account bootstrap
+  - [x] UC-11.01–03 — UTF-8 BOM, PS 5.1 compat, unit tests
 - [ ] **Phase 2** — Production (UC-3–12)
   - [ ] UC-3.01 — Dry-run
   - [ ] UC-4.01–03 — TUI menu

@@ -1,0 +1,25 @@
+#!/bin/sh
+# Pre-commit gate (UC-11.01 / UC-11.02): UTF-8 BOM on PowerShell files and a
+# cheap tripwire for PS7-only operators. Enable with:
+#   git config core.hooksPath .githooks
+
+# NUL-delimited names converted to one-per-line: safe for spaces and avoids
+# git's quoting of non-ASCII paths. Filenames containing a newline are not
+# supported (git blocks them on Windows anyway).
+git diff --cached --name-only --diff-filter=ACM -z |
+tr '\0' '\n' |
+grep -E '\.(ps1|psm1|psd1)$' |
+(
+    status=0
+    while IFS= read -r f; do
+        bom=$(head -c3 "$f" | od -An -tx1 | tr -d ' \n')
+        if [ "$bom" != "efbbbf" ]; then
+            echo "ERROR: $f is missing a UTF-8 BOM (UC-11.01)." >&2
+            status=1
+        fi
+        if grep -nE '\?\?|\?\.' "$f" >/dev/null 2>&1; then
+            echo "WARNING: $f may contain PS7-only operators; verify PS 5.1 compatibility (UC-11.02)." >&2
+        fi
+    done
+    exit $status
+)

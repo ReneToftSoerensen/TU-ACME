@@ -6,12 +6,12 @@ As an **internal function**, I want to **set the active Posh-ACME account and se
 
 ## Acceptance Criteria
 
-- [ ] `Use-TUACMEProdAccount` sets the active server to the production URL from config
-- [ ] `Use-TUACMEProdAccount` sets the active account to the production account ID from config
-- [ ] `Use-TUACMEStagingAccount` sets the active server to the staging URL from config
-- [ ] `Use-TUACMEStagingAccount` sets the active account to the staging account ID from config
-- [ ] Both functions return the previously active server URL (to support restoration)
-- [ ] No other code path in the module calls `Set-PAServer` or `Set-PAAccount` directly
+- [x] `Use-TUACMEProdAccount` sets the active server to the production URL from config
+- [x] `Use-TUACMEProdAccount` sets the active account to the production account ID from config
+- [x] `Use-TUACMEStagingAccount` sets the active server to the staging URL from config
+- [x] `Use-TUACMEStagingAccount` sets the active account to the staging account ID from config
+- [x] Both functions return the previously active server URL (to support restoration)
+- [x] No other code path in the module calls `Set-PAServer` or `Set-PAAccount` directly
 
 ## Implementation Notes
 

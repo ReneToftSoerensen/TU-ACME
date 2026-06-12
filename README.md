@@ -61,7 +61,7 @@ This folder contains the specification, acceptance criteria, and atomic use case
 
 | Area | Count | Priority | Status |
 |------|-------|----------|--------|
-| A. Module Initialization | 4 | P0 | [ ] |
+| A. Module Initialization | 4 | P0 | [x] |
 | B. Two-Account Model | 4 | P0–P1 | [ ] |
 | C. TUI Menu System | 4 | P1 | [ ] |
 | D. Certificate Operations | 5 | P0–P2 | [ ] |
@@ -79,13 +79,13 @@ This folder contains the specification, acceptance criteria, and atomic use case
 
 | UC | Title | Status |
 |----|-------|--------|
-| UC-1.01 | Module Import | [ ] |
-| UC-1.02 | First-Run Wizard | [ ] |
-| UC-2.01 | Account Bootstrap | [ ] |
+| UC-1.01 | Module Import | [x] |
+| UC-1.02 | First-Run Wizard | [x] |
+| UC-2.01 | Account Bootstrap | [x] |
 | UC-3.01 | Dry-Run | [ ] |
-| UC-11.01 | UTF-8 BOM | [ ] |
-| UC-11.02 | PS 5.1 Compatibility | [ ] |
-| UC-11.03 | Unit Tests | [ ] |
+| UC-11.01 | UTF-8 BOM | [x] |
+| UC-11.02 | PS 5.1 Compatibility | [x] |
+| UC-11.03 | Unit Tests | [x] |
 
 ### Phase 2: Production Readiness
 
@@ -120,13 +120,29 @@ This folder contains the specification, acceptance criteria, and atomic use case
 
 ## Development Checklist
 
-- [ ] **Plan** — Review SPEC and AC matrix; prioritize Phase 1 usecases.
-- [ ] **Bootstrap** — Create module structure, first-run wizard, account functions.
-- [ ] **Test** — Write Pester tests (Unit) alongside implementation.
+- [x] **Plan** — Review SPEC and AC matrix; prioritize Phase 1 usecases.
+- [x] **Bootstrap** — Create module structure, first-run wizard, account functions.
+- [x] **Test** — Write Pester tests (Unit) alongside implementation.
 - [ ] **Integrate** — Add file I/O, event logging, config persistence.
 - [ ] **Polish** — TUI menu, colors, search; verify PS 5.1 + PS 7+.
 - [ ] **Verify** — Run full Pester suite; all tests green.
 - [ ] **Deploy** — Test installation and first-run on clean Windows VM.
+
+## Running the Tests
+
+```powershell
+# Full unit suite (Pester 5.5+ required)
+Invoke-Pester -Configuration (& ./tests/pester.config.ps1)
+```
+
+Enable the pre-commit gate (UTF-8 BOM + PS7-syntax tripwire) once per clone:
+
+```
+git config core.hooksPath .githooks
+```
+
+CI (`.github/workflows/test.yml`) runs the Unit suite on Ubuntu (pwsh),
+Windows (pwsh), and Windows PowerShell 5.1.
 
 ## Resources
 

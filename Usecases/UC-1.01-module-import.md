@@ -6,10 +6,10 @@ As an **operator**, I want to **import TU-ACME without errors**, so that **I can
 
 ## Acceptance Criteria
 
-- [ ] `Import-Module TU-ACME` completes without errors
-- [ ] All public cmdlets are available after import (`Get-Command -Module TU-ACME`)
-- [ ] The module version is readable from the manifest
-- [ ] No initialization errors are logged to Event Log
+- [x] `Import-Module TU-ACME` completes without errors
+- [x] All public cmdlets are available after import (`Get-Command -Module TU-ACME`)
+- [x] The module version is readable from the manifest
+- [x] No initialization errors are logged to Event Log
 
 ## Implementation Notes
 
