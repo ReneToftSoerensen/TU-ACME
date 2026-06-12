@@ -6,18 +6,33 @@
     Write-Host 'TU-ACME first-run setup' -ForegroundColor Cyan
     Write-Host 'Configuring the production and staging ACME accounts.' -ForegroundColor DarkCyan
 
+    # Fail fast before prompting: account creation below needs the real
+    # Posh-ACME commands available in this session.
+    if (-not (Import-TUACMEPoshACME)) {
+        throw 'Posh-ACME is required for first-run setup but could not be imported. Install it with: Install-Module Posh-ACME -Scope AllUsers'
+    }
+
     $contactEmail = ''
     while ($contactEmail -notmatch '@') {
+        if (-not [string]::IsNullOrEmpty($contactEmail)) {
+            Write-Warning 'The contact email must contain "@".'
+        }
         $contactEmail = Read-Host 'Contact email for ACME accounts'
     }
 
     $prodUrl = ''
     while ($prodUrl -notlike 'https://*') {
+        if (-not [string]::IsNullOrEmpty($prodUrl)) {
+            Write-Warning 'The directory URL must start with https:// (forward slashes).'
+        }
         $prodUrl = Read-Host 'Production ACME directory URL'
     }
 
     $stagingUrl = ''
     while ($stagingUrl -notlike 'https://*') {
+        if (-not [string]::IsNullOrEmpty($stagingUrl)) {
+            Write-Warning 'The directory URL must start with https:// (forward slashes).'
+        }
         $stagingUrl = Read-Host 'Staging ACME directory URL'
     }
 

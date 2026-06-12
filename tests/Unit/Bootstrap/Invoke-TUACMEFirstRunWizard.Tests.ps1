@@ -9,6 +9,7 @@ Describe 'Invoke-TUACMEFirstRunWizard (UC-1.02)' -Tag 'Unit' {
         $global:TUACMETestSwitches = @()
         $global:TUACMETestAccounts = 0
 
+        Mock -ModuleName 'TU-ACME' Import-TUACMEPoshACME { $true }
         Mock -ModuleName 'TU-ACME' Read-Host { 'certs@example.com' } -ParameterFilter {
             $Prompt -like '*email*'
         }
@@ -100,5 +101,31 @@ Describe 'Invoke-TUACMEFirstRunWizard (UC-1.02)' -Tag 'Unit' {
         Mock -ModuleName 'TU-ACME' New-PAAccount { $null }
 
         { InModuleScope 'TU-ACME' { Invoke-TUACMEFirstRunWizard } } | Should -Throw '*account id*'
+    }
+
+    It 'fails fast with a clear error when Posh-ACME is unavailable' {
+        Mock -ModuleName 'TU-ACME' Import-TUACMEPoshACME { $false }
+
+        { InModuleScope 'TU-ACME' { Invoke-TUACMEFirstRunWizard } } | Should -Throw '*Posh-ACME*'
+        Should -Invoke -ModuleName 'TU-ACME' Read-Host -Times 0 -Exactly
+        Should -Invoke -ModuleName 'TU-ACME' New-PAAccount -Times 0 -Exactly
+    }
+
+    It 'warns and re-prompts when the production URL is invalid' {
+        $global:TUACMETestProdPrompts = 0
+        Mock -ModuleName 'TU-ACME' Read-Host {
+            $global:TUACMETestProdPrompts++
+            if ($global:TUACMETestProdPrompts -eq 1) { 'https:\\acme.example.com' }
+            else { 'https://acme.example.com/prod/directory' }
+        } -ParameterFilter { $Prompt -like 'Production*' }
+        Mock -ModuleName 'TU-ACME' Write-Warning { }
+
+        $result = InModuleScope 'TU-ACME' { Invoke-TUACMEFirstRunWizard }
+
+        $result.ProdDirectoryUrl | Should -Be 'https://acme.example.com/prod/directory'
+        Should -Invoke -ModuleName 'TU-ACME' Write-Warning -Times 1 -Exactly -ParameterFilter {
+            $Message -like '*https://*'
+        }
+        Remove-Variable -Name 'TUACMETestProdPrompts' -Scope Global -ErrorAction SilentlyContinue
     }
 }
