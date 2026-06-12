@@ -46,3 +46,13 @@ jobs:
           $configuration = & ./tests/pester.config.ps1
           $configuration.Run.Exit = $true
           Invoke-Pester -Configuration $configuration
+
+      - name: Run script tests
+        run: |
+          Import-Module Pester -MinimumVersion 5.5
+          $configuration = New-PesterConfiguration
+          $configuration.Run.Path = './tests/Scripts'
+          $configuration.Filter.Tag = @('Scripts')
+          $configuration.Output.Verbosity = 'Detailed'
+          $configuration.Run.Exit = $true
+          Invoke-Pester -Configuration $configuration
