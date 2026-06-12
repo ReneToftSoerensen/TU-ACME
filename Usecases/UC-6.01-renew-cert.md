@@ -6,14 +6,14 @@ As an **operator**, I want to **renew an existing certificate manually**, so tha
 
 ## Acceptance Criteria
 
-- [ ] Renew operation calls `Use-TUACMEProdAccount` to ensure prod context
-- [ ] User selects a certificate from the list
-- [ ] `Submit-Renewal` is invoked for the selected cert (via Posh-ACME)
-- [ ] New certificate is issued and placed in the prod store
-- [ ] Old certificate remains in the store (Posh-ACME behavior)
-- [ ] Event Log entry ID 1001 is written with domain and renewal details
-- [ ] Certificate is imported to LocalMachine\My after renewal
-- [ ] Return value includes old and new thumbprints
+- [x] Renew operation calls `Use-TUACMEProdAccount` to ensure prod context
+- [x] User selects a certificate from the list
+- [x] `Submit-Renewal` is invoked for the selected cert (via Posh-ACME)
+- [x] New certificate is issued and placed in the prod store
+- [x] Old certificate remains in the store (Posh-ACME behavior)
+- [x] Event Log entry ID 1001 is written with domain and renewal details
+- [x] Certificate is imported to LocalMachine\My after renewal
+- [x] Return value includes old and new thumbprints
 
 ## Implementation Notes
 

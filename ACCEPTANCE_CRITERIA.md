@@ -228,36 +228,36 @@
 | AC-A.4 | UC-1.02-first-run | P0 | [x] |
 | AC-B.1 | UC-2.01-account-bootstrap | P0 | [x] |
 | AC-B.2 | UC-2.01-account-bootstrap | P0 | [x] |
-| AC-B.3 | UC-3.01-dry-run | P1 | [ ] |
-| AC-B.4 | UC-3.01-dry-run | P1 | [ ] |
-| AC-C.1 | UC-4.01-menu-navigation | P1 | [ ] |
-| AC-C.2 | UC-4.02-menu-search | P1 | [ ] |
-| AC-C.3 | UC-4.03-menu-format | P0 | [ ] |
-| AC-C.4 | UC-4.03-menu-format | P0 | [ ] |
-| AC-D.1 | UC-5.01-order-cert | P0 | [ ] |
-| AC-D.2 | UC-5.02-order-dryrun | P1 | [ ] |
-| AC-D.3 | UC-6.01-renew-cert | P1 | [ ] |
+| AC-B.3 | UC-3.01-dry-run | P1 | [x] |
+| AC-B.4 | UC-3.01-dry-run | P1 | [x] |
+| AC-C.1 | UC-4.01-menu-navigation | P1 | [x] |
+| AC-C.2 | UC-4.02-menu-search | P1 | [x] |
+| AC-C.3 | UC-4.03-menu-format | P0 | [x] |
+| AC-C.4 | UC-4.03-menu-format | P0 | [x] |
+| AC-D.1 | UC-5.01-order-cert | P0 | [x] |
+| AC-D.2 | UC-5.02-order-dryrun | P1 | [x] |
+| AC-D.3 | UC-6.01-renew-cert | P1 | [x] |
 | AC-D.4 | UC-6.02-revoke-cert | P2 | [ ] |
 | AC-D.5 | UC-6.03-force-renew | P2 | [ ] |
-| AC-E.1 | UC-7.01-scheduled-task | P1 | [ ] |
-| AC-E.2 | UC-7.02-renewal-script | P1 | [ ] |
-| AC-E.3 | UC-7.02-renewal-script | P1 | [ ] |
-| AC-F.1 | UC-8.01-event-logging | P1 | [ ] |
-| AC-F.2 | UC-8.01-event-logging | P1 | [ ] |
-| AC-F.3 | UC-8.01-event-logging | P1 | [ ] |
-| AC-F.4 | UC-8.01-event-logging | P1 | [ ] |
-| AC-G.1 | UC-9.01-iis-discover | P1 | [ ] |
+| AC-E.1 | UC-7.01-scheduled-task | P1 | [x] |
+| AC-E.2 | UC-7.02-renewal-script | P1 | [x] |
+| AC-E.3 | UC-7.02-renewal-script | P1 | [x] |
+| AC-F.1 | UC-8.01-event-logging | P1 | [x] |
+| AC-F.2 | UC-8.01-event-logging | P1 | [x] |
+| AC-F.3 | UC-8.01-event-logging | P1 | [x] |
+| AC-F.4 | UC-8.01-event-logging | P1 | [x] |
+| AC-G.1 | UC-9.01-iis-discover | P1 | [x] |
 | AC-G.2 | UC-9.02-iis-rebind | P1 | [ ] |
 | AC-G.3 | UC-9.03-iis-recovery | P1 | [ ] |
 | AC-H.1 | UC-10.01-config-persist | P0 | [x] |
-| AC-H.2 | UC-10.02-smtp-encrypt | P1 | [ ] |
-| AC-H.3 | UC-10.03-dns-encrypt | P1 | [ ] |
+| AC-H.2 | UC-10.02-smtp-encrypt | P1 | [x] |
+| AC-H.3 | UC-10.03-dns-encrypt | P1 | [x] |
 | AC-I.1 | UC-11.01-utf8-bom | P0 | [x] |
 | AC-I.2 | UC-11.02-ps51-compat | P0 | [x] |
 | AC-I.3 | UC-11.03-unit-tests | P0 | [x] |
-| AC-I.4 | UC-11.04-integration-tests | P1 | [ ] |
-| AC-I.5 | UC-11.05-script-tests | P1 | [ ] |
-| AC-J.1 | UC-12.01-dashboard | P1 | [ ] |
-| AC-J.2 | UC-5.01-order-cert | P0 | [ ] |
-| AC-J.3 | UC-5.02-order-dryrun | P1 | [ ] |
+| AC-I.4 | UC-11.04-integration-tests | P1 | [x] |
+| AC-I.5 | UC-11.05-script-tests | P1 | [x] |
+| AC-J.1 | UC-12.01-dashboard | P1 | [x] |
+| AC-J.2 | UC-5.01-order-cert | P0 | [x] |
+| AC-J.3 | UC-5.02-order-dryrun | P1 | [x] |
 | AC-J.4 | UC-12.02-renewal-status | P2 | [ ] |

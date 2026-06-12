@@ -6,13 +6,13 @@ As an **operator**, I want to **press `/` to search menu items by name**, so tha
 
 ## Acceptance Criteria
 
-- [ ] `/` key initiates search mode within any menu
-- [ ] Search box appears and accepts keyboard input
-- [ ] Matching items are highlighted; non-matching items are hidden or grayed out
-- [ ] Up/down arrows navigate filtered results
-- [ ] Enter selects the highlighted result
-- [ ] Escape cancels search and returns to the full menu
-- [ ] Search is case-insensitive
+- [x] `/` key initiates search mode within any menu
+- [x] Search box appears and accepts keyboard input
+- [x] Matching items are highlighted; non-matching items are hidden or grayed out
+- [x] Up/down arrows navigate filtered results
+- [x] Enter selects the highlighted result
+- [x] Escape cancels search and returns to the full menu
+- [x] Search is case-insensitive
 
 ## Implementation Notes
 

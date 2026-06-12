@@ -6,12 +6,12 @@ As a **code maintainer**, I want to **enforce consistent TUI styling** (79-char 
 
 ## Acceptance Criteria
 
-- [ ] All menu titles are ≤79 characters (enforced in code review)
-- [ ] Menu output uses only Cyan and DarkCyan (no Red, Green, Yellow, Blue, Magenta)
-- [ ] Menu chrome (borders, selection highlight) uses DarkCyan
-- [ ] Menu text uses Cyan
-- [ ] Status messages use Cyan for info, DarkCyan for prompts
-- [ ] Validation errors use Cyan (not Red, for readability in terminal)
+- [x] All menu titles are ≤79 characters (enforced in code review)
+- [x] Menu output uses only Cyan and DarkCyan (no Red, Green, Yellow, Blue, Magenta)
+- [x] Menu chrome (borders, selection highlight) uses DarkCyan
+- [x] Menu text uses Cyan
+- [x] Status messages use Cyan for info, DarkCyan for prompts
+- [x] Validation errors use Cyan (not Red, for readability in terminal)
 
 ## Implementation Notes
 
