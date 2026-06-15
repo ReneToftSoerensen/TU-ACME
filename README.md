@@ -144,6 +144,17 @@ git config core.hooksPath .githooks
 CI (`.github/workflows/test.yml`) runs the Unit suite on Ubuntu (pwsh),
 Windows (pwsh), and Windows PowerShell 5.1.
 
+## Local Install (testing)
+
+`deploy.ps1` removes and (re)installs the module into your user module path so
+`Import-Module TU-ACME` resolves by name during testing:
+
+```powershell
+.\deploy.ps1            # remove old copy, reinstall from source, import
+.\deploy.ps1 -Uninstall # remove from the session and the user module path
+.\deploy.ps1 -NoImport  # reinstall without importing
+```
+
 ## Resources
 
 - **SPEC.md** — Project specification and architecture
