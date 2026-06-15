@@ -6,14 +6,14 @@ As an **operator**, I want to **revoke a certificate that is no longer needed or
 
 ## Acceptance Criteria
 
-- [ ] Revoke operation calls `Use-TUACMEProdAccount` to ensure prod context
-- [ ] User selects a certificate from the list
-- [ ] Operator is prompted to confirm revocation (safety check)
-- [ ] `Revoke-PACertificate` is invoked (via Posh-ACME)
-- [ ] Certificate is marked as revoked in the Posh-ACME store
-- [ ] Event Log entry ID 1004 is written with domain and thumbprint
-- [ ] Revoked certificate is removed from IIS bindings (if applicable)
-- [ ] Clear confirmation message is displayed
+- [x] Revoke operation calls `Use-TUACMEProdAccount` to ensure prod context
+- [x] User selects a certificate from the list
+- [x] Operator is prompted to confirm revocation (safety check)
+- [x] `Revoke-PACertificate` is invoked (via Posh-ACME)
+- [x] Certificate is marked as revoked in the Posh-ACME store
+- [x] Event Log entry ID 1004 is written with domain and thumbprint
+- [x] Revoked certificate is removed from IIS bindings (if applicable)
+- [x] Clear confirmation message is displayed
 
 ## Implementation Notes
 

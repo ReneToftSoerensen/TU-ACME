@@ -94,4 +94,27 @@ Describe 'Invoke-Renewal.ps1 (UC-11.05, UC-7.02 / AC-I.5, AC-E.2, AC-E.3)' -Tag 
 
         { & $script:scriptPath } | Should -Not -Throw
     }
+
+    It 'rebinds IIS and cleans up old certs during the sweep (UC-9.02, UC-9.03)' {
+        Mock -ModuleName 'TU-ACME' Update-TUACMEIISBinding {
+            [pscustomobject]@{ Updated = @([pscustomobject]@{ SiteName = 'S' }); Failed = @() }
+        }
+        Mock -ModuleName 'TU-ACME' Remove-TUACMEWebHostingCertificate { $true }
+
+        & $script:scriptPath
+
+        Should -Invoke -ModuleName 'TU-ACME' Update-TUACMEIISBinding -Times 2 -Exactly
+        Should -Invoke -ModuleName 'TU-ACME' Remove-TUACMEWebHostingCertificate -Times 2 -Exactly
+    }
+
+    It 'continues the sweep when a rebind throws (UC-9.03)' {
+        Mock -ModuleName 'TU-ACME' Update-TUACMEIISBinding { throw 'IIS exploded' }
+
+        & $script:scriptPath
+
+        Should -Invoke -ModuleName 'TU-ACME' Import-TUACMECertificate -Times 2 -Exactly
+        Should -Invoke -ModuleName 'TU-ACME' Write-TUACMEEventLog -ParameterFilter {
+            $EventId -eq 2001 -and $EntryType -eq 'Warning'
+        }
+    }
 }

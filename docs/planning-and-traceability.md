@@ -17,13 +17,13 @@
 | **A. Module Initialization** | UC-1.01–02 | 4 | [x] |
 | **B. Two-Account Model** | UC-2.01, 3.01 | 4 | [x] |
 | **C. TUI Menu** | UC-4.01–03 | 4 | [x] |
-| **D. Cert Operations** | UC-5–6 | 5 | [ ] (D.4–D.5 in Phase 3) |
+| **D. Cert Operations** | UC-5–6 | 5 | [x] |
 | **E. Scheduled Renewal** | UC-7.01–02 | 3 | [x] |
 | **F. Event Logging** | UC-8.01 | 4 | [x] |
-| **G. IIS Integration** | UC-9.01–03 | 3 | [ ] (G.2–G.3 in Phase 3) |
+| **G. IIS Integration** | UC-9.01–03 | 3 | [x] |
 | **H. Config & Persist** | UC-10.01–03 | 3 | [x] |
 | **I. Code Quality** | UC-11.01–05 | 5 | [x] |
-| **J. Ops Workflows** | UC-12.01–02 | 4 | [ ] (J.4 in Phase 3) |
+| **J. Ops Workflows** | UC-12.01–02 | 4 | [x] |
 
 See `ACCEPTANCE_CRITERIA.md` for the full traceability matrix.
 
@@ -45,15 +45,15 @@ See `ACCEPTANCE_CRITERIA.md` for the full traceability matrix.
   - [x] UC-10.01–03 — Config & encryption
   - [x] UC-11.04–05 — Integration & script tests
   - [x] UC-12.01 — Dashboard
-- [ ] **Phase 3** — Operations (UC-6.02–03, 9.02–03, 12.02)
-  - [ ] UC-6.02 — Revoke
-  - [ ] UC-6.03 — Force-renew
-  - [ ] UC-9.02 — IIS rebind
-  - [ ] UC-9.03 — IIS rebind failure recovery
-  - [ ] UC-12.02 — Renewal status (advanced)
+- [x] **Phase 3** — Operations (UC-6.02–03, 9.02–03, 12.02)
+  - [x] UC-6.02 — Revoke
+  - [x] UC-6.03 — Force-renew
+  - [x] UC-9.02 — IIS rebind
+  - [x] UC-9.03 — IIS rebind failure recovery
+  - [x] UC-12.02 — Renewal status (advanced)
 - [ ] **Verification**
-  - [ ] All tests pass (Unit, Integration, Scripts)
+  - [ ] All tests pass (Unit, Integration, Scripts) — validate on CI
   - [ ] PS 5.1 and PS 7+ both green on CI
-  - [ ] All `.ps1`, `.psm1`, `.psd1` files have UTF-8 BOM
-  - [ ] No PS7-only syntax in codebase
+  - [x] All `.ps1`, `.psm1`, `.psd1` files have UTF-8 BOM
+  - [x] No PS7-only syntax in codebase
   - [ ] Installation and first-run tested on clean Windows VM

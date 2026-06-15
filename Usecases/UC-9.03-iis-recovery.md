@@ -6,22 +6,22 @@ As an **automated system**, I want to **handle IIS rebind and old-certificate-cl
 
 The IIS thin-layer flow has three post-ACME side effects that can each fail independently:
 
-1. **Import into `Cert:\LocalMachine\WebHosting`** (UC-9.14) — if this fails, the rebind cannot proceed for that cert, and the failure is surfaced as a terminating error (the cert is still safely in the Posh-ACME store; the operator can retry the import from the menu).
-2. **Rebind one or more bindings** (UC-9.02, UC-9.04, UC-9.05) — per-binding failure must **not** abort the renewal; the cert was already issued and other bindings should still get pointed at it.
-3. **Delete the old cert from `Cert:\LocalMachine\WebHosting`** on renewal (UC-9.16) — a deletion failure is logged as a warning but never aborts the renewal; the new cert is already serving traffic, and a stale old cert in the store is harmless until the next sweep.
+1. **Import into `Cert:\LocalMachine\WebHosting`** (UC-9.02) — if this fails, the rebind cannot proceed for that cert, and the failure is surfaced as a terminating error (the cert is still safely in the Posh-ACME store; the operator can retry the import from the menu).
+2. **Rebind one or more bindings** (UC-9.02) — per-binding failure must **not** abort the renewal; the cert was already issued and other bindings should still get pointed at it.
+3. **Delete the old cert from `Cert:\LocalMachine\WebHosting`** on renewal (this UC) — a deletion failure is logged as a warning but never aborts the renewal; the new cert is already serving traffic, and a stale old cert in the store is harmless until the next sweep.
 
-Dry-run (UC-9.17) bypasses all three steps, so this UC's recovery logic only applies to production flows.
+Dry-run (UC-3.01) bypasses all three steps, so this UC's recovery logic only applies to production flows.
 
 ## Acceptance Criteria
 
-- [ ] If a rebind fails for a single binding, it is logged but does not abort renewal (UC-9.05)
-- [ ] Event Log entry ID 2001 (Warning) is written with binding details and error on per-binding rebind failure
-- [ ] If the old-cert delete fails after a successful renewal rebind, Event Log entry ID 2001 is written; renewal still reports success
-- [ ] Renewal script continues to the next certificate/binding after any of the failures above
-- [ ] Error message is clear (e.g., "binding is in use", "access denied", "cert in use by another binding")
-- [ ] Operator is notified of failed bindings and undeleted old certs via Event Log and dashboard
-- [ ] Failed bindings can be manually retried from the menu (UC-9.04)
-- [ ] Undeleted old certs can be cleaned up manually from the certificate dashboard
+- [x] If a rebind fails for a single binding, it is logged but does not abort renewal (UC-9.02)
+- [x] Event Log entry ID 2001 (Warning) is written with binding details and error on per-binding rebind failure
+- [x] If the old-cert delete fails after a successful renewal rebind, Event Log entry ID 2001 is written; renewal still reports success
+- [x] Renewal script continues to the next certificate/binding after any of the failures above
+- [x] Error message is clear (e.g., "binding is in use", "access denied", "cert in use by another binding")
+- [x] Operator is notified of failed bindings and undeleted old certs via Event Log and dashboard
+- [x] Failed bindings can be manually retried from the menu (UC-9.02)
+- [x] Undeleted old certs can be cleaned up manually from the certificate dashboard
 
 ## Implementation Notes
 

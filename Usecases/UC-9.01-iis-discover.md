@@ -17,19 +17,19 @@ Dry-run is supported through the same dispatch: when the IIS order flow is enter
 
 - [x] Certificate dashboard displays all IIS bindings (site name, host header, protocol, thumbprint on HTTPS rows)
 - [x] HTTPS bindings are linked to certificates in `Cert:\LocalMachine\WebHosting` (primary) and `Cert:\LocalMachine\My` (fallback) by thumbprint
-- [x] Current certificate `NotAfter` is displayed next to each HTTPS binding (UC-9.08)
-- [x] AD CS template name is displayed next to each HTTPS binding (UC-9.09)
+- [x] Current certificate `NotAfter` is displayed next to each HTTPS binding
+- [x] AD CS template name is displayed next to each HTTPS binding
 - [x] Bindings without a resolvable certificate leave `Expires` / `Template` blank rather than throwing
 - [ ] Discovery works on IIS 7.5+ (Server 2008 R2+)
-- [ ] Dashboard is keyboard-navigable; the menu also exposes the order-from-bindings and rebind actions (UC-9.04, UC-9.11)
+- [ ] Dashboard is keyboard-navigable; the menu also exposes the manual rebind action (UC-9.02). An order-from-bindings flow remains future scope.
 
 ## Implementation Notes
 
-- IIS discovery via `Get-WebBinding` (WebAdministration module); no `-Protocol` filter (UC-9.07)
+- IIS discovery via `Get-WebBinding` (WebAdministration module); no `-Protocol` filter
 - Binding info: site name, host header, binding information, protocol, thumbprint
 - Thumbprint resolved via `Cert:\LocalMachine\WebHosting` first, then `Cert:\LocalMachine\My`
 - The menu is read-only; mutating actions (order, rebind) are explicit sub-flows
-- CN/SAN derivation for the order flow lives in `Invoke-IISOrderFromBindings` (UC-9.11), not in the discovery render
+- CN/SAN derivation for an order-from-bindings flow is future scope, not part of the discovery render
 
 ## Test Coverage
 

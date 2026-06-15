@@ -66,9 +66,19 @@ function Submit-Renewal {
     [CmdletBinding()]
     param(
         [string]$MainDomain,
-        [switch]$Force
+        [switch]$Force,
+        [switch]$NewKey
     )
     throw 'Stub Submit-Renewal called without a Pester mock.'
+}
+
+function Revoke-PACertificate {
+    [CmdletBinding()]
+    param(
+        [string]$MainDomain,
+        [switch]$Force
+    )
+    throw 'Stub Revoke-PACertificate called without a Pester mock.'
 }
 
 Export-ModuleMember -Function @(
@@ -80,4 +90,5 @@ Export-ModuleMember -Function @(
     'New-PACertificate'
     'Get-PACertificate'
     'Submit-Renewal'
+    'Revoke-PACertificate'
 )

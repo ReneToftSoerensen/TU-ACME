@@ -6,15 +6,15 @@ As an **operator**, I want to **force-renew a certificate with a new private key
 
 ## Acceptance Criteria
 
-- [ ] Force-renew operation calls `Use-TUACMEProdAccount` to ensure prod context
-- [ ] User selects a certificate from the list
-- [ ] `-NewKey` flag triggers key regeneration in Posh-ACME
-- [ ] A new private key is generated
-- [ ] A new certificate is ordered with the new key
-- [ ] New certificate is placed in the prod store
-- [ ] Event Log entry ID 1005 is written with domain and new thumbprint
-- [ ] New certificate is imported to LocalMachine\My
-- [ ] Old certificate remains in the store (for reference)
+- [x] Force-renew operation calls `Use-TUACMEProdAccount` to ensure prod context
+- [x] User selects a certificate from the list
+- [x] `-NewKey` flag triggers key regeneration in Posh-ACME
+- [x] A new private key is generated
+- [x] A new certificate is ordered with the new key
+- [x] New certificate is placed in the prod store
+- [x] Event Log entry ID 1005 is written with domain and new thumbprint
+- [x] New certificate is imported to LocalMachine\My
+- [x] Old certificate remains in the store (for reference)
 
 ## Implementation Notes
 
