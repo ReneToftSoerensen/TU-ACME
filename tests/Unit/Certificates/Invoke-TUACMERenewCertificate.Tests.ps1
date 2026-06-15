@@ -186,6 +186,22 @@ Describe 'Invoke-TUACMERenewCertificate IIS rebind (UC-9.02, UC-9.03)' -Tag 'Uni
         Should -Invoke -ModuleName 'TU-ACME' Remove-TUACMEWebHostingCertificate -Times 0 -Exactly
     }
 
+    It 'does not delete the old cert when some bindings failed to rebind' {
+        # A binding still on the old thumbprint would break if the old cert were
+        # deleted, so cleanup is skipped on any per-binding failure (UC-9.03).
+        Mock -ModuleName 'TU-ACME' Update-TUACMEIISBinding {
+            [pscustomobject]@{
+                Updated = @([pscustomobject]@{ SiteName = 'S1' })
+                Failed  = @([pscustomobject]@{ SiteName = 'S2' })
+            }
+        }
+        Mock -ModuleName 'TU-ACME' Remove-TUACMEWebHostingCertificate { $true }
+
+        $null = InModuleScope 'TU-ACME' { Invoke-TUACMERenewCertificate -Domain 'www.example.com' }
+
+        Should -Invoke -ModuleName 'TU-ACME' Remove-TUACMEWebHostingCertificate -Times 0 -Exactly
+    }
+
     It 'still reports success when the IIS rebind throws' {
         Mock -ModuleName 'TU-ACME' Update-TUACMEIISBinding { throw 'IIS exploded' }
 

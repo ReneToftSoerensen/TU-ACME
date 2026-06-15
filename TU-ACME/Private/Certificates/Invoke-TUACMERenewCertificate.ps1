@@ -54,7 +54,11 @@
             $rebind = Update-TUACMEIISBinding -OldThumbprint $oldThumbprint -NewThumbprint $newThumbprint -Certificate $newCertificate
             $rebindUpdated = @($rebind.Updated).Count
             $rebindFailed = @($rebind.Failed).Count
-            if ($rebindUpdated -gt 0 -and -not [string]::IsNullOrEmpty($oldThumbprint) -and $oldThumbprint -ne $newThumbprint) {
+            # Only delete the superseded cert once *every* targeted binding moved
+            # to the new thumbprint. A binding left on the old thumbprint would
+            # break if the old cert were deleted, so a partial rebind keeps it
+            # (the next sweep retries cleanup) (UC-9.03).
+            if ($rebindUpdated -gt 0 -and $rebindFailed -eq 0 -and -not [string]::IsNullOrEmpty($oldThumbprint) -and $oldThumbprint -ne $newThumbprint) {
                 $null = Remove-TUACMEWebHostingCertificate -Thumbprint $oldThumbprint
             }
         }
@@ -73,10 +77,12 @@
     }
     catch {
         $errorId = 3003
+        $operation = 'renewal'
         if ($NewKey) {
             $errorId = 3005
+            $operation = 'force-renew with new key'
         }
-        Write-TUACMEEventLog -EventId $errorId -EntryType Error -Message ('Certificate renewal for {0} failed: {1}' -f $Domain, $_.Exception.Message)
+        Write-TUACMEEventLog -EventId $errorId -EntryType Error -Message ('Certificate {0} for {1} failed: {2}' -f $operation, $Domain, $_.Exception.Message)
         throw
     }
 }

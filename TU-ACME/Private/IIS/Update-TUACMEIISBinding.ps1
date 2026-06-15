@@ -70,14 +70,21 @@
         return [pscustomobject]@{ Updated = $updated; Failed = $failed }
     }
 
-    # IIS reads a binding's cert from the per-machine WebHosting store, so the
-    # cert must live there before Set-WebBinding runs (UC-9.02).
-    $null = Import-TUACMECertificate -Certificate $Certificate -StoreName 'WebHosting'
+    # Import into both stores so the new thumbprint resolves regardless of which
+    # store a binding currently references; this keeps each per-binding update
+    # safe even if the certificateStoreName switch below fails (UC-9.03). IIS
+    # treats WebHosting as canonical, but My is a valid fallback.
+    $null = Import-TUACMECertificate -Certificate $Certificate -StoreName @('My', 'WebHosting')
 
     foreach ($binding in $targets) {
         try {
-            Set-WebBinding -Name $binding.SiteName -BindingInformation $binding.BindingInformation -PropertyName 'certificateStoreName' -Value 'WebHosting' -ErrorAction Stop
+            # Update the hash first: the new cert lives in both stores, so the
+            # binding serves it immediately under its existing store name. Only
+            # then switch the store name to canonical WebHosting. A failed hash
+            # update therefore never strands the binding on a store/thumbprint
+            # pair that lacks the cert (UC-9.03).
             Set-WebBinding -Name $binding.SiteName -BindingInformation $binding.BindingInformation -PropertyName 'certificateHash' -Value $NewThumbprint -ErrorAction Stop
+            Set-WebBinding -Name $binding.SiteName -BindingInformation $binding.BindingInformation -PropertyName 'certificateStoreName' -Value 'WebHosting' -ErrorAction Stop
 
             Write-TUACMEEventLog -EventId 1002 -EntryType Information -Message ('IIS binding {0} on site ''{1}'' rebound to thumbprint {2}.' -f $binding.BindingInformation, $binding.SiteName, $NewThumbprint)
             $updated += $binding
