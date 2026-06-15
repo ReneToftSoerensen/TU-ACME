@@ -171,7 +171,7 @@
                                 if ($certPick -ge 0) {
                                     $chosenBinding = $bindings[$bindingSelection]
                                     $chosenCert = $certificates[$certPick]
-                                    $rebind = Update-TUACMEIISBinding -HostHeader $chosenBinding.HostHeader -NewThumbprint ([string]$chosenCert.Thumbprint) -Certificate $chosenCert
+                                    $rebind = Update-TUACMEIISBinding -SiteName $chosenBinding.SiteName -BindingInformation $chosenBinding.BindingInformation -NewThumbprint ([string]$chosenCert.Thumbprint) -Certificate $chosenCert
                                     Write-Host ('Rebind complete: {0} updated, {1} failed.' -f @($rebind.Updated).Count, @($rebind.Failed).Count) -ForegroundColor Cyan
                                 }
                             }

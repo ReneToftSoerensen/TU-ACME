@@ -25,7 +25,7 @@ Dry-run **never** rebinds. When the IIS flow runs with `-DryRun` (UC-3.01), the 
 
 - [x] Rebind operation updates the binding's `certificateHash` to the new thumbprint
 - [x] Binding is updated in IIS configuration via `Set-WebBinding -PropertyName 'certificateHash'` (this UC)
-- [x] Rebind happens automatically after a non-dry-run IIS-driven order or renewal
+- [x] Rebind happens automatically after a non-dry-run renewal; manual rebind covers ad-hoc cases (automatic post-order rebind via an order-from-bindings flow is future scope)
 - [x] Rebind is **skipped** entirely when the operation is a dry-run
 - [x] Event Log entry ID 1002 is written on success
 - [x] Manual rebind is also reachable from the IIS menu and works against any cert in the Posh-ACME store

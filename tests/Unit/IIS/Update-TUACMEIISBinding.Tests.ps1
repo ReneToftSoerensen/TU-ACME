@@ -12,7 +12,8 @@ Describe 'Update-TUACMEIISBinding (UC-9.02 / AC-G.2, UC-9.03 / AC-G.3)' -Tag 'Un
             @(
                 [pscustomobject]@{ SiteName = 'Site1'; Protocol = 'https'; BindingInformation = '*:443:a.example.com'; HostHeader = 'a.example.com'; Thumbprint = 'OLD1' },
                 [pscustomobject]@{ SiteName = 'Site2'; Protocol = 'https'; BindingInformation = '*:443:b.example.com'; HostHeader = 'b.example.com'; Thumbprint = 'OLD1' },
-                [pscustomobject]@{ SiteName = 'Site3'; Protocol = 'https'; BindingInformation = '*:443:c.example.com'; HostHeader = 'c.example.com'; Thumbprint = 'OTHER' }
+                [pscustomobject]@{ SiteName = 'Site3'; Protocol = 'https'; BindingInformation = '*:443:c.example.com'; HostHeader = 'c.example.com'; Thumbprint = 'OTHER' },
+                [pscustomobject]@{ SiteName = 'Site4'; Protocol = 'https'; BindingInformation = '*:443:'; HostHeader = ''; Thumbprint = 'OLD4' }
             )
         }
     }
@@ -62,9 +63,17 @@ Describe 'Update-TUACMEIISBinding (UC-9.02 / AC-G.2, UC-9.03 / AC-G.3)' -Tag 'Un
         }
     }
 
-    It 'selects bindings by host header when no old thumbprint is given' {
+    It 'selects a specific binding by site and binding information (manual rebind)' {
         $result = InModuleScope 'TU-ACME' {
-            Update-TUACMEIISBinding -HostHeader 'c.example.com' -NewThumbprint 'NEWTHUMB' -Certificate ([pscustomobject]@{ MainDomain = 'c'; PfxFullChain = 'x' })
+            Update-TUACMEIISBinding -SiteName 'Site3' -BindingInformation '*:443:c.example.com' -NewThumbprint 'NEWTHUMB' -Certificate ([pscustomobject]@{ MainDomain = 'c'; PfxFullChain = 'x' })
+        }
+
+        @($result.Updated).Count | Should -Be 1
+    }
+
+    It 'rebinds a binding with an empty host header by binding information' {
+        $result = InModuleScope 'TU-ACME' {
+            Update-TUACMEIISBinding -SiteName 'Site4' -BindingInformation '*:443:' -NewThumbprint 'NEWTHUMB' -Certificate ([pscustomobject]@{ MainDomain = 'x'; PfxFullChain = 'x' })
         }
 
         @($result.Updated).Count | Should -Be 1

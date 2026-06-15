@@ -5,9 +5,9 @@
 
     .DESCRIPTION
     Selects bindings either by the old certificate thumbprint (renewal path) or
-    by host header (manual / order path), imports the new certificate into the
-    IIS-canonical WebHosting store, then updates each matching binding's
-    certificate hash. Per-binding failures are logged (event 2001) and skipped
+    by a specific site + binding information (manual path), imports the new
+    certificate into the IIS-canonical WebHosting store, then updates each
+    matching binding's certificate hash. Per-binding failures are logged (event 2001) and skipped
     so a single binding never aborts the caller (UC-9.03). Never rebinds on a
     non-Windows host or when WebAdministration is unavailable.
     #>
@@ -21,9 +21,16 @@
         [Parameter(Mandatory = $true)]
         [object]$Certificate,
 
+        # Renewal sweep: rebind every binding currently serving this thumbprint.
         [string]$OldThumbprint = '',
 
-        [string]$HostHeader = ''
+        # Manual rebind: target one specific binding by its unique site + binding
+        # information. A host header is neither always present (HTTPS bindings
+        # are commonly '*:443:' with no host) nor unique, so it is not used as a
+        # selector.
+        [string]$SiteName = '',
+
+        [string]$BindingInformation = ''
     )
 
     $updated = @()
@@ -52,8 +59,11 @@
     if (-not [string]::IsNullOrEmpty($OldThumbprint)) {
         $targets = @($allBindings | Where-Object { $_.Thumbprint -eq $OldThumbprint })
     }
-    elseif (-not [string]::IsNullOrEmpty($HostHeader)) {
-        $targets = @($allBindings | Where-Object { $_.HostHeader -eq $HostHeader })
+    elseif (-not [string]::IsNullOrEmpty($BindingInformation)) {
+        $targets = @($allBindings | Where-Object {
+                $_.BindingInformation -eq $BindingInformation -and
+                ([string]::IsNullOrEmpty($SiteName) -or $_.SiteName -eq $SiteName)
+            })
     }
 
     if ($targets.Count -eq 0) {
