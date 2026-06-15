@@ -62,14 +62,14 @@ This folder contains the specification, acceptance criteria, and atomic use case
 | Area | Count | Priority | Status |
 |------|-------|----------|--------|
 | A. Module Initialization | 4 | P0 | [x] |
-| B. Two-Account Model | 4 | P0–P1 | [ ] |
-| C. TUI Menu System | 4 | P1 | [ ] |
+| B. Two-Account Model | 4 | P0–P1 | [x] |
+| C. TUI Menu System | 4 | P1 | [x] |
 | D. Certificate Operations | 5 | P0–P2 | [ ] |
-| E. Scheduled Renewal | 3 | P1 | [ ] |
-| F. Event Logging | 4 | P1 | [ ] |
+| E. Scheduled Renewal | 3 | P1 | [x] |
+| F. Event Logging | 4 | P1 | [x] |
 | G. IIS Integration | 3 | P1 | [ ] |
-| H. Config & Persistence | 3 | P0–P1 | [ ] |
-| I. Code Quality | 5 | P0 | [ ] |
+| H. Config & Persistence | 3 | P0–P1 | [x] |
+| I. Code Quality | 5 | P0 | [x] |
 | J. Operational Workflows | 4 | P1 | [ ] |
 | **Total** | **39** | — | — |
 
@@ -82,7 +82,7 @@ This folder contains the specification, acceptance criteria, and atomic use case
 | UC-1.01 | Module Import | [x] |
 | UC-1.02 | First-Run Wizard | [x] |
 | UC-2.01 | Account Bootstrap | [x] |
-| UC-3.01 | Dry-Run | [ ] |
+| UC-3.01 | Dry-Run | [x] |
 | UC-11.01 | UTF-8 BOM | [x] |
 | UC-11.02 | PS 5.1 Compatibility | [x] |
 | UC-11.03 | Unit Tests | [x] |
@@ -91,24 +91,22 @@ This folder contains the specification, acceptance criteria, and atomic use case
 
 | UC | Title | Status |
 |----|-------|--------|
-| UC-4.01 | Menu Navigation | [ ] |
-| UC-4.02 | Menu Search | [ ] |
-| UC-4.03 | Menu Format | [ ] |
-| UC-5.01 | Order Certificate (Prod) | [ ] |
-| UC-5.02 | Order Certificate (Dry-Run) | [ ] |
-| UC-6.01 | Renew Certificate | [ ] |
-| UC-7.01 | Scheduled Task | [ ] |
-| UC-7.02 | Renewal Script | [ ] |
-| UC-8.01 | Event Logging | [ ] |
-| UC-9.01 | IIS Discovery | [ ] |
-| UC-9.02 | IIS Rebind | [ ] |
-| UC-9.03 | IIS Recovery | [ ] |
-| UC-10.01 | Config Persistence | [ ] |
-| UC-10.02 | SMTP Encryption | [ ] |
-| UC-10.03 | DNS Encryption | [ ] |
-| UC-11.04 | Integration Tests | [ ] |
-| UC-11.05 | Script Tests | [ ] |
-| UC-12.01 | Dashboard | [ ] |
+| UC-4.01 | Menu Navigation | [x] |
+| UC-4.02 | Menu Search | [x] |
+| UC-4.03 | Menu Format | [x] |
+| UC-5.01 | Order Certificate (Prod) | [x] |
+| UC-5.02 | Order Certificate (Dry-Run) | [x] |
+| UC-6.01 | Renew Certificate | [x] |
+| UC-7.01 | Scheduled Task | [x] |
+| UC-7.02 | Renewal Script | [x] |
+| UC-8.01 | Event Logging | [x] |
+| UC-9.01 | IIS Discovery | [x] |
+| UC-10.01 | Config Persistence | [x] |
+| UC-10.02 | SMTP Encryption | [x] |
+| UC-10.03 | DNS Encryption | [x] |
+| UC-11.04 | Integration Tests | [x] |
+| UC-11.05 | Script Tests | [x] |
+| UC-12.01 | Dashboard | [x] |
 
 ### Phase 3: Operations
 
@@ -116,6 +114,8 @@ This folder contains the specification, acceptance criteria, and atomic use case
 |----|-------|--------|
 | UC-6.02 | Revoke Certificate | [ ] |
 | UC-6.03 | Force-Renew with New Key | [ ] |
+| UC-9.02 | IIS Rebind | [ ] |
+| UC-9.03 | IIS Recovery | [ ] |
 | UC-12.02 | Renewal Status | [ ] |
 
 ## Development Checklist
@@ -123,9 +123,9 @@ This folder contains the specification, acceptance criteria, and atomic use case
 - [x] **Plan** — Review SPEC and AC matrix; prioritize Phase 1 usecases.
 - [x] **Bootstrap** — Create module structure, first-run wizard, account functions.
 - [x] **Test** — Write Pester tests (Unit) alongside implementation.
-- [ ] **Integrate** — Add file I/O, event logging, config persistence.
-- [ ] **Polish** — TUI menu, colors, search; verify PS 5.1 + PS 7+.
-- [ ] **Verify** — Run full Pester suite; all tests green.
+- [x] **Integrate** — Add file I/O, event logging, config persistence.
+- [x] **Polish** — TUI menu, colors, search; verify PS 5.1 + PS 7+.
+- [x] **Verify** — Run full Pester suite; all tests green.
 - [ ] **Deploy** — Test installation and first-run on clean Windows VM.
 
 ## Running the Tests

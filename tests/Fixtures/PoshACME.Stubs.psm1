@@ -17,14 +17,17 @@ function Set-PAServer {
 
 function Get-PAAccount {
     [CmdletBinding()]
-    param()
+    param(
+        [switch]$List
+    )
     throw 'Stub Get-PAAccount called without a Pester mock.'
 }
 
 function Set-PAAccount {
     [CmdletBinding()]
     param(
-        [string]$ID
+        [string]$ID,
+        [switch]$UseAltPluginEncryption
     )
     throw 'Stub Set-PAAccount called without a Pester mock.'
 }
@@ -38,10 +41,43 @@ function New-PAAccount {
     throw 'Stub New-PAAccount called without a Pester mock.'
 }
 
+function New-PACertificate {
+    [CmdletBinding()]
+    param(
+        [string[]]$Domain,
+        [string[]]$Contact,
+        [switch]$AcceptTOS,
+        [string]$Plugin,
+        [hashtable]$PluginArgs
+    )
+    throw 'Stub New-PACertificate called without a Pester mock.'
+}
+
+function Get-PACertificate {
+    [CmdletBinding()]
+    param(
+        [string]$MainDomain,
+        [switch]$List
+    )
+    throw 'Stub Get-PACertificate called without a Pester mock.'
+}
+
+function Submit-Renewal {
+    [CmdletBinding()]
+    param(
+        [string]$MainDomain,
+        [switch]$Force
+    )
+    throw 'Stub Submit-Renewal called without a Pester mock.'
+}
+
 Export-ModuleMember -Function @(
     'Get-PAServer'
     'Set-PAServer'
     'Get-PAAccount'
     'Set-PAAccount'
     'New-PAAccount'
+    'New-PACertificate'
+    'Get-PACertificate'
+    'Submit-Renewal'
 )

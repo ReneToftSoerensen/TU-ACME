@@ -15,11 +15,11 @@ Dry-run is supported through the same dispatch: when the IIS order flow is enter
 
 ## Acceptance Criteria
 
-- [ ] Certificate dashboard displays all IIS bindings (site name, host header, protocol, thumbprint on HTTPS rows)
-- [ ] HTTPS bindings are linked to certificates in `Cert:\LocalMachine\WebHosting` (primary) and `Cert:\LocalMachine\My` (fallback) by thumbprint
-- [ ] Current certificate `NotAfter` is displayed next to each HTTPS binding (UC-9.08)
-- [ ] AD CS template name is displayed next to each HTTPS binding (UC-9.09)
-- [ ] Bindings without a resolvable certificate leave `Expires` / `Template` blank rather than throwing
+- [x] Certificate dashboard displays all IIS bindings (site name, host header, protocol, thumbprint on HTTPS rows)
+- [x] HTTPS bindings are linked to certificates in `Cert:\LocalMachine\WebHosting` (primary) and `Cert:\LocalMachine\My` (fallback) by thumbprint
+- [x] Current certificate `NotAfter` is displayed next to each HTTPS binding (UC-9.08)
+- [x] AD CS template name is displayed next to each HTTPS binding (UC-9.09)
+- [x] Bindings without a resolvable certificate leave `Expires` / `Template` blank rather than throwing
 - [ ] Discovery works on IIS 7.5+ (Server 2008 R2+)
 - [ ] Dashboard is keyboard-navigable; the menu also exposes the order-from-bindings and rebind actions (UC-9.04, UC-9.11)
 

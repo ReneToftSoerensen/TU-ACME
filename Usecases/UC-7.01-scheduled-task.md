@@ -6,16 +6,16 @@ As an **administrator**, I want to **install a Windows Scheduled Task for backgr
 
 ## Acceptance Criteria
 
-- [ ] Install option is available in the main TUI menu (Admin only)
-- [ ] User confirms task creation (safety check)
-- [ ] A Windows Scheduled Task is created to run the renewal script
-- [ ] Task is named `TU-ACME-Renewal` (or similar)
-- [ ] Task runs the renewal script (e.g., `renewal.ps1`) with appropriate parameters
-- [ ] Task is configured to run every 1 hour (or per policy)
-- [ ] Task runs as SYSTEM (with SYSTEM privileges)
-- [ ] Task is set to run on system startup and at scheduled interval
-- [ ] Event Log entry ID 1008 is written on successful installation
-- [ ] Clear confirmation message is displayed with task name and schedule
+- [x] Install option is available in the main TUI menu (Admin only)
+- [x] User confirms task creation (safety check)
+- [x] A Windows Scheduled Task is created to run the renewal script
+- [x] Task is named `TU-ACME-Renewal` (or similar)
+- [x] Task runs the renewal script (e.g., `renewal.ps1`) with appropriate parameters
+- [x] Task is configured to run every 1 hour (or per policy)
+- [x] Task runs as SYSTEM (with SYSTEM privileges)
+- [x] Task is set to run on system startup and at scheduled interval
+- [x] Event Log entry ID 1008 is written on successful installation
+- [x] Clear confirmation message is displayed with task name and schedule
 
 ## Implementation Notes
 

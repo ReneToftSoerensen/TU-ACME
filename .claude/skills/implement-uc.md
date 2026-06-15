@@ -7,7 +7,7 @@ Implement one UC at a time through this pipeline:
 
 1. **Read the spec**: `Usecases/UC-<id>-*.md` and the matching AC rows in `ACCEPTANCE_CRITERIA.md`. If the UC conflicts with a locked decision (below), surface it before coding.
 2. **Write failing tests first** in `tests/Unit/` (Pester 5, `Describe -Tag 'Unit'`). Conventions: dot-source `tests/Bootstrap.ps1` in `BeforeAll`; mock with `Mock -ModuleName 'TU-ACME'` and call private functions via `InModuleScope 'TU-ACME'`; isolate config with `$env:TUACME_DATA_DIR = Join-Path $TestDrive ...` in `BeforeEach`; Posh-ACME commands resolve via `tests/Fixtures/PoshACME.Stubs.psm1` (each throws unless mocked) — never require real Posh-ACME in unit tests.
-3. **Implement** in `TU-ACME/Private/<Area>/` or `TU-ACME/Public/` (one function per file, file named after the function). Public cmdlets must also be added to `FunctionsToExport` in the manifest and `Export-ModuleMember` in the psm1.
+3. **Implement** in `TU-ACME/Private/<Area>/` or `TU-ACME/Public/` (one function per file, file named after the function), following the `code-style` skill for function shape, idioms, and bottlenecks. Public cmdlets must also be added to `FunctionsToExport` in the manifest and `Export-ModuleMember` in the psm1.
 4. **Quality gates**: PS 5.1-safe syntax only (no `??`, `?.`, ternary, pipeline chains, `-AsHashtable`, `-Parallel`); UTF-8 BOM on every new/edited `.ps1/.psm1/.psd1` (run the `fix-bom` skill); run the suite via the `run-pester` skill — must stay green and under 10 s.
 5. **Traceability closeout**: tick the AC checkboxes in `ACCEPTANCE_CRITERIA.md`, update status in `README.md` and `docs/planning-and-traceability.md`.
 6. **Commit per UC** with the UC id in the message.

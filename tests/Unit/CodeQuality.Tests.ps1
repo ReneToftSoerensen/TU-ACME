@@ -68,6 +68,59 @@ Describe 'PowerShell 5.1 compatibility (UC-11.02 / AC-I.2)' -Tag 'Unit', 'CodeQu
     }
 }
 
+Describe 'TUI palette (UC-4.03 / AC-C.4)' -Tag 'Unit', 'CodeQuality' {
+    BeforeDiscovery {
+        $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+        $modulePath = Join-Path $repoRoot 'TU-ACME'
+        $moduleFiles = @()
+        if (Test-Path -LiteralPath $modulePath) {
+            $moduleFiles = @(Get-ChildItem -Path $modulePath -Recurse -File |
+                Where-Object { @('.ps1', '.psm1') -contains $_.Extension })
+        }
+    }
+
+    It 'uses only Cyan/DarkCyan console colors: <_.Name>' -ForEach $moduleFiles {
+        $allowedColors = @('Cyan', 'DarkCyan')
+
+        $tokens = $null
+        $parseErrors = $null
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile(
+            $_.FullName, [ref]$tokens, [ref]$parseErrors)
+
+        # Literal -ForegroundColor/-BackgroundColor arguments on Write-Host.
+        $commands = @($ast.FindAll({
+                    param($node)
+                    $node.GetType().Name -eq 'CommandAst' -and $node.GetCommandName() -eq 'Write-Host'
+                }, $true))
+        foreach ($command in $commands) {
+            $elements = @($command.CommandElements)
+            for ($i = 0; $i -lt $elements.Count; $i++) {
+                if ($elements[$i].GetType().Name -ne 'CommandParameterAst') { continue }
+                if (@('ForegroundColor', 'BackgroundColor') -notcontains $elements[$i].ParameterName) { continue }
+                if (($i + 1) -ge $elements.Count) { continue }
+                $argument = $elements[$i + 1]
+                if ($argument.GetType().Name -eq 'StringConstantExpressionAst') {
+                    $argument.Value | Should -BeIn $allowedColors -Because (
+                        'Write-Host colors are locked to Cyan/DarkCyan (AC-C.4)')
+                }
+            }
+        }
+
+        # ConsoleColor member references anywhere (covers colors assigned to
+        # variables before reaching Write-Host).
+        $memberRefs = @($ast.FindAll({
+                    param($node)
+                    $node.GetType().Name -eq 'MemberExpressionAst' -and
+                    $node.Expression.GetType().Name -eq 'TypeExpressionAst' -and
+                    $node.Expression.TypeName.FullName -match 'ConsoleColor$'
+                }, $true))
+        foreach ($memberRef in $memberRefs) {
+            [string]$memberRef.Member.Value | Should -BeIn $allowedColors -Because (
+                'ConsoleColor usage is locked to Cyan/DarkCyan (AC-C.4)')
+        }
+    }
+}
+
 Describe 'Account bootstrap bottleneck (UC-2.01)' -Tag 'Unit', 'CodeQuality' {
     BeforeAll {
         $script:repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)

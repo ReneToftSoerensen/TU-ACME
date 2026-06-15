@@ -6,11 +6,11 @@ As an **operator**, I want to **perform a dry-run certificate order against stag
 
 ## Acceptance Criteria
 
-- [ ] `-DryRun` flag on order operation switches to staging account before operation
-- [ ] Certificate is issued against staging account and appears only in staging store
-- [ ] Production account context is restored after dry-run (success or failure)
-- [ ] Any errors during dry-run do not leave the system in staging context
-- [ ] Event Log entry ID 1006 is written on successful dry-run
+- [x] `-DryRun` flag on order operation switches to staging account before operation
+- [x] Certificate is issued against staging account and appears only in staging store
+- [x] Production account context is restored after dry-run (success or failure)
+- [x] Any errors during dry-run do not leave the system in staging context
+- [x] Event Log entry ID 1006 is written on successful dry-run
 
 ## Implementation Notes
 

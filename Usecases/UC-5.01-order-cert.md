@@ -6,13 +6,13 @@ As an **operator**, I want to **order a new certificate for a domain**, so that 
 
 ## Acceptance Criteria
 
-- [ ] Order operation calls `Use-TUACMEProdAccount` to ensure prod context
-- [ ] `New-PACertificate` is invoked with the domain and contact email
-- [ ] Certificate is placed in the prod Posh-ACME store
-- [ ] Certificate thumbprint and expiry are readable after ordering
-- [ ] Event Log entry ID 1003 is written with domain and thumbprint
-- [ ] Return value includes certificate thumbprint and expiry date
-- [ ] On error, a clear error message is displayed and logged
+- [x] Order operation calls `Use-TUACMEProdAccount` to ensure prod context
+- [x] `New-PACertificate` is invoked with the domain and contact email
+- [x] Certificate is placed in the prod Posh-ACME store
+- [x] Certificate thumbprint and expiry are readable after ordering
+- [x] Event Log entry ID 1003 is written with domain and thumbprint
+- [x] Return value includes certificate thumbprint and expiry date
+- [x] On error, a clear error message is displayed and logged
 
 ## Implementation Notes
 

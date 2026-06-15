@@ -27,13 +27,25 @@
         }
     }
 
-    if ($missingFields.Count -eq 0) {
-        return $true
+    if ($missingFields.Count -gt 0) {
+        if ($ThrowOnInvalid) {
+            throw ('TU-ACME configuration is missing required field(s): {0}' -f ($missingFields -join ', '))
+        }
+        return $false
     }
 
-    if ($ThrowOnInvalid) {
-        throw ('TU-ACME configuration is missing required field(s): {0}' -f ($missingFields -join ', '))
+    # Set-PAServer only accepts full https URLs; catch a hand-edited config
+    # (e.g. a Posh-ACME saved-server short name) here with a clear message
+    # instead of deep inside the account bootstrap.
+    foreach ($urlField in @('ProdDirectoryUrl', 'StagingDirectoryUrl')) {
+        $url = [string]$Config.PSObject.Properties[$urlField].Value
+        if ($url -notlike 'https://*') {
+            if ($ThrowOnInvalid) {
+                throw ('TU-ACME configuration field {0} must be a full https:// directory URL, got ''{1}''.' -f $urlField, $url)
+            }
+            return $false
+        }
     }
 
-    return $false
+    return $true
 }

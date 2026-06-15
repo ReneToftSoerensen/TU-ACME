@@ -2,13 +2,15 @@
     [CmdletBinding()]
     param()
 
+    $storeRedirected = $false
     if ((Test-TUACMEIsWindows) -and
         [string]::IsNullOrEmpty($env:POSHACME_HOME) -and
         -not [string]::IsNullOrEmpty($env:ProgramData)) {
         $env:POSHACME_HOME = Join-Path $env:ProgramData 'Posh-ACME'
+        $storeRedirected = $true
     }
 
-    if (-not (Import-TUACMEPoshACME)) {
+    if (-not (Import-TUACMEPoshACME -ForceStoreRebind:$storeRedirected)) {
         Write-Warning ('Posh-ACME is not installed. Install it from the PowerShell ' +
             'Gallery before running certificate operations.')
     }

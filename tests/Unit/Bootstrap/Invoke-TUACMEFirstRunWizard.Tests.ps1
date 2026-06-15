@@ -97,8 +97,9 @@ Describe 'Invoke-TUACMEFirstRunWizard (UC-1.02)' -Tag 'Unit' {
         $result.StagingAccountId | Should -Be 'staging-account-1'
     }
 
-    It 'fails when New-PAAccount does not return an account id' {
+    It 'fails when no account id is resolvable after New-PAAccount' {
         Mock -ModuleName 'TU-ACME' New-PAAccount { $null }
+        Mock -ModuleName 'TU-ACME' Get-PAAccount { $null }
 
         { InModuleScope 'TU-ACME' { Invoke-TUACMEFirstRunWizard } } | Should -Throw '*account id*'
     }
@@ -124,6 +125,44 @@ Describe 'Invoke-TUACMEFirstRunWizard (UC-1.02)' -Tag 'Unit' {
         }
     }
 
+    It 'falls back to Get-PAAccount when New-PAAccount returns nothing (Posh-ACME 4.32+)' {
+        Mock -ModuleName 'TU-ACME' New-PAAccount { $null }
+        $global:TUACMETestFallbacks = 0
+        Mock -ModuleName 'TU-ACME' Get-PAAccount {
+            $global:TUACMETestFallbacks++
+            if ($global:TUACMETestFallbacks -eq 1) {
+                [pscustomobject]@{ id = 'prod-account-1' }
+            }
+            else {
+                [pscustomobject]@{ id = 'staging-account-1' }
+            }
+        }
+
+        $result = InModuleScope 'TU-ACME' { Invoke-TUACMEFirstRunWizard }
+
+        $result.ProdAccountId | Should -Be 'prod-account-1'
+        $result.StagingAccountId | Should -Be 'staging-account-1'
+        Remove-Variable -Name 'TUACMETestFallbacks' -Scope Global -ErrorAction SilentlyContinue
+    }
+
+    It 'restores prod context when staging account creation fails' {
+        Mock -ModuleName 'TU-ACME' New-PAAccount {
+            $global:TUACMETestAccounts++
+            if ($global:TUACMETestAccounts -eq 1) {
+                [pscustomobject]@{ id = 'prod-account-1' }
+            }
+            else {
+                throw 'staging directory unreachable'
+            }
+        }
+
+        {
+            InModuleScope 'TU-ACME' { Invoke-TUACMEFirstRunWizard }
+        } | Should -Throw '*staging directory unreachable*'
+
+        $global:TUACMETestSwitches[-1] | Should -Be 'prod'
+    }
+
     It 'fails fast with a clear error when Posh-ACME is unavailable' {
         Mock -ModuleName 'TU-ACME' Import-TUACMEPoshACME { $false }
 
@@ -139,13 +178,12 @@ Describe 'Invoke-TUACMEFirstRunWizard (UC-1.02)' -Tag 'Unit' {
             if ($global:TUACMETestProdPrompts -eq 1) { 'https:\\acme.example.com' }
             else { 'https://acme.example.com/prod/directory' }
         } -ParameterFilter { $Prompt -like 'Production*' }
-        Mock -ModuleName 'TU-ACME' Write-Warning { }
 
         $result = InModuleScope 'TU-ACME' { Invoke-TUACMEFirstRunWizard }
 
         $result.ProdDirectoryUrl | Should -Be 'https://acme.example.com/prod/directory'
-        Should -Invoke -ModuleName 'TU-ACME' Write-Warning -Times 1 -Exactly -ParameterFilter {
-            $Message -like '*https://*'
+        Should -Invoke -ModuleName 'TU-ACME' Write-Host -Times 1 -Exactly -ParameterFilter {
+            $Object -like '*https://*' -and [string]$ForegroundColor -eq 'Cyan'
         }
         Remove-Variable -Name 'TUACMETestProdPrompts' -Scope Global -ErrorAction SilentlyContinue
     }

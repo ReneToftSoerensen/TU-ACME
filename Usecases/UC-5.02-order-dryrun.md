@@ -6,14 +6,14 @@ As an **operator**, I want to **order a certificate against staging for testing*
 
 ## Acceptance Criteria
 
-- [ ] Order operation accepts `-DryRun` flag
-- [ ] With `-DryRun`, operation calls `Use-TUACMEStagingAccount` at start
-- [ ] Certificate is issued against staging account
-- [ ] Certificate appears in staging store only, not prod
-- [ ] Operation calls `Use-TUACMEProdAccount` in finally block to restore prod context
-- [ ] Prod context is restored even if the order fails
-- [ ] Event Log entry ID 1006 is written on success
-- [ ] Dry-run certificate is **not** imported to LocalMachine\My
+- [x] Order operation accepts `-DryRun` flag
+- [x] With `-DryRun`, operation calls `Use-TUACMEStagingAccount` at start
+- [x] Certificate is issued against staging account
+- [x] Certificate appears in staging store only, not prod
+- [x] Operation calls `Use-TUACMEProdAccount` in finally block to restore prod context
+- [x] Prod context is restored even if the order fails
+- [x] Event Log entry ID 1006 is written on success
+- [x] Dry-run certificate is **not** imported to LocalMachine\My
 
 ## Implementation Notes
 

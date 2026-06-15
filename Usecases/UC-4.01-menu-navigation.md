@@ -6,12 +6,12 @@ As an **operator**, I want to **navigate menus using arrow keys and Enter**, so 
 
 ## Acceptance Criteria
 
-- [ ] Up arrow moves selection to previous menu item
-- [ ] Down arrow moves selection to next menu item
-- [ ] Enter invokes the selected menu item
-- [ ] Selection wraps at top and bottom of menu
-- [ ] Current selection is visually highlighted (Cyan/DarkCyan)
-- [ ] Disabled items are skipped during navigation
+- [x] Up arrow moves selection to previous menu item
+- [x] Down arrow moves selection to next menu item
+- [x] Enter invokes the selected menu item
+- [x] Selection wraps at top and bottom of menu
+- [x] Current selection is visually highlighted (Cyan/DarkCyan)
+- [x] Disabled items are skipped during navigation
 
 ## Implementation Notes
 

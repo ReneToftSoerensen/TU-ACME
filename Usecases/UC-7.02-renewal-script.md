@@ -6,16 +6,16 @@ As an **automated system**, I want to **run a renewal script hourly (via Schedul
 
 ## Acceptance Criteria
 
-- [ ] Renewal script is standalone (e.g., `TU-ACME/Scripts/Invoke-Renewal.ps1`)
-- [ ] Script imports TU-ACME module
-- [ ] Script calls `Use-TUACMEProdAccount` before any Posh-ACME operation
-- [ ] Script iterates through all certificates and checks expiry
-- [ ] Certificates within 30 days of expiry are renewed
-- [ ] Renewed certificates are imported to LocalMachine\My automatically
-- [ ] Script logs to Event Log (ID 1001 per renewed cert, ID 3001 on fatal error)
-- [ ] Script handles errors gracefully (logs, continues to next cert)
+- [x] Renewal script is standalone (e.g., `TU-ACME/Scripts/Invoke-Renewal.ps1`)
+- [x] Script imports TU-ACME module
+- [x] Script calls `Use-TUACMEProdAccount` before any Posh-ACME operation
+- [x] Script iterates through all certificates and checks expiry
+- [x] Certificates within 30 days of expiry are renewed
+- [x] Renewed certificates are imported to LocalMachine\My automatically
+- [x] Script logs to Event Log (ID 1001 per renewed cert, ID 3001 on fatal error)
+- [x] Script handles errors gracefully (logs, continues to next cert)
 - [ ] Script completes in <5 minutes (typical run)
-- [ ] Script outputs no console output (suitable for scheduled task)
+- [x] Script outputs no console output (suitable for scheduled task)
 
 ## Implementation Notes
 
