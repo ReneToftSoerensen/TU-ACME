@@ -74,6 +74,32 @@ Describe 'Invoke-TUACMEOrderCertificate (UC-5.01 / AC-D.1, AC-J.2)' -Tag 'Unit' 
         }
     }
 
+    It 'orders the FQDN as CN and the short hostname as a SAN (UC-5.03 / #18)' {
+        $null = InModuleScope 'TU-ACME' { Invoke-TUACMEOrderCertificate -Domain @('df-bpxt4s2-ws.fragt.root.local', 'DF-BPXT4S2-WS') }
+
+        Should -Invoke -ModuleName 'TU-ACME' New-PACertificate -Times 1 -Exactly -ParameterFilter {
+            $Domain -contains 'df-bpxt4s2-ws.fragt.root.local' -and $Domain -contains 'DF-BPXT4S2-WS'
+        }
+    }
+
+    It 'returns the primary FQDN as a scalar string when ordering a multi-name cert (UC-5.03 / #18)' {
+        $result = InModuleScope 'TU-ACME' { Invoke-TUACMEOrderCertificate -Domain @('df-bpxt4s2-ws.fragt.root.local', 'DF-BPXT4S2-WS') }
+
+        $result.Domain | Should -Be 'df-bpxt4s2-ws.fragt.root.local'
+        $result.Domain | Should -BeOfType [string]
+    }
+
+    It 'logs event 1003 referencing the primary FQDN for a multi-name order (UC-5.03 / #18)' {
+        $null = InModuleScope 'TU-ACME' { Invoke-TUACMEOrderCertificate -Domain @('df-bpxt4s2-ws.fragt.root.local', 'DF-BPXT4S2-WS') }
+
+        Should -Invoke -ModuleName 'TU-ACME' Write-TUACMEEventLog -Times 1 -Exactly -ParameterFilter {
+            $EventId -eq 1003 -and
+            $EntryType -eq 'Information' -and
+            $Message -like '*df-bpxt4s2-ws.fragt.root.local*' -and
+            $Message -like '*ABCDEF1234567890*'
+        }
+    }
+
     It 'passes the configured DNS plugin and decrypted args to New-PACertificate (UC-10.03)' {
         Mock -ModuleName 'TU-ACME' Get-TUACMEDNSConfig {
             [pscustomobject]@{

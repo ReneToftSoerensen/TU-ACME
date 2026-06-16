@@ -82,17 +82,23 @@
                     Show-TUACMEDashboard
                 }
                 'Order certificate' {
-                    $domain = ([string](Read-Host 'Domain to order')).Trim()
-                    if (-not [string]::IsNullOrEmpty($domain)) {
-                        $result = Invoke-TUACMEOrderCertificate -Domain $domain
+                    $domains = Get-TUACMEOrderDomain -Prompt 'FQDN to order (CN)'
+                    if (@($domains).Count -gt 0) {
+                        $result = Invoke-TUACMEOrderCertificate -Domain $domains
                         Write-Host ('Ordered {0} (thumbprint {1}, expires {2:yyyy-MM-dd}).' -f $result.Domain, $result.Thumbprint, $result.NotAfter) -ForegroundColor Cyan
+                        if (@($domains).Count -gt 1) {
+                            Write-Host ('Included SAN: {0}.' -f ((@($domains)[1..(@($domains).Count - 1)]) -join ', ')) -ForegroundColor Cyan
+                        }
                     }
                 }
                 'Dry-run order (staging)' {
-                    $domain = ([string](Read-Host 'Domain for the staging dry-run')).Trim()
-                    if (-not [string]::IsNullOrEmpty($domain)) {
-                        $result = Invoke-TUACMEOrderCertificate -Domain $domain -DryRun
+                    $domains = Get-TUACMEOrderDomain -Prompt 'FQDN for the staging dry-run (CN)'
+                    if (@($domains).Count -gt 0) {
+                        $result = Invoke-TUACMEOrderCertificate -Domain $domains -DryRun
                         Write-Host ('Dry-run issued {0} against staging (thumbprint {1}). Production is unchanged.' -f $result.Domain, $result.Thumbprint) -ForegroundColor Cyan
+                        if (@($domains).Count -gt 1) {
+                            Write-Host ('Included SAN: {0}.' -f ((@($domains)[1..(@($domains).Count - 1)]) -join ', ')) -ForegroundColor Cyan
+                        }
                     }
                 }
                 'Renew certificate' {
