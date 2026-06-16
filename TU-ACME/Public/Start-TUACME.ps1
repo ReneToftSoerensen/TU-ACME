@@ -238,6 +238,30 @@
                                 $sanText = ([string](Read-Host 'Additional SANs (comma/space separated, blank for none)')).Trim()
                                 $san = @($sanText -split '[,\s]+' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrEmpty($_) })
 
+                                # The HTTPS binding host header is independent of the
+                                # certificate CN: default it to the selected HTTP
+                                # binding's host header (which may be empty for an
+                                # all-hosts binding). Binding on the CN would make a
+                                # wildcard CN (*.example.com) an invalid IIS host and
+                                # silently turn an all-hosts binding into an SNI one.
+                                $bindingHostDefault = [string]$chosenBinding.HostHeader
+                                if ([string]::IsNullOrEmpty($bindingHostDefault)) {
+                                    $bindingHostPrompt = 'HTTPS binding host header (blank for all hosts)'
+                                }
+                                else {
+                                    $bindingHostPrompt = 'HTTPS binding host header (Enter for "{0}", "*" for all hosts)' -f $bindingHostDefault
+                                }
+                                $bindingHostInput = ([string](Read-Host $bindingHostPrompt)).Trim()
+                                if ([string]::IsNullOrEmpty($bindingHostInput)) {
+                                    $bindingHost = $bindingHostDefault
+                                }
+                                elseif ($bindingHostInput -eq '*') {
+                                    $bindingHost = ''
+                                }
+                                else {
+                                    $bindingHost = $bindingHostInput
+                                }
+
                                 $dryRunAnswer = ([string](Read-Host 'Dry-run against staging? Makes no IIS changes. (y/N)')).Trim()
                                 $dryRun = ($dryRunAnswer -eq 'y')
 
@@ -246,7 +270,7 @@
                                     Domain     = $cn
                                     San        = $san
                                     Port       = $port
-                                    HostHeader = $cn
+                                    HostHeader = $bindingHost
                                 }
                                 if ($dryRun) {
                                     $httpsParams['DryRun'] = $true

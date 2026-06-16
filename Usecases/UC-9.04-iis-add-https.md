@@ -23,7 +23,9 @@ The operator reaches it from the **"Add HTTPS to an IIS site"** menu entry. The
 flow lists HTTP bindings (`Get-TUACMEIISBinding | Where-Object Protocol -eq
 'http'`), prompts for the HTTPS port (default 443), the CN (pre-filled from the
 selected binding's host header when present), optional comma/space-separated
-SANs, and whether to dry-run.
+SANs, the HTTPS binding host header (defaulted to the selected HTTP binding's
+host header — independent of the CN; `*` selects an all-hosts binding), and
+whether to dry-run.
 
 Dry-run **never** touches IIS. With `-DryRun`, `Invoke-TUACMEOrderCertificate`
 swaps to the staging account in a `try/finally` (UC-3.01); the staging cert is
@@ -35,6 +37,7 @@ production IIS state is never touched by a dry-run.
 - [x] Operator selects an HTTP IIS binding and provisions HTTPS for that site
 - [x] Operator chooses the CN (primary domain), optional SANs, and the HTTPS port (default 443)
 - [x] The CN prompt is pre-filled with the selected binding's host header when present (Enter accepts it)
+- [x] The HTTPS binding host header defaults to the selected HTTP binding's host header (independent of the certificate CN) and is operator-overridable, so a wildcard CN (`*.example.com`) is never used as an invalid IIS host header and an all-hosts HTTP binding is not silently turned into an SNI binding
 - [x] Certificate is ordered via the normal ACME flow (`Invoke-TUACMEOrderCertificate`); event 1003 on success, 3002 on order failure
 - [x] Certificate is imported into `Cert:\LocalMachine\WebHosting` (and `My`); event 1011 on import
 - [x] HTTPS binding is created at the chosen port/host header, or **updated** if one already exists on that site/port/host
