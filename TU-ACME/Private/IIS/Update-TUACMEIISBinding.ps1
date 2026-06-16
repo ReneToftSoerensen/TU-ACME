@@ -9,7 +9,8 @@
     certificate into the IIS-canonical WebHosting store, then updates each
     matching binding's certificate hash. Per-binding failures are logged (event 2001) and skipped
     so a single binding never aborts the caller (UC-9.03). Never rebinds on a
-    non-Windows host or when WebAdministration is unavailable.
+    non-Windows host or when no IIS provider (WebAdministration on Windows
+    PowerShell 5.1, IISAdministration on PowerShell 7) is available (issue #16).
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -39,8 +40,9 @@
     if (-not (Test-TUACMEIsWindows)) {
         return [pscustomobject]@{ Updated = $updated; Failed = $failed }
     }
-    if ($null -eq (Get-Command -Name 'Set-WebBinding' -ErrorAction SilentlyContinue)) {
-        Write-Verbose 'WebAdministration is not available; skipping IIS rebind.'
+    $provider = Get-TUACMEIISProvider
+    if ($null -eq $provider) {
+        Write-Verbose 'No IIS provider (WebAdministration / IISAdministration) is available; skipping IIS rebind.'
         return [pscustomobject]@{ Updated = $updated; Failed = $failed }
     }
 
@@ -78,13 +80,21 @@
 
     foreach ($binding in $targets) {
         try {
-            # Update the hash first: the new cert lives in both stores, so the
-            # binding serves it immediately under its existing store name. Only
-            # then switch the store name to canonical WebHosting. A failed hash
-            # update therefore never strands the binding on a store/thumbprint
-            # pair that lacks the cert (UC-9.03).
-            Set-WebBinding -Name $binding.SiteName -BindingInformation $binding.BindingInformation -PropertyName 'certificateHash' -Value $NewThumbprint -ErrorAction Stop
-            Set-WebBinding -Name $binding.SiteName -BindingInformation $binding.BindingInformation -PropertyName 'certificateStoreName' -Value 'WebHosting' -ErrorAction Stop
+            if ($provider -eq 'IISAdministration') {
+                # PowerShell 7 path: there is no Set-WebBinding cmdlet, so the
+                # certificateHash + certificateStoreName are set via the
+                # ServerManager and committed atomically (issue #16).
+                Set-TUACMEIISBindingCertificate -SiteName $binding.SiteName -BindingInformation $binding.BindingInformation -Thumbprint $NewThumbprint -StoreName 'WebHosting'
+            }
+            else {
+                # Update the hash first: the new cert lives in both stores, so the
+                # binding serves it immediately under its existing store name. Only
+                # then switch the store name to canonical WebHosting. A failed hash
+                # update therefore never strands the binding on a store/thumbprint
+                # pair that lacks the cert (UC-9.03).
+                Set-WebBinding -Name $binding.SiteName -BindingInformation $binding.BindingInformation -PropertyName 'certificateHash' -Value $NewThumbprint -ErrorAction Stop
+                Set-WebBinding -Name $binding.SiteName -BindingInformation $binding.BindingInformation -PropertyName 'certificateStoreName' -Value 'WebHosting' -ErrorAction Stop
+            }
 
             Write-TUACMEEventLog -EventId 1002 -EntryType Information -Message ('IIS binding {0} on site ''{1}'' rebound to thumbprint {2}.' -f $binding.BindingInformation, $binding.SiteName, $NewThumbprint)
             $updated += $binding

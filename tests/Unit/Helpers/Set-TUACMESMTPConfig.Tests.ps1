@@ -68,6 +68,28 @@ Describe 'Set-TUACMESMTPConfig (UC-10.02 / AC-H.2)' -Tag 'Unit' {
         $saved = Get-Content -LiteralPath (Join-Path $env:TUACME_DATA_DIR 'config.json') -Raw | ConvertFrom-Json
         $saved.Smtp.Server | Should -Be 'new.example.com'
     }
+
+    It 'stores an empty EncryptedPassword for an unauthenticated relay (blank password) without throwing (issue #15)' {
+        InModuleScope 'TU-ACME' {
+            $emptyPassword = New-Object System.Security.SecureString
+            { Set-TUACMESMTPConfig -Server 'relay.example.com' -Password $emptyPassword } | Should -Not -Throw
+        }
+
+        $saved = Get-Content -LiteralPath (Join-Path $env:TUACME_DATA_DIR 'config.json') -Raw | ConvertFrom-Json
+        $saved.Smtp.Server | Should -Be 'relay.example.com'
+        $saved.Smtp.EncryptedPassword | Should -Be ''
+        Should -Invoke -ModuleName 'TU-ACME' ConvertFrom-SecureString -Times 0 -Exactly
+    }
+
+    It 'is configurable with the Password parameter omitted entirely (issue #15)' {
+        InModuleScope 'TU-ACME' {
+            { Set-TUACMESMTPConfig -Server 'relay.example.com' } | Should -Not -Throw
+        }
+
+        $saved = Get-Content -LiteralPath (Join-Path $env:TUACME_DATA_DIR 'config.json') -Raw | ConvertFrom-Json
+        $saved.Smtp.EncryptedPassword | Should -Be ''
+        Should -Invoke -ModuleName 'TU-ACME' ConvertFrom-SecureString -Times 0 -Exactly
+    }
 }
 
 Describe 'Get-TUACMESMTPConfig (UC-10.02 / AC-H.2)' -Tag 'Unit' {
@@ -88,7 +110,11 @@ Describe 'Get-TUACMESMTPConfig (UC-10.02 / AC-H.2)' -Tag 'Unit' {
         Mock -ModuleName 'TU-ACME' ConvertTo-SecureString { New-Object System.Security.SecureString }
 
         $result = InModuleScope 'TU-ACME' {
+            # A non-empty SecureString: a blank one now means "no password" and
+            # is stored without encryption (issue #15), so it would not exercise
+            # the decrypt round-trip under test here.
             $password = New-Object System.Security.SecureString
+            $password.AppendChar('x')
             Set-TUACMESMTPConfig -Server 'smtp.example.com' -Port 587 -Username 'mailer' -Password $password
             Get-TUACMESMTPConfig
         }

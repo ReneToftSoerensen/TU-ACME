@@ -8,7 +8,8 @@
 
         [string]$Username = '',
 
-        [Parameter(Mandatory = $true)]
+        # Optional: an internal relay is commonly unauthenticated, so a blank
+        # password is valid and stores an empty EncryptedPassword (issue #15).
         [System.Security.SecureString]$Password
     )
 
@@ -16,7 +17,13 @@
 
     # ConvertFrom-SecureString without -Key uses DPAPI, so the stored
     # ciphertext is bound to this user on this machine by design (AC-H.2).
-    $encryptedPassword = ConvertFrom-SecureString -SecureString $Password
+    # An empty SecureString (unauthenticated relay) is left unencrypted:
+    # ConvertFrom-SecureString rejects an empty SecureString and would throw
+    # otherwise (issue #15).
+    $encryptedPassword = ''
+    if ($null -ne $Password -and $Password.Length -gt 0) {
+        $encryptedPassword = ConvertFrom-SecureString -SecureString $Password
+    }
 
     $smtp = [pscustomobject]@{
         Server            = $Server
