@@ -104,6 +104,30 @@ Describe 'New-TUACMEIISHttpsBinding (UC-9.04 / AC-G.4)' -Tag 'Unit' {
         } | Should -Throw
     }
 
+    It 'rejects a blank certificate CN after trimming and does not order' {
+        {
+            InModuleScope 'TU-ACME' {
+                New-TUACMEIISHttpsBinding -SiteName 'Site1' -Domain '   '
+            }
+        } | Should -Throw
+
+        Should -Invoke -ModuleName 'TU-ACME' Invoke-TUACMEOrderCertificate -Times 0 -Exactly
+    }
+
+    It 'looks up the issued cert by the order''s normalised primary domain, not the raw input' {
+        Mock -ModuleName 'TU-ACME' Invoke-TUACMEOrderCertificate {
+            [pscustomobject]@{ Domain = 'resolved.example.com'; Thumbprint = 'ORDERED'; NotAfter = (Get-Date).AddDays(90) }
+        }
+
+        $null = InModuleScope 'TU-ACME' {
+            New-TUACMEIISHttpsBinding -SiteName 'Site1' -Domain 'site.example.com' -Port 443 -HostHeader 'site.example.com'
+        }
+
+        Should -Invoke -ModuleName 'TU-ACME' Get-PACertificate -Times 1 -Exactly -ParameterFilter {
+            $MainDomain -eq 'resolved.example.com'
+        }
+    }
+
     It 'makes no binding calls on non-Windows platforms' {
         Mock -ModuleName 'TU-ACME' Test-TUACMEIsWindows { $false }
         Mock -ModuleName 'TU-ACME' Write-Host { }

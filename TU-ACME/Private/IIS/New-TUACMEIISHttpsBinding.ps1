@@ -37,6 +37,16 @@
         [switch]$DryRun
     )
 
+    # Normalise the operator-supplied CN and binding host so trimmed values flow
+    # into both the order and the binding information. Invoke-TUACMEOrderCertificate
+    # trims internally, so an untrimmed CN here would mismatch the stored cert and
+    # the binding lookups. Reject a blank CN up front.
+    $Domain = ([string]$Domain).Trim()
+    if ([string]::IsNullOrEmpty($Domain)) {
+        throw 'A non-empty certificate CN (-Domain) is required.'
+    }
+    $HostHeader = ([string]$HostHeader).Trim()
+
     # The CN is the first entry; SANs follow. De-dupe so a SAN that repeats the
     # CN never orders the same name twice (mirrors Get-TUACMEOrderDomain).
     $domains = @($Domain)
@@ -88,8 +98,10 @@
     }
 
     # Get-PACertificate returns the importable object (PfxFullChain/PfxPass);
-    # the order fn deliberately does not import (mirrors the renewal path).
-    $paCert = Get-PACertificate -MainDomain $Domain
+    # the order fn deliberately does not import (mirrors the renewal path). Use
+    # the order's primary domain (normalised by Invoke-TUACMEOrderCertificate) so
+    # the lookup matches the name the cert was actually stored under.
+    $paCert = Get-PACertificate -MainDomain $order.Domain
 
     # Import into both stores so the binding resolves the thumbprint regardless
     # of store name; WebHosting is the IIS-canonical store (UC-9.02). Returns
