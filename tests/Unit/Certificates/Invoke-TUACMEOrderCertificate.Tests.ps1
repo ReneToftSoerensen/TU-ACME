@@ -100,6 +100,14 @@ Describe 'Invoke-TUACMEOrderCertificate (UC-5.01 / AC-D.1, AC-J.2)' -Tag 'Unit' 
         }
     }
 
+    It 'throws and does not order when no non-empty domain is supplied' {
+        {
+            InModuleScope 'TU-ACME' { Invoke-TUACMEOrderCertificate -Domain @('   ') }
+        } | Should -Throw
+
+        Should -Invoke -ModuleName 'TU-ACME' New-PACertificate -Times 0 -Exactly
+    }
+
     It 'passes the configured DNS plugin and decrypted args to New-PACertificate (UC-10.03)' {
         Mock -ModuleName 'TU-ACME' Get-TUACMEDNSConfig {
             [pscustomobject]@{

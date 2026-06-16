@@ -27,6 +27,7 @@
         # Additional Subject Alternative Names appended after the CN.
         [string[]]$San = @(),
 
+        [ValidateRange(1, 65535)]
         [int]$Port = 443,
 
         # HTTPS binding host header; commonly equals the CN. Empty means an
@@ -71,7 +72,9 @@
     # Guard before importing so an unavailable provider never imports needlessly.
     $provider = Get-TUACMEIISProvider
     if (-not (Test-TUACMEIsWindows) -or $null -eq $provider) {
-        Write-Host 'IIS management is unavailable; install IIS Management Scripts and Tools, or run under Windows PowerShell 5.1. Certificate ordered but no HTTPS binding was created.' -ForegroundColor Cyan
+        # DarkCyan is the advisory/remediation tone (AC-C.4); the cert was still
+        # ordered, but this path created no binding and needs operator action.
+        Write-Host 'IIS management is unavailable; install IIS Management Scripts and Tools, or run under Windows PowerShell 5.1. Certificate ordered but no HTTPS binding was created.' -ForegroundColor DarkCyan
         return [pscustomobject]@{
             Domain         = $order.Domain
             Thumbprint     = $order.Thumbprint

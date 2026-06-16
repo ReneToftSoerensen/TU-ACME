@@ -96,6 +96,14 @@ Describe 'New-TUACMEIISHttpsBinding (UC-9.04 / AC-G.4)' -Tag 'Unit' {
         }
     }
 
+    It 'rejects an out-of-range HTTPS port' {
+        {
+            InModuleScope 'TU-ACME' {
+                New-TUACMEIISHttpsBinding -SiteName 'Site1' -Domain 'site.example.com' -Port 70000
+            }
+        } | Should -Throw
+    }
+
     It 'makes no binding calls on non-Windows platforms' {
         Mock -ModuleName 'TU-ACME' Test-TUACMEIsWindows { $false }
         Mock -ModuleName 'TU-ACME' Write-Host { }

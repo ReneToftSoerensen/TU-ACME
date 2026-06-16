@@ -14,6 +14,14 @@
     $config = Get-TUACMEConfig
     $dns = Get-TUACMEDNSConfig
 
+    # -Domain is [string[]]; a caller can still pass blank entries or an array
+    # that trims down to nothing. Normalise and require at least one usable
+    # name so the primary domain (and the 3002 message) is never empty.
+    $Domain = @($Domain | ForEach-Object { ([string]$_).Trim() } | Where-Object { -not [string]::IsNullOrEmpty($_) })
+    if ($Domain.Count -eq 0) {
+        throw 'At least one non-empty domain is required to order a certificate.'
+    }
+
     # The order body takes its inputs as parameters (no closure) so it stays
     # bound to the module session state on both the prod and dry-run paths.
     $orderOperation = {
