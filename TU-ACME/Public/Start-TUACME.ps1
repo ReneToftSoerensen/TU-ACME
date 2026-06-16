@@ -48,6 +48,7 @@
         'Force-renew certificate (new key)'
         'Revoke certificate'
         'Rebind IIS site'
+        'Add HTTPS to an IIS site'
         'Clean up unbound certificates'
         'Configure SMTP notifications'
         'Configure DNS plugin'
@@ -67,6 +68,7 @@
         # configuration, so they need elevation just like the task install.
         $disabledIndices += [array]::IndexOf($menuItems, 'Install scheduled renewal task')
         $disabledIndices += [array]::IndexOf($menuItems, 'Rebind IIS site')
+        $disabledIndices += [array]::IndexOf($menuItems, 'Add HTTPS to an IIS site')
         $disabledIndices += [array]::IndexOf($menuItems, 'Clean up unbound certificates')
     }
 
@@ -179,6 +181,72 @@
                                     $chosenCert = $certificates[$certPick]
                                     $rebind = Update-TUACMEIISBinding -SiteName $chosenBinding.SiteName -BindingInformation $chosenBinding.BindingInformation -NewThumbprint ([string]$chosenCert.Thumbprint) -Certificate $chosenCert
                                     Write-Host ('Rebind complete: {0} updated, {1} failed.' -f @($rebind.Updated).Count, @($rebind.Failed).Count) -ForegroundColor Cyan
+                                }
+                            }
+                        }
+                    }
+                }
+                'Add HTTPS to an IIS site' {
+                    $httpBindings = @(Get-TUACMEIISBinding | Where-Object { $_.Protocol -eq 'http' })
+                    if ($httpBindings.Count -eq 0) {
+                        # An empty list is most often issue #16 on PowerShell 7
+                        # (WebAdministration not loaded), so point operators at
+                        # the remedy rather than implying no HTTP sites exist.
+                        Write-Host 'No HTTP bindings found. If IIS is installed, WebAdministration may be unavailable; install IIS Management Scripts and Tools, or run under Windows PowerShell 5.1.' -ForegroundColor Cyan
+                    }
+                    else {
+                        $httpLabels = @($httpBindings | ForEach-Object { ('{0} - {1}' -f $_.SiteName, $_.BindingInformation) })
+                        $siteSelection = Show-TUACMEMenu -Title 'Select an HTTP site to add HTTPS to' -Items $httpLabels
+                        if ($siteSelection -ge 0) {
+                            $chosenBinding = $httpBindings[$siteSelection]
+
+                            $portText = ([string](Read-Host 'HTTPS port (default 443)')).Trim()
+                            $port = 443
+                            if (-not [string]::IsNullOrEmpty($portText)) {
+                                $port = [int]$portText
+                            }
+
+                            # Pre-fill the CN from the binding's host header when
+                            # present so the common case is a single Enter.
+                            $cnDefault = [string]$chosenBinding.HostHeader
+                            $cnPrompt = 'Certificate CN (primary domain)'
+                            if (-not [string]::IsNullOrEmpty($cnDefault)) {
+                                $cnPrompt = 'Certificate CN (Enter for "{0}")' -f $cnDefault
+                            }
+                            $cn = ([string](Read-Host $cnPrompt)).Trim()
+                            if ([string]::IsNullOrEmpty($cn)) {
+                                $cn = $cnDefault
+                            }
+
+                            if ([string]::IsNullOrEmpty($cn)) {
+                                Write-Host 'No CN provided; nothing to order.' -ForegroundColor Cyan
+                            }
+                            else {
+                                $sanText = ([string](Read-Host 'Additional SANs (comma/space separated, blank for none)')).Trim()
+                                $san = @($sanText -split '[,\s]+' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrEmpty($_) })
+
+                                $dryRunAnswer = ([string](Read-Host 'Dry-run against staging? Makes no IIS changes. (y/N)')).Trim()
+                                $dryRun = ($dryRunAnswer -eq 'y')
+
+                                $httpsParams = @{
+                                    SiteName   = $chosenBinding.SiteName
+                                    Domain     = $cn
+                                    San        = $san
+                                    Port       = $port
+                                    HostHeader = $cn
+                                }
+                                if ($dryRun) {
+                                    $httpsParams['DryRun'] = $true
+                                }
+                                $result = New-TUACMEIISHttpsBinding @httpsParams
+                                if ($dryRun) {
+                                    Write-Host ('Dry-run issued {0} against staging (thumbprint {1}). Production and IIS are unchanged.' -f $result.Domain, $result.Thumbprint) -ForegroundColor Cyan
+                                }
+                                elseif ($result.BindingCreated -or $result.BindingUpdated) {
+                                    Write-Host ('HTTPS provisioned for {0} on site ''{1}'' (port {2}, thumbprint {3}).' -f $result.Domain, $result.SiteName, $result.Port, $result.Thumbprint) -ForegroundColor Cyan
+                                }
+                                else {
+                                    Write-Host ('Certificate ordered for {0} (thumbprint {1}); no HTTPS binding was created.' -f $result.Domain, $result.Thumbprint) -ForegroundColor Cyan
                                 }
                             }
                         }
