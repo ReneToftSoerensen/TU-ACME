@@ -38,10 +38,10 @@ production IIS state is never touched by a dry-run.
 - [x] Certificate is ordered via the normal ACME flow (`Invoke-TUACMEOrderCertificate`); event 1003 on success, 3002 on order failure
 - [x] Certificate is imported into `Cert:\LocalMachine\WebHosting` (and `My`); event 1011 on import
 - [x] HTTPS binding is created at the chosen port/host header, or **updated** if one already exists on that site/port/host
-- [x] The new certificate is attached via `Set-WebBinding -PropertyName 'certificateHash'`; event 1002 on success
+- [x] The new certificate is attached via the session's IIS provider — `Set-WebBinding -PropertyName 'certificateHash'` on 5.1, `Set-TUACMEIISBindingCertificate` (ServerManager) on PowerShell 7; event 1002 on success
 - [x] SNI (`-SslFlags 1`) is used when a host header is present, else `0`
 - [x] Dry-run orders against staging and makes **NO import and NO IIS changes**
-- [x] Non-Windows / WebAdministration-unavailable: no binding is attempted; a clear remediation message is surfaced (event 2001 / 3xxx on a genuine binding failure)
+- [x] Non-Windows / no IIS provider available: no binding is attempted; a clear remediation message is surfaced (event 2001 / 3xxx on a genuine binding failure)
 - [x] Existing non-cert binding settings are preserved when updating
 
 ## Implementation Notes
@@ -53,24 +53,34 @@ production IIS state is never touched by a dry-run.
   `-DryRun` (switch).
 - Domain array is `@($Domain) + $San` de-duped; the first entry is the CN, the
   rest are SANs (matches `Invoke-TUACMEOrderCertificate`).
-- The cert **must** live in `Cert:\LocalMachine\WebHosting` before
-  `Set-WebBinding` runs; the import targets both `My` and `WebHosting` so the
-  binding resolves the thumbprint regardless of store name (UC-9.02).
-- The hash is updated before switching `certificateStoreName` to `WebHosting`,
-  for the same no-strand rationale as `Update-TUACMEIISBinding`.
+- The binding is provisioned through the session's IIS provider, selected by
+  `Get-TUACMEIISProvider` (issue #16): WebAdministration `New-WebBinding` +
+  `Set-WebBinding` on Windows PowerShell 5.1, and the IISAdministration
+  `Microsoft.Web.Administration` ServerManager
+  (`Get-IISServerManager`, `$site.Bindings.Add($bindingInformation, 'https')`,
+  `SetAttributeValue('sslFlags', …)`, `CommitChanges()`) on PowerShell 7. The
+  PowerShell 7 cert-attach step reuses `Set-TUACMEIISBindingCertificate`
+  (the same helper UC-9.02 rebind uses).
+- The cert **must** live in `Cert:\LocalMachine\WebHosting` before the cert is
+  attached; the import targets both `My` and `WebHosting` so the binding
+  resolves the thumbprint regardless of store name (UC-9.02).
+- On the 5.1 path the hash is updated before switching `certificateStoreName`
+  to `WebHosting`, for the same no-strand rationale as `Update-TUACMEIISBinding`;
+  on PowerShell 7 `Set-TUACMEIISBindingCertificate` sets both atomically and
+  commits.
 - Existing binding detection reuses the `Get-TUACMEIISBinding` selection by
   site + binding information (`*:port:host`) rather than failing on a duplicate.
 - Requires admin privileges; the menu entry is admin-gated alongside the other
   IIS actions.
 - **Event IDs:** 1003 order success, 1011 import, 1002 binding success;
   3002 order failure, 2001 per-binding failure.
-- **Dependency on issue #16:** IIS discovery returns nothing under PowerShell 7
-  because WebAdministration is not loaded, so the HTTP-binding list will be
-  empty there even with IIS installed. This feature needs #16 resolved, or to
-  run under Windows PowerShell 5.1. The flow surfaces this with a clear
-  "install IIS Management Scripts and Tools, or run under Windows PowerShell
-  5.1" message rather than implying no HTTP sites exist. #16 is **not** fixed
-  here.
+- **Built on issue #16:** the flow uses the #16 provider abstraction
+  (`Get-TUACMEIISProvider`) for both discovery and binding provisioning, so it
+  now works under **both** Windows PowerShell 5.1 (WebAdministration) and
+  PowerShell 7 (IISAdministration) wherever an IIS provider is present. When no
+  provider is available it surfaces a clear "install IIS Management Scripts and
+  Tools, or run under Windows PowerShell 5.1" message rather than implying no
+  HTTP sites exist.
 
 ## Test Coverage
 
@@ -79,8 +89,12 @@ production IIS state is never touched by a dry-run.
 `-DryRun` and makes no import/`New-WebBinding`/`Set-WebBinding` calls; the prod
 path orders with the CN + SANs, imports into `@('My','WebHosting')`, creates the
 binding, attaches the hash, and logs 1002; an existing binding is updated rather
-than duplicated; non-Windows / WebAdministration-unavailable makes no binding
-calls.
+than duplicated; non-Windows / no-provider makes no binding calls. The
+IISAdministration path is covered too (provider mocked to `'IISAdministration'`):
+the binding is created via a mocked `Get-IISServerManager` ServerManager and the
+cert attached via `Set-TUACMEIISBindingCertificate` (no `New-WebBinding`/
+`Set-WebBinding`), with an existing-binding case asserting no ServerManager
+`Add`.
 
 **Integration:** Add HTTPS to a real HTTP site; verify the binding exists and
 serves the new cert.

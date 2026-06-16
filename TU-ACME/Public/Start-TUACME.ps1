@@ -197,10 +197,15 @@
                 'Add HTTPS to an IIS site' {
                     $httpBindings = @(Get-TUACMEIISBinding | Where-Object { $_.Protocol -eq 'http' })
                     if ($httpBindings.Count -eq 0) {
-                        # An empty list is most often issue #16 on PowerShell 7
-                        # (WebAdministration not loaded), so point operators at
-                        # the remedy rather than implying no HTTP sites exist.
-                        Write-Host 'No HTTP bindings found. If IIS is installed, WebAdministration may be unavailable; install IIS Management Scripts and Tools, or run under Windows PowerShell 5.1.' -ForegroundColor Cyan
+                        if (Test-TUACMEIISAvailable) {
+                            Write-Host 'No HTTP bindings found to add HTTPS to.' -ForegroundColor Cyan
+                        }
+                        else {
+                            # Distinguish a missing IIS provider from zero HTTP
+                            # sites so the operator is not misled (issue #16).
+                            # DarkCyan is the advisory tone (AC-C.4).
+                            Write-Host 'IIS management is unavailable in this session. Install the IIS Management Scripts and Tools feature, or run TU-ACME under Windows PowerShell 5.1.' -ForegroundColor DarkCyan
+                        }
                     }
                     else {
                         $httpLabels = @($httpBindings | ForEach-Object { ('{0} - {1}' -f $_.SiteName, $_.BindingInformation) })

@@ -9,8 +9,10 @@
     IIS-canonical WebHosting store, then creates (or updates) the site's HTTPS
     binding at the requested port/host header and attaches the new cert. A
     dry-run orders against staging and makes NO import and NO IIS changes
-    (UC-3.01). Never touches IIS on a non-Windows host or when WebAdministration
-    is unavailable.
+    (UC-3.01). The binding is provisioned through the session's IIS provider
+    (WebAdministration on Windows PowerShell 5.1, IISAdministration on
+    PowerShell 7), selected via Get-TUACMEIISProvider (issue #16). Never touches
+    IIS on a non-Windows host or when no IIS provider is available.
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -64,22 +66,12 @@
     # order fn logs 1003 / 3002 itself.
     $order = Invoke-TUACMEOrderCertificate -Domain $domains
 
-    if (-not (Test-TUACMEIsWindows)) {
-        Write-Host 'WebAdministration unavailable; install IIS Management Scripts and Tools, or run under Windows PowerShell 5.1. Certificate ordered but no HTTPS binding was created.' -ForegroundColor Cyan
-        return [pscustomobject]@{
-            Domain         = $order.Domain
-            Thumbprint     = $order.Thumbprint
-            Port           = $Port
-            HostHeader     = $HostHeader
-            SiteName       = $SiteName
-            DryRun         = $false
-            BindingCreated = $false
-            BindingUpdated = $false
-        }
-    }
-    if ($null -eq (Get-Command -Name 'New-WebBinding' -ErrorAction SilentlyContinue) -or
-        $null -eq (Get-Command -Name 'Set-WebBinding' -ErrorAction SilentlyContinue)) {
-        Write-Host 'WebAdministration unavailable; install IIS Management Scripts and Tools, or run under Windows PowerShell 5.1. Certificate ordered but no HTTPS binding was created.' -ForegroundColor Cyan
+    # Select the IIS provider that works in this session: WebAdministration on
+    # Windows PowerShell 5.1, IISAdministration on PowerShell 7 (issue #16).
+    # Guard before importing so an unavailable provider never imports needlessly.
+    $provider = Get-TUACMEIISProvider
+    if (-not (Test-TUACMEIsWindows) -or $null -eq $provider) {
+        Write-Host 'IIS management is unavailable; install IIS Management Scripts and Tools, or run under Windows PowerShell 5.1. Certificate ordered but no HTTPS binding was created.' -ForegroundColor Cyan
         return [pscustomobject]@{
             Domain         = $order.Domain
             Thumbprint     = $order.Thumbprint
@@ -107,7 +99,7 @@
     $bindingInformation = '*:{0}:{1}' -f $Port, $HostHeader
 
     # SNI is only meaningful with a host header; an all-hosts binding cannot use
-    # it. Set-WebBinding's certificateHash/Name path is identical either way.
+    # it. The certificateHash/Name attach path is identical either way.
     $sslFlags = 0
     if (-not [string]::IsNullOrEmpty($HostHeader)) {
         $sslFlags = 1
@@ -122,30 +114,59 @@
                 $_.BindingInformation -eq $bindingInformation
             })
 
-        if ($existing.Count -eq 0) {
-            $newBindingParams = @{
-                Name        = $SiteName
-                Protocol    = 'https'
-                Port        = $Port
-                IPAddress   = '*'
-                SslFlags    = $sslFlags
-                ErrorAction = 'Stop'
+        if ($provider -eq 'IISAdministration') {
+            # PowerShell 7 path: there is no New-WebBinding/Set-WebBinding, so the
+            # binding is created via the Microsoft.Web.Administration ServerManager
+            # and the cert is attached through Set-TUACMEIISBindingCertificate,
+            # which commits its own changes (issue #16).
+            if ($existing.Count -eq 0) {
+                $manager = Get-IISServerManager
+                $site = $manager.Sites[$SiteName]
+                if ($null -eq $site) {
+                    throw ("IIS site '{0}' was not found." -f $SiteName)
+                }
+                $newBinding = $site.Bindings.Add($bindingInformation, 'https')
+                # SetAttributeValue sets the SNI flag; an all-hosts binding leaves
+                # sslFlags at its default 0 so the attribute is only touched when
+                # a host header is present.
+                if ($sslFlags -ne 0) {
+                    $newBinding.SetAttributeValue('sslFlags', $sslFlags)
+                }
+                $manager.CommitChanges()
+                $bindingCreated = $true
             }
-            if (-not [string]::IsNullOrEmpty($HostHeader)) {
-                $newBindingParams['HostHeader'] = $HostHeader
+            else {
+                $bindingUpdated = $true
             }
-            New-WebBinding @newBindingParams
-            $bindingCreated = $true
+
+            Set-TUACMEIISBindingCertificate -SiteName $SiteName -BindingInformation $bindingInformation -Thumbprint $thumbprint -StoreName 'WebHosting'
         }
         else {
-            $bindingUpdated = $true
-        }
+            if ($existing.Count -eq 0) {
+                $newBindingParams = @{
+                    Name        = $SiteName
+                    Protocol    = 'https'
+                    Port        = $Port
+                    IPAddress   = '*'
+                    SslFlags    = $sslFlags
+                    ErrorAction = 'Stop'
+                }
+                if (-not [string]::IsNullOrEmpty($HostHeader)) {
+                    $newBindingParams['HostHeader'] = $HostHeader
+                }
+                New-WebBinding @newBindingParams
+                $bindingCreated = $true
+            }
+            else {
+                $bindingUpdated = $true
+            }
 
-        # Update the hash before switching the store name: the cert lives in
-        # both stores, so the binding serves it immediately under any store name
-        # and a failed store switch never strands the binding (UC-9.02).
-        Set-WebBinding -Name $SiteName -BindingInformation $bindingInformation -PropertyName 'certificateHash' -Value $thumbprint -ErrorAction Stop
-        Set-WebBinding -Name $SiteName -BindingInformation $bindingInformation -PropertyName 'certificateStoreName' -Value 'WebHosting' -ErrorAction Stop
+            # Update the hash before switching the store name: the cert lives in
+            # both stores, so the binding serves it immediately under any store name
+            # and a failed store switch never strands the binding (UC-9.02).
+            Set-WebBinding -Name $SiteName -BindingInformation $bindingInformation -PropertyName 'certificateHash' -Value $thumbprint -ErrorAction Stop
+            Set-WebBinding -Name $SiteName -BindingInformation $bindingInformation -PropertyName 'certificateStoreName' -Value 'WebHosting' -ErrorAction Stop
+        }
 
         Write-TUACMEEventLog -EventId 1002 -EntryType Information -Message ('HTTPS binding {0} on site ''{1}'' provisioned with thumbprint {2}.' -f $bindingInformation, $SiteName, $thumbprint)
     }
