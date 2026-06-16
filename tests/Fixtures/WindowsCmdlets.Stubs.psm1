@@ -22,6 +22,17 @@ function Get-WebBinding {
     throw 'Stub Get-WebBinding called without a Pester mock.'
 }
 
+function Set-WebBinding {
+    [CmdletBinding()]
+    param(
+        [string]$Name,
+        [string]$BindingInformation,
+        [string]$PropertyName,
+        [object]$Value
+    )
+    throw 'Stub Set-WebBinding called without a Pester mock.'
+}
+
 function Register-ScheduledTask {
     [CmdletBinding()]
     param(
@@ -68,6 +79,7 @@ function New-ScheduledTaskPrincipal {
 Export-ModuleMember -Function @(
     'Import-PfxCertificate'
     'Get-WebBinding'
+    'Set-WebBinding'
     'Register-ScheduledTask'
     'New-ScheduledTaskAction'
     'New-ScheduledTaskTrigger'

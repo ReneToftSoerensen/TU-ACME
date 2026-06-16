@@ -44,6 +44,11 @@
         'Dry-run order (staging)'
         'Renew certificate'
         'Install scheduled renewal task'
+        'Renewal status'
+        'Force-renew certificate (new key)'
+        'Revoke certificate'
+        'Rebind IIS site'
+        'Clean up unbound certificates'
         'Configure SMTP notifications'
         'Configure DNS plugin'
         'Exit'
@@ -58,7 +63,11 @@
 
     $disabledIndices = @()
     if (-not (Test-TUACMEIsAdministrator)) {
+        # IIS rebind and cleanup write to the machine cert stores and IIS
+        # configuration, so they need elevation just like the task install.
         $disabledIndices += [array]::IndexOf($menuItems, 'Install scheduled renewal task')
+        $disabledIndices += [array]::IndexOf($menuItems, 'Rebind IIS site')
+        $disabledIndices += [array]::IndexOf($menuItems, 'Clean up unbound certificates')
     }
 
     while ($true) {
@@ -105,6 +114,92 @@
                         $null = Install-TUACMEScheduledTask
                     }
                 }
+                'Renewal status' {
+                    Show-TUACMERenewalStatus
+                }
+                'Force-renew certificate (new key)' {
+                    $domains = @(Get-TUACMECertificate | ForEach-Object { [string]$_.MainDomain })
+                    if ($domains.Count -eq 0) {
+                        Write-Host 'No certificates to force-renew yet. Order one first.' -ForegroundColor Cyan
+                    }
+                    else {
+                        $certSelection = Show-TUACMEMenu -Title 'Select a certificate to force-renew (new key)' -Items $domains
+                        if ($certSelection -ge 0) {
+                            $confirmation = ([string](Read-Host ('Force-renew {0} with a brand new key? (y/N)' -f $domains[$certSelection]))).Trim()
+                            if ($confirmation -eq 'y') {
+                                $result = Invoke-TUACMERenewCertificate -Domain $domains[$certSelection] -NewKey
+                                Write-Host ('Force-renewed {0} with a new key (new thumbprint {1}).' -f $result.Domain, $result.NewThumbprint) -ForegroundColor Cyan
+                            }
+                        }
+                    }
+                }
+                'Revoke certificate' {
+                    $domains = @(Get-TUACMECertificate | ForEach-Object { [string]$_.MainDomain })
+                    if ($domains.Count -eq 0) {
+                        Write-Host 'No certificates to revoke.' -ForegroundColor Cyan
+                    }
+                    else {
+                        $certSelection = Show-TUACMEMenu -Title 'Select a certificate to revoke' -Items $domains
+                        if ($certSelection -ge 0) {
+                            $confirmation = ([string](Read-Host ('Revoke {0}? This cannot be undone. (y/N)' -f $domains[$certSelection]))).Trim()
+                            if ($confirmation -eq 'y') {
+                                $result = Invoke-TUACMERevokeCertificate -Domain $domains[$certSelection]
+                                Write-Host ('Revoked {0} (thumbprint {1}).' -f $result.Domain, $result.Thumbprint) -ForegroundColor Cyan
+                                if (@($result.AffectedBindings).Count -gt 0) {
+                                    Write-Host ('{0} IIS binding(s) still reference the revoked cert; rebind them from "Rebind IIS site".' -f @($result.AffectedBindings).Count) -ForegroundColor DarkCyan
+                                }
+                            }
+                        }
+                    }
+                }
+                'Rebind IIS site' {
+                    $bindings = @(Get-TUACMEIISBinding | Where-Object { $_.Protocol -eq 'https' })
+                    if ($bindings.Count -eq 0) {
+                        Write-Host 'No HTTPS bindings found to rebind.' -ForegroundColor Cyan
+                    }
+                    else {
+                        $bindingLabels = @($bindings | ForEach-Object { ('{0} - {1}' -f $_.SiteName, $_.BindingInformation) })
+                        $bindingSelection = Show-TUACMEMenu -Title 'Select an HTTPS binding to rebind' -Items $bindingLabels
+                        if ($bindingSelection -ge 0) {
+                            $certificates = @(Get-TUACMECertificate)
+                            if ($certificates.Count -eq 0) {
+                                Write-Host 'No certificates in the store to bind.' -ForegroundColor Cyan
+                            }
+                            else {
+                                $certLabels = @($certificates | ForEach-Object { ('{0} ({1})' -f [string]$_.MainDomain, [string]$_.Thumbprint) })
+                                $certPick = Show-TUACMEMenu -Title 'Select the certificate to bind' -Items $certLabels
+                                if ($certPick -ge 0) {
+                                    $chosenBinding = $bindings[$bindingSelection]
+                                    $chosenCert = $certificates[$certPick]
+                                    $rebind = Update-TUACMEIISBinding -SiteName $chosenBinding.SiteName -BindingInformation $chosenBinding.BindingInformation -NewThumbprint ([string]$chosenCert.Thumbprint) -Certificate $chosenCert
+                                    Write-Host ('Rebind complete: {0} updated, {1} failed.' -f @($rebind.Updated).Count, @($rebind.Failed).Count) -ForegroundColor Cyan
+                                }
+                            }
+                        }
+                    }
+                }
+                'Clean up unbound certificates' {
+                    $unbound = @(Get-TUACMEUnboundWebHostingCertificate)
+                    if ($unbound.Count -eq 0) {
+                        Write-Host 'No unbound certificates in the WebHosting store.' -ForegroundColor Cyan
+                    }
+                    else {
+                        $labels = @($unbound | ForEach-Object { ('{0} (expires {1:yyyy-MM-dd})' -f $_.Thumbprint, $_.NotAfter) })
+                        $pick = Show-TUACMEMenu -Title 'Select an unbound certificate to delete' -Items $labels
+                        if ($pick -ge 0) {
+                            $confirmation = ([string](Read-Host ('Delete certificate {0} from WebHosting? (y/N)' -f $unbound[$pick].Thumbprint))).Trim()
+                            if ($confirmation -eq 'y') {
+                                $deleted = Remove-TUACMEWebHostingCertificate -Thumbprint ([string]$unbound[$pick].Thumbprint)
+                                if ($deleted) {
+                                    Write-Host ('Deleted {0}.' -f $unbound[$pick].Thumbprint) -ForegroundColor Cyan
+                                }
+                                else {
+                                    Write-Host ('Could not delete {0}; see the event log.' -f $unbound[$pick].Thumbprint) -ForegroundColor Cyan
+                                }
+                            }
+                        }
+                    }
+                }
                 'Configure SMTP notifications' {
                     $server = ([string](Read-Host 'SMTP server')).Trim()
                     $portText = ([string](Read-Host 'SMTP port (default 25)')).Trim()
@@ -139,7 +234,7 @@
             Write-Host ('Operation failed: {0}' -f $_.Exception.Message) -ForegroundColor Cyan
         }
 
-        if ($menuItems[$selection] -ne 'Certificate dashboard') {
+        if (@('Certificate dashboard', 'Renewal status') -notcontains $menuItems[$selection]) {
             Write-Host 'Press any key to return to the menu.' -ForegroundColor DarkCyan
             $null = Read-TUACMEKey
         }

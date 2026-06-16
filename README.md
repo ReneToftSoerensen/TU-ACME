@@ -53,9 +53,9 @@ This folder contains the specification, acceptance criteria, and atomic use case
 
 - Certificate revocation
 - Force-renew with new key
-- DNS plugin support
-- Configuration backup/restore
-- Advanced IIS scenarios
+- IIS binding rebind (manual + post-renewal) and failure recovery
+- Renewal status report
+- Future: configuration backup/restore, order-from-bindings IIS flow
 
 ## Acceptance Criteria Matrix
 
@@ -64,13 +64,13 @@ This folder contains the specification, acceptance criteria, and atomic use case
 | A. Module Initialization | 4 | P0 | [x] |
 | B. Two-Account Model | 4 | P0–P1 | [x] |
 | C. TUI Menu System | 4 | P1 | [x] |
-| D. Certificate Operations | 5 | P0–P2 | [ ] |
+| D. Certificate Operations | 5 | P0–P2 | [x] |
 | E. Scheduled Renewal | 3 | P1 | [x] |
 | F. Event Logging | 4 | P1 | [x] |
-| G. IIS Integration | 3 | P1 | [ ] |
+| G. IIS Integration | 3 | P1 | [x] |
 | H. Config & Persistence | 3 | P0–P1 | [x] |
 | I. Code Quality | 5 | P0 | [x] |
-| J. Operational Workflows | 4 | P1 | [ ] |
+| J. Operational Workflows | 4 | P1 | [x] |
 | **Total** | **39** | — | — |
 
 ## Use Case Index
@@ -112,11 +112,11 @@ This folder contains the specification, acceptance criteria, and atomic use case
 
 | UC | Title | Status |
 |----|-------|--------|
-| UC-6.02 | Revoke Certificate | [ ] |
-| UC-6.03 | Force-Renew with New Key | [ ] |
-| UC-9.02 | IIS Rebind | [ ] |
-| UC-9.03 | IIS Recovery | [ ] |
-| UC-12.02 | Renewal Status | [ ] |
+| UC-6.02 | Revoke Certificate | [x] |
+| UC-6.03 | Force-Renew with New Key | [x] |
+| UC-9.02 | IIS Rebind | [x] |
+| UC-9.03 | IIS Recovery | [x] |
+| UC-12.02 | Renewal Status | [x] |
 
 ## Development Checklist
 
@@ -143,6 +143,17 @@ git config core.hooksPath .githooks
 
 CI (`.github/workflows/test.yml`) runs the Unit suite on Ubuntu (pwsh),
 Windows (pwsh), and Windows PowerShell 5.1.
+
+## Local Install (testing)
+
+`deploy.ps1` removes and (re)installs the module into your user module path so
+`Import-Module TU-ACME` resolves by name during testing:
+
+```powershell
+.\deploy.ps1            # remove old copy, reinstall from source, import
+.\deploy.ps1 -Uninstall # remove from the session and the user module path
+.\deploy.ps1 -NoImport  # reinstall without importing
+```
 
 ## Resources
 

@@ -237,8 +237,8 @@
 | AC-D.1 | UC-5.01-order-cert | P0 | [x] |
 | AC-D.2 | UC-5.02-order-dryrun | P1 | [x] |
 | AC-D.3 | UC-6.01-renew-cert | P1 | [x] |
-| AC-D.4 | UC-6.02-revoke-cert | P2 | [ ] |
-| AC-D.5 | UC-6.03-force-renew | P2 | [ ] |
+| AC-D.4 | UC-6.02-revoke-cert | P2 | [x] |
+| AC-D.5 | UC-6.03-force-renew | P2 | [x] |
 | AC-E.1 | UC-7.01-scheduled-task | P1 | [x] |
 | AC-E.2 | UC-7.02-renewal-script | P1 | [x] |
 | AC-E.3 | UC-7.02-renewal-script | P1 | [x] |
@@ -247,8 +247,8 @@
 | AC-F.3 | UC-8.01-event-logging | P1 | [x] |
 | AC-F.4 | UC-8.01-event-logging | P1 | [x] |
 | AC-G.1 | UC-9.01-iis-discover | P1 | [x] |
-| AC-G.2 | UC-9.02-iis-rebind | P1 | [ ] |
-| AC-G.3 | UC-9.03-iis-recovery | P1 | [ ] |
+| AC-G.2 | UC-9.02-iis-rebind | P1 | [x] |
+| AC-G.3 | UC-9.03-iis-recovery | P1 | [x] |
 | AC-H.1 | UC-10.01-config-persist | P0 | [x] |
 | AC-H.2 | UC-10.02-smtp-encrypt | P1 | [x] |
 | AC-H.3 | UC-10.03-dns-encrypt | P1 | [x] |
@@ -260,4 +260,4 @@
 | AC-J.1 | UC-12.01-dashboard | P1 | [x] |
 | AC-J.2 | UC-5.01-order-cert | P0 | [x] |
 | AC-J.3 | UC-5.02-order-dryrun | P1 | [x] |
-| AC-J.4 | UC-12.02-renewal-status | P2 | [ ] |
+| AC-J.4 | UC-12.02-renewal-status | P2 | [x] |

@@ -104,7 +104,7 @@ Layout: `<root>/<server-dir>/<account-id>/<order-name>/`. Active selection track
 
 - **Initialize-PALogging's proxy list contains `Set-PAConfig`** — harmless (`Get-Command -Module Posh-ACME -Name Set-PAConfig` returns `$null`, the proxy is skipped), but the list should be updated to reflect the real surface.
 
-- **For the dashboard (UC-4.1):** the cert object exposes `AllSANs` (array), not `SANs`. There is no `MainDomain` on the cert — read it from the order via `Get-PAOrder`. Color by `(NotAfter - (Get-Date)).TotalDays`. `Thumbprint` is the join key to `Get-WebBinding`'s `certificateHash`.
+- **For the dashboard (UC-12.01):** the cert object exposes `AllSANs` (array), not `SANs`. There is no `MainDomain` on the cert — read it from the order via `Get-PAOrder`. Color by `(NotAfter - (Get-Date)).TotalDays`. `Thumbprint` is the join key to `Get-WebBinding`'s `certificateHash`.
 
 - **For headless renewal (UC-5.x):** set `$env:POSHACME_HOME = "$env:ProgramData\TU-ACME\Posh-ACME"` in the Scheduled Task action so SYSTEM and the admin who set things up see the same store. Create the initial account under whichever identity will run the task, or pass `-UseAltPluginEncryption`.
 
