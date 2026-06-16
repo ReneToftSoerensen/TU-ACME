@@ -163,7 +163,15 @@
                 'Rebind IIS site' {
                     $bindings = @(Get-TUACMEIISBinding | Where-Object { $_.Protocol -eq 'https' })
                     if ($bindings.Count -eq 0) {
-                        Write-Host 'No HTTPS bindings found to rebind.' -ForegroundColor Cyan
+                        if (Test-TUACMEIISAvailable) {
+                            Write-Host 'No HTTPS bindings found to rebind.' -ForegroundColor Cyan
+                        }
+                        else {
+                            # Distinguish a missing IIS provider from zero bindings
+                            # so the operator is not misled (issue #16). DarkCyan
+                            # is the advisory tone (AC-C.4).
+                            Write-Host 'IIS management is unavailable in this session. Install the IIS Management Scripts and Tools feature, or run TU-ACME under Windows PowerShell 5.1.' -ForegroundColor DarkCyan
+                        }
                     }
                     else {
                         $bindingLabels = @($bindings | ForEach-Object { ('{0} - {1}' -f $_.SiteName, $_.BindingInformation) })
@@ -255,7 +263,15 @@
                 'Clean up unbound certificates' {
                     $unbound = @(Get-TUACMEUnboundWebHostingCertificate)
                     if ($unbound.Count -eq 0) {
-                        Write-Host 'No unbound certificates in the WebHosting store.' -ForegroundColor Cyan
+                        if (Test-TUACMEIISAvailable) {
+                            Write-Host 'No unbound certificates in the WebHosting store.' -ForegroundColor Cyan
+                        }
+                        else {
+                            # Distinguish a missing IIS provider from zero certs
+                            # so the operator is not misled (issue #16). DarkCyan
+                            # is the advisory tone (AC-C.4).
+                            Write-Host 'IIS management is unavailable in this session. Install the IIS Management Scripts and Tools feature, or run TU-ACME under Windows PowerShell 5.1.' -ForegroundColor DarkCyan
+                        }
                     }
                     else {
                         $labels = @($unbound | ForEach-Object { ('{0} (expires {1:yyyy-MM-dd})' -f $_.Thumbprint, $_.NotAfter) })
@@ -282,9 +298,24 @@
                         $port = [int]$portText
                     }
                     $username = ([string](Read-Host 'SMTP username (blank for none)')).Trim()
-                    $password = Read-Host 'SMTP password' -AsSecureString
-                    Set-TUACMESMTPConfig -Server $server -Port $port -Username $username -Password $password
-                    Write-Host 'SMTP settings saved; the password is stored encrypted.' -ForegroundColor Cyan
+                    if ([string]::IsNullOrEmpty($username)) {
+                        # Unauthenticated relay: no credential to prompt for or
+                        # store (issue #15).
+                        Set-TUACMESMTPConfig -Server $server -Port $port -Username $username
+                        Write-Host 'SMTP settings saved (unauthenticated relay).' -ForegroundColor Cyan
+                    }
+                    else {
+                        $password = Read-Host 'SMTP password' -AsSecureString
+                        Set-TUACMESMTPConfig -Server $server -Port $port -Username $username -Password $password
+                        if ($null -ne $password -and $password.Length -gt 0) {
+                            Write-Host 'SMTP settings saved; the password is stored encrypted.' -ForegroundColor Cyan
+                        }
+                        else {
+                            # A blank password is stored as no credential, so do
+                            # not claim it was encrypted (issue #15 follow-up).
+                            Write-Host 'SMTP settings saved; no password entered, so none is stored.' -ForegroundColor Cyan
+                        }
+                    }
                 }
                 'Configure DNS plugin' {
                     $pluginName = ([string](Read-Host 'Posh-ACME DNS plugin name')).Trim()
