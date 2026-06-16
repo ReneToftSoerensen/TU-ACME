@@ -9,6 +9,7 @@ Describe 'Set-TUACMEIISBindingCertificate (issue #16)' -Tag 'Unit' {
             $script:fakeBinding = $null
             Mock Get-IISServerManager {
                 $b = [pscustomobject]@{
+                    Protocol             = 'https'
                     BindingInformation   = '*:443:a.example.com'
                     CertificateHash      = $null
                     CertificateStoreName = $null
@@ -34,6 +35,7 @@ Describe 'Set-TUACMEIISBindingCertificate (issue #16)' -Tag 'Unit' {
             $script:fakeBinding = $null
             Mock Get-IISServerManager {
                 $b = [pscustomobject]@{
+                    Protocol             = 'https'
                     BindingInformation   = '*:443:a.example.com'
                     CertificateHash      = $null
                     CertificateStoreName = $null
@@ -65,6 +67,7 @@ Describe 'Set-TUACMEIISBindingCertificate (issue #16)' -Tag 'Unit' {
             $script:committed = $false
             Mock Get-IISServerManager {
                 $b = [pscustomobject]@{
+                    Protocol             = 'https'
                     BindingInformation   = '*:443:other.example.com'
                     CertificateHash      = $null
                     CertificateStoreName = $null
@@ -78,6 +81,41 @@ Describe 'Set-TUACMEIISBindingCertificate (issue #16)' -Tag 'Unit' {
             { Set-TUACMEIISBindingCertificate -SiteName 'Site1' -BindingInformation '*:443:a.example.com' -Thumbprint 'AABBCC' } |
                 Should -Throw
             $script:committed | Should -BeFalse
+        }
+    }
+
+    It 'updates only the HTTPS binding when an HTTP binding shares the same BindingInformation' {
+        InModuleScope 'TU-ACME' {
+            $script:httpsBinding = $null
+            $script:httpBinding = $null
+            Mock Get-IISServerManager {
+                # HTTP listed first so the old (protocol-agnostic) match would
+                # have written to it before reaching the HTTPS binding.
+                $http = [pscustomobject]@{
+                    Protocol             = 'http'
+                    BindingInformation   = '*:443:a.example.com'
+                    CertificateHash      = $null
+                    CertificateStoreName = $null
+                }
+                $https = [pscustomobject]@{
+                    Protocol             = 'https'
+                    BindingInformation   = '*:443:a.example.com'
+                    CertificateHash      = $null
+                    CertificateStoreName = $null
+                }
+                $site = [pscustomobject]@{ Bindings = @($http, $https) }
+                $mgr = [pscustomobject]@{ Sites = @{ 'Site1' = $site } }
+                $mgr | Add-Member -MemberType ScriptMethod -Name 'CommitChanges' -Value { }
+                $script:httpBinding = $http
+                $script:httpsBinding = $https
+                $mgr
+            }
+
+            Set-TUACMEIISBindingCertificate -SiteName 'Site1' -BindingInformation '*:443:a.example.com' -Thumbprint 'AABBCC'
+
+            $script:httpsBinding.CertificateStoreName | Should -Be 'WebHosting'
+            $script:httpBinding.CertificateStoreName | Should -BeNullOrEmpty
+            $script:httpBinding.CertificateHash | Should -BeNullOrEmpty
         }
     }
 }

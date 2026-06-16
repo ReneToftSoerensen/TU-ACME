@@ -34,7 +34,10 @@
     $hashBytes = Convert-TUACMEThumbprintToByte -Thumbprint $Thumbprint
     $matched = $false
     foreach ($binding in $site.Bindings) {
-        if ([string]$binding.BindingInformation -eq $BindingInformation) {
+        # Match the HTTPS binding only: BindingInformation (ip:port:host) is not
+        # unique across protocols, and setting certificateHash on a non-SSL
+        # binding throws, so a co-located HTTP binding must be skipped.
+        if ([string]$binding.BindingInformation -eq $BindingInformation -and [string]$binding.Protocol -eq 'https') {
             $binding.CertificateHash = $hashBytes
             $binding.CertificateStoreName = $StoreName
             $matched = $true
@@ -42,7 +45,7 @@
     }
 
     if (-not $matched) {
-        throw ("Binding '{0}' was not found on IIS site '{1}'." -f $BindingInformation, $SiteName)
+        throw ("No HTTPS binding '{0}' was found on IIS site '{1}'." -f $BindingInformation, $SiteName)
     }
 
     $manager.CommitChanges()

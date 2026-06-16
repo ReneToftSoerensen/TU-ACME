@@ -233,7 +233,14 @@
                     else {
                         $password = Read-Host 'SMTP password' -AsSecureString
                         Set-TUACMESMTPConfig -Server $server -Port $port -Username $username -Password $password
-                        Write-Host 'SMTP settings saved; the password is stored encrypted.' -ForegroundColor Cyan
+                        if ($null -ne $password -and $password.Length -gt 0) {
+                            Write-Host 'SMTP settings saved; the password is stored encrypted.' -ForegroundColor Cyan
+                        }
+                        else {
+                            # A blank password is stored as no credential, so do
+                            # not claim it was encrypted (issue #15 follow-up).
+                            Write-Host 'SMTP settings saved; no password entered, so none is stored.' -ForegroundColor Cyan
+                        }
                     }
                 }
                 'Configure DNS plugin' {
