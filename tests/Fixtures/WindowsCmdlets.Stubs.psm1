@@ -33,6 +33,20 @@ function Set-WebBinding {
     throw 'Stub Set-WebBinding called without a Pester mock.'
 }
 
+function Get-IISSite {
+    [CmdletBinding()]
+    param(
+        [string]$Name
+    )
+    throw 'Stub Get-IISSite called without a Pester mock.'
+}
+
+function Get-IISServerManager {
+    [CmdletBinding()]
+    param()
+    throw 'Stub Get-IISServerManager called without a Pester mock.'
+}
+
 function Register-ScheduledTask {
     [CmdletBinding()]
     param(
@@ -80,6 +94,8 @@ Export-ModuleMember -Function @(
     'Import-PfxCertificate'
     'Get-WebBinding'
     'Set-WebBinding'
+    'Get-IISSite'
+    'Get-IISServerManager'
     'Register-ScheduledTask'
     'New-ScheduledTaskAction'
     'New-ScheduledTaskTrigger'

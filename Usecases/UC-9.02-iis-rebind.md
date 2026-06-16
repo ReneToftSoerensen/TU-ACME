@@ -24,7 +24,7 @@ Dry-run **never** rebinds. When the IIS flow runs with `-DryRun` (UC-3.01), the 
 ## Acceptance Criteria
 
 - [x] Rebind operation updates the binding's `certificateHash` to the new thumbprint
-- [x] Binding is updated in IIS configuration via `Set-WebBinding -PropertyName 'certificateHash'` (this UC)
+- [x] Binding is updated in IIS configuration via `Set-WebBinding -PropertyName 'certificateHash'` on Windows PowerShell 5.1, or via the IISAdministration ServerManager (`certificateHash` + `certificateStoreName`, then `CommitChanges()`) on PowerShell 7 (issue #16)
 - [x] Rebind happens automatically after a non-dry-run renewal; manual rebind covers ad-hoc cases (automatic post-order rebind via an order-from-bindings flow is future scope)
 - [x] Rebind is **skipped** entirely when the operation is a dry-run
 - [x] Event Log entry ID 1002 is written on success
@@ -34,7 +34,7 @@ Dry-run **never** rebinds. When the IIS flow runs with `-DryRun` (UC-3.01), the 
 
 ## Implementation Notes
 
-- Rebind via `Set-WebBinding -PropertyName 'certificateHash' -Value <newThumbprint>` (this UC)
+- Rebind via `Set-WebBinding -PropertyName 'certificateHash' -Value <newThumbprint>` (WebAdministration, PS 5.1); under PowerShell 7 the IISAdministration provider has no `Set-WebBinding`, so `Set-TUACMEIISBindingCertificate` sets the hash + store via the `Get-IISServerManager` ServerManager and commits atomically (issue #16)
 - Requires admin privileges
 - Post-issuance: an order-from-bindings flow (future scope) would rebind after `Invoke-OrderCertificate` returns and the WebHosting import succeeds
 - Post-renewal: triggered by `Update-TUACMEIISBinding` from the background renewal script (UC-7.02, this UC)

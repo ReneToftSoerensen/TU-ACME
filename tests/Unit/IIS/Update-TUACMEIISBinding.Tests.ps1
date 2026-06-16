@@ -8,6 +8,9 @@ Describe 'Update-TUACMEIISBinding (UC-9.02 / AC-G.2, UC-9.03 / AC-G.3)' -Tag 'Un
         Mock -ModuleName 'TU-ACME' Write-TUACMEEventLog { }
         Mock -ModuleName 'TU-ACME' Import-TUACMECertificate { 'NEWTHUMB' }
         Mock -ModuleName 'TU-ACME' Set-WebBinding { }
+        # Default to the Windows PowerShell 5.1 (WebAdministration) write path;
+        # the IISAdministration path is exercised by its own test (issue #16).
+        Mock -ModuleName 'TU-ACME' Get-TUACMEIISProvider { 'WebAdministration' }
         Mock -ModuleName 'TU-ACME' Get-TUACMEIISBinding {
             @(
                 [pscustomobject]@{ SiteName = 'Site1'; Protocol = 'https'; BindingInformation = '*:443:a.example.com'; HostHeader = 'a.example.com'; Thumbprint = 'OLD1' },
@@ -77,6 +80,33 @@ Describe 'Update-TUACMEIISBinding (UC-9.02 / AC-G.2, UC-9.03 / AC-G.3)' -Tag 'Un
         }
 
         @($result.Updated).Count | Should -Be 1
+    }
+
+    It 'skips rebinding (and importing) when no IIS provider is available' {
+        Mock -ModuleName 'TU-ACME' Get-TUACMEIISProvider { $null }
+
+        $result = InModuleScope 'TU-ACME' {
+            Update-TUACMEIISBinding -OldThumbprint 'OLD1' -NewThumbprint 'NEWTHUMB' -Certificate ([pscustomobject]@{ MainDomain = 'a'; PfxFullChain = 'x' })
+        }
+
+        @($result.Updated).Count | Should -Be 0
+        Should -Invoke -ModuleName 'TU-ACME' Import-TUACMECertificate -Times 0 -Exactly
+        Should -Invoke -ModuleName 'TU-ACME' Set-WebBinding -Times 0 -Exactly
+    }
+
+    It 'rebinds via IISAdministration when running under PowerShell 7 (issue #16)' {
+        Mock -ModuleName 'TU-ACME' Get-TUACMEIISProvider { 'IISAdministration' }
+        Mock -ModuleName 'TU-ACME' Set-TUACMEIISBindingCertificate { }
+
+        $result = InModuleScope 'TU-ACME' {
+            Update-TUACMEIISBinding -OldThumbprint 'OLD1' -NewThumbprint 'NEWTHUMB' -Certificate ([pscustomobject]@{ MainDomain = 'a'; PfxFullChain = 'x' })
+        }
+
+        @($result.Updated).Count | Should -Be 2
+        Should -Invoke -ModuleName 'TU-ACME' Set-TUACMEIISBindingCertificate -Times 2 -Exactly -ParameterFilter {
+            $Thumbprint -eq 'NEWTHUMB' -and $StoreName -eq 'WebHosting'
+        }
+        Should -Invoke -ModuleName 'TU-ACME' Set-WebBinding -Times 0 -Exactly
     }
 
     It 'logs 2001 and continues when a single binding fails to rebind' {

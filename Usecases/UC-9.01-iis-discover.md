@@ -6,7 +6,7 @@ As an **operator**, I want to **see all IIS bindings (HTTP and HTTPS) and the ce
 
 The IIS menu is the **thin layer** at the top of every IIS flow. It does **not** reimplement ACME orders, account selection, or certificate issuance. Its job is:
 
-1. **Enumerate** bindings via `Get-WebBinding` (no protocol filter — HTTP rows are listed too).
+1. **Enumerate** bindings via the available IIS provider (no protocol filter — HTTP rows are listed too): `Get-WebBinding` (WebAdministration) on Windows PowerShell 5.1, `Get-IISSite` (IISAdministration) on PowerShell 7, since WebAdministration is unreliable under PowerShell 7 (issue #16).
 2. **Project** each HTTPS row with its certificate's subject, expiry, and AD CS template.
 3. **Derive** the CN (primary domain) and SANs (additional hostnames) from selected site bindings when the operator chooses to order.
 4. **Dispatch** to the normal ACME flow (`Invoke-OrderCertificate`) — bootstrap, plugin selection, plugin args, summary, confirmation, `New-PACertificate` all run unchanged.
@@ -25,7 +25,8 @@ Dry-run is supported through the same dispatch: when the IIS order flow is enter
 
 ## Implementation Notes
 
-- IIS discovery via `Get-WebBinding` (WebAdministration module); no `-Protocol` filter
+- `Get-TUACMEIISProvider` picks the IIS provider per edition: `IISAdministration` (`Get-IISSite`) on PowerShell 7, `WebAdministration` (`Get-WebBinding`) on Windows PowerShell 5.1; no `-Protocol` filter on either path
+- When neither provider is available, discovery returns empty and the Rebind / Clean-up handlers report "IIS management is unavailable" (via `Test-TUACMEIISAvailable`) instead of a misleading "No HTTPS bindings found" (issue #16)
 - Binding info: site name, host header, binding information, protocol, thumbprint
 - Thumbprint resolved via `Cert:\LocalMachine\WebHosting` first, then `Cert:\LocalMachine\My`
 - The menu is read-only; mutating actions (order, rebind) are explicit sub-flows

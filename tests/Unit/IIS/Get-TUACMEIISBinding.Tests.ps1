@@ -16,6 +16,9 @@ Describe 'Get-TUACMEIISBinding (UC-9.01 / AC-G.1)' -Tag 'Unit' {
     BeforeEach {
         Mock -ModuleName 'TU-ACME' Test-TUACMEIsWindows { $true }
         Mock -ModuleName 'TU-ACME' Get-ChildItem { @() } -ParameterFilter { $Path -like 'Cert:*' }
+        # Default to the Windows PowerShell 5.1 provider; the IISAdministration
+        # path is exercised by its own tests below (issue #16).
+        Mock -ModuleName 'TU-ACME' Get-TUACMEIISProvider { 'WebAdministration' }
     }
 
     It 'returns an empty list on non-Windows platforms' {
@@ -26,8 +29,8 @@ Describe 'Get-TUACMEIISBinding (UC-9.01 / AC-G.1)' -Tag 'Unit' {
         $result | Should -BeNullOrEmpty
     }
 
-    It 'returns an empty list when WebAdministration is unavailable' {
-        Mock -ModuleName 'TU-ACME' Get-Command { $null } -ParameterFilter { $Name -eq 'Get-WebBinding' }
+    It 'returns an empty list when no IIS provider is available' {
+        Mock -ModuleName 'TU-ACME' Get-TUACMEIISProvider { $null }
 
         $result = InModuleScope 'TU-ACME' { Get-TUACMEIISBinding }
 
@@ -154,5 +157,70 @@ Describe 'Get-TUACMEIISBinding (UC-9.01 / AC-G.1)' -Tag 'Unit' {
         $result = @(InModuleScope 'TU-ACME' { Get-TUACMEIISBinding })
 
         $result[0].Template | Should -Be 'WebServerV2'
+    }
+
+    Context 'IISAdministration provider (PowerShell 7 / issue #16)' {
+        BeforeEach {
+            Mock -ModuleName 'TU-ACME' Get-TUACMEIISProvider { 'IISAdministration' }
+        }
+
+        It 'enumerates sites and bindings via Get-IISSite, listing HTTP alongside HTTPS' {
+            Mock -ModuleName 'TU-ACME' Get-IISSite {
+                @(
+                    [pscustomobject]@{
+                        Name     = 'Default Web Site'
+                        Bindings = @(
+                            [pscustomobject]@{ Protocol = 'http'; BindingInformation = '*:80:'; CertificateHash = $null },
+                            [pscustomobject]@{ Protocol = 'https'; BindingInformation = '*:443:portal.example.com'; CertificateHash = ([byte[]]@(0xAA, 0xBB, 0xCC)) }
+                        )
+                    }
+                )
+            }
+
+            $result = @(InModuleScope 'TU-ACME' { Get-TUACMEIISBinding })
+
+            $result.Count | Should -Be 2
+            $httpsRow = $result | Where-Object { $_.Protocol -eq 'https' }
+            $httpsRow.SiteName | Should -Be 'Default Web Site'
+            $httpsRow.HostHeader | Should -Be 'portal.example.com'
+            $httpsRow.Thumbprint | Should -Be 'AABBCC'
+        }
+
+        It 'does not read CertificateHash on a plain HTTP binding (it throws on non-SSL bindings)' {
+            Mock -ModuleName 'TU-ACME' Get-IISSite {
+                $httpBinding = [pscustomobject]@{ Protocol = 'http'; BindingInformation = '*:80:' }
+                # A real Microsoft.Web.Administration binding throws when
+                # CertificateHash is read on a non-SSL binding.
+                $httpBinding | Add-Member -MemberType ScriptProperty -Name 'CertificateHash' -Value { throw 'not an SSL binding' }
+                @([pscustomobject]@{ Name = 'S'; Bindings = @($httpBinding) })
+            }
+
+            $result = @(InModuleScope 'TU-ACME' { Get-TUACMEIISBinding })
+
+            $result.Count | Should -Be 1
+            $result[0].Protocol | Should -Be 'http'
+            $result[0].Thumbprint | Should -Be ''
+        }
+
+        It 'resolves the certificate expiry from the WebHosting store' {
+            Mock -ModuleName 'TU-ACME' Get-IISSite {
+                @(
+                    [pscustomobject]@{
+                        Name     = 'S'
+                        Bindings = @(
+                            [pscustomobject]@{ Protocol = 'https'; BindingInformation = '*:443:a.example.com'; CertificateHash = ([byte[]]@(0xAA, 0xBB, 0xCC)) }
+                        )
+                    }
+                )
+            }
+            $expectedExpiry = (Get-Date).AddDays(42)
+            Mock -ModuleName 'TU-ACME' Get-ChildItem {
+                @([pscustomobject]@{ Thumbprint = 'AABBCC'; NotAfter = $expectedExpiry; Extensions = @() })
+            } -ParameterFilter { $Path -like '*WebHosting*' }
+
+            $result = @(InModuleScope 'TU-ACME' { Get-TUACMEIISBinding })
+
+            $result[0].NotAfter | Should -Be $expectedExpiry
+        }
     }
 }
