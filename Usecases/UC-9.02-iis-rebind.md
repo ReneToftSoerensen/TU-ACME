@@ -15,7 +15,7 @@ IIS bindings → derive CN + SANs → Invoke-OrderCertificate (normal ACME flow)
 
 A rebind is triggered in three contexts:
 
-1. **Post-order** — an order-from-bindings flow (future scope) would update the binding the operator started from to the new thumbprint.
+1. **Post-order** — the order-from-bindings flow (UC-9.04) provisions the HTTPS binding for the site the operator started from, attaching the freshly issued thumbprint.
 2. **Post-renewal** — the background renewal script (UC-7.02) walks every binding whose `certificateHash` equals the renewed cert's old thumbprint and updates each one (this UC).
 3. **Manual** — the "Rebind IIS site" menu entry (this UC) lets the operator point any HTTPS binding at any cert currently in the Posh-ACME store.
 
@@ -25,7 +25,7 @@ Dry-run **never** rebinds. When the IIS flow runs with `-DryRun` (UC-3.01), the 
 
 - [x] Rebind operation updates the binding's `certificateHash` to the new thumbprint
 - [x] Binding is updated in IIS configuration via `Set-WebBinding -PropertyName 'certificateHash'` on Windows PowerShell 5.1, or via the IISAdministration ServerManager (`certificateHash` + `certificateStoreName`, then `CommitChanges()`) on PowerShell 7 (issue #16)
-- [x] Rebind happens automatically after a non-dry-run renewal; manual rebind covers ad-hoc cases (automatic post-order rebind via an order-from-bindings flow is future scope)
+- [x] Rebind happens automatically after a non-dry-run renewal; manual rebind covers ad-hoc cases; the order-from-bindings flow (UC-9.04) provisions the binding after a fresh order
 - [x] Rebind is **skipped** entirely when the operation is a dry-run
 - [x] Event Log entry ID 1002 is written on success
 - [x] Manual rebind is also reachable from the IIS menu and works against any cert in the Posh-ACME store
@@ -36,7 +36,7 @@ Dry-run **never** rebinds. When the IIS flow runs with `-DryRun` (UC-3.01), the 
 
 - Rebind via `Set-WebBinding -PropertyName 'certificateHash' -Value <newThumbprint>` (WebAdministration, PS 5.1); under PowerShell 7 the IISAdministration provider has no `Set-WebBinding`, so `Set-TUACMEIISBindingCertificate` sets the hash + store via the `Get-IISServerManager` ServerManager and commits atomically (issue #16)
 - Requires admin privileges
-- Post-issuance: an order-from-bindings flow (future scope) would rebind after `Invoke-OrderCertificate` returns and the WebHosting import succeeds
+- Post-issuance: the order-from-bindings flow (UC-9.04) provisions/updates the binding after `Invoke-OrderCertificate` returns and the WebHosting import succeeds
 - Post-renewal: triggered by `Update-TUACMEIISBinding` from the background renewal script (UC-7.02, this UC)
 - The cert **must** already live in `Cert:\LocalMachine\WebHosting` before `Set-WebBinding` runs (IIS reads the binding's cert from a per-machine store; WebHosting is the IIS-canonical one)
 

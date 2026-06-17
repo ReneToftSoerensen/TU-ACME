@@ -42,6 +42,14 @@ Describe 'Invoke-TUACMEOrderCertificate -DryRun (UC-5.02 / AC-D.2, AC-B.3, AC-B.
         $result.Thumbprint | Should -Be 'STAGING1234567890'
     }
 
+    It 'forwards both the FQDN CN and the short hostname SAN through the dry-run wrapper (UC-5.03 / #18)' {
+        $null = InModuleScope 'TU-ACME' { Invoke-TUACMEOrderCertificate -Domain @('df-bpxt4s2-ws.fragt.root.local', 'DF-BPXT4S2-WS') -DryRun }
+
+        Should -Invoke -ModuleName 'TU-ACME' New-PACertificate -Times 1 -Exactly -ParameterFilter {
+            $Domain -contains 'df-bpxt4s2-ws.fragt.root.local' -and $Domain -contains 'DF-BPXT4S2-WS'
+        }
+    }
+
     It 'restores prod context after the dry-run' {
         $null = InModuleScope 'TU-ACME' { Invoke-TUACMEOrderCertificate -Domain 'www.example.com' -DryRun }
 

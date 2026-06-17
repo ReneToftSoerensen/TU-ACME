@@ -48,6 +48,7 @@
         'Force-renew certificate (new key)'
         'Revoke certificate'
         'Rebind IIS site'
+        'Add HTTPS to an IIS site'
         'Clean up unbound certificates'
         'Configure SMTP notifications'
         'Configure DNS plugin'
@@ -67,6 +68,7 @@
         # configuration, so they need elevation just like the task install.
         $disabledIndices += [array]::IndexOf($menuItems, 'Install scheduled renewal task')
         $disabledIndices += [array]::IndexOf($menuItems, 'Rebind IIS site')
+        $disabledIndices += [array]::IndexOf($menuItems, 'Add HTTPS to an IIS site')
         $disabledIndices += [array]::IndexOf($menuItems, 'Clean up unbound certificates')
     }
 
@@ -82,17 +84,23 @@
                     Show-TUACMEDashboard
                 }
                 'Order certificate' {
-                    $domain = ([string](Read-Host 'Domain to order')).Trim()
-                    if (-not [string]::IsNullOrEmpty($domain)) {
-                        $result = Invoke-TUACMEOrderCertificate -Domain $domain
+                    $domains = Get-TUACMEOrderDomain -Prompt 'FQDN to order (CN)'
+                    if (@($domains).Count -gt 0) {
+                        $result = Invoke-TUACMEOrderCertificate -Domain $domains
                         Write-Host ('Ordered {0} (thumbprint {1}, expires {2:yyyy-MM-dd}).' -f $result.Domain, $result.Thumbprint, $result.NotAfter) -ForegroundColor Cyan
+                        if (@($domains).Count -gt 1) {
+                            Write-Host ('Included SAN: {0}.' -f ((@($domains)[1..(@($domains).Count - 1)]) -join ', ')) -ForegroundColor Cyan
+                        }
                     }
                 }
                 'Dry-run order (staging)' {
-                    $domain = ([string](Read-Host 'Domain for the staging dry-run')).Trim()
-                    if (-not [string]::IsNullOrEmpty($domain)) {
-                        $result = Invoke-TUACMEOrderCertificate -Domain $domain -DryRun
+                    $domains = Get-TUACMEOrderDomain -Prompt 'FQDN for the staging dry-run (CN)'
+                    if (@($domains).Count -gt 0) {
+                        $result = Invoke-TUACMEOrderCertificate -Domain $domains -DryRun
                         Write-Host ('Dry-run issued {0} against staging (thumbprint {1}). Production is unchanged.' -f $result.Domain, $result.Thumbprint) -ForegroundColor Cyan
+                        if (@($domains).Count -gt 1) {
+                            Write-Host ('Included SAN: {0}.' -f ((@($domains)[1..(@($domains).Count - 1)]) -join ', ')) -ForegroundColor Cyan
+                        }
                     }
                 }
                 'Renew certificate' {
@@ -181,6 +189,101 @@
                                     $chosenCert = $certificates[$certPick]
                                     $rebind = Update-TUACMEIISBinding -SiteName $chosenBinding.SiteName -BindingInformation $chosenBinding.BindingInformation -NewThumbprint ([string]$chosenCert.Thumbprint) -Certificate $chosenCert
                                     Write-Host ('Rebind complete: {0} updated, {1} failed.' -f @($rebind.Updated).Count, @($rebind.Failed).Count) -ForegroundColor Cyan
+                                }
+                            }
+                        }
+                    }
+                }
+                'Add HTTPS to an IIS site' {
+                    $httpBindings = @(Get-TUACMEIISBinding | Where-Object { $_.Protocol -eq 'http' })
+                    if ($httpBindings.Count -eq 0) {
+                        if (Test-TUACMEIISAvailable) {
+                            Write-Host 'No HTTP bindings found to add HTTPS to.' -ForegroundColor Cyan
+                        }
+                        else {
+                            # Distinguish a missing IIS provider from zero HTTP
+                            # sites so the operator is not misled (issue #16).
+                            # DarkCyan is the advisory tone (AC-C.4).
+                            Write-Host 'IIS management is unavailable in this session. Install the IIS Management Scripts and Tools feature, or run TU-ACME under Windows PowerShell 5.1.' -ForegroundColor DarkCyan
+                        }
+                    }
+                    else {
+                        $httpLabels = @($httpBindings | ForEach-Object { ('{0} - {1}' -f $_.SiteName, $_.BindingInformation) })
+                        $siteSelection = Show-TUACMEMenu -Title 'Select an HTTP site to add HTTPS to' -Items $httpLabels
+                        if ($siteSelection -ge 0) {
+                            $chosenBinding = $httpBindings[$siteSelection]
+
+                            $portText = ([string](Read-Host 'HTTPS port (default 443)')).Trim()
+                            $port = 443
+                            if (-not [string]::IsNullOrEmpty($portText)) {
+                                $port = [int]$portText
+                            }
+
+                            # Pre-fill the CN from the binding's host header when
+                            # present so the common case is a single Enter.
+                            $cnDefault = [string]$chosenBinding.HostHeader
+                            $cnPrompt = 'Certificate CN (primary domain)'
+                            if (-not [string]::IsNullOrEmpty($cnDefault)) {
+                                $cnPrompt = 'Certificate CN (Enter for "{0}")' -f $cnDefault
+                            }
+                            $cn = ([string](Read-Host $cnPrompt)).Trim()
+                            if ([string]::IsNullOrEmpty($cn)) {
+                                $cn = $cnDefault
+                            }
+
+                            if ([string]::IsNullOrEmpty($cn)) {
+                                Write-Host 'No CN provided; nothing to order.' -ForegroundColor Cyan
+                            }
+                            else {
+                                $sanText = ([string](Read-Host 'Additional SANs (comma/space separated, blank for none)')).Trim()
+                                $san = @($sanText -split '[,\s]+' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrEmpty($_) })
+
+                                # The HTTPS binding host header is independent of the
+                                # certificate CN: default it to the selected HTTP
+                                # binding's host header (which may be empty for an
+                                # all-hosts binding). Binding on the CN would make a
+                                # wildcard CN (*.example.com) an invalid IIS host and
+                                # silently turn an all-hosts binding into an SNI one.
+                                $bindingHostDefault = [string]$chosenBinding.HostHeader
+                                if ([string]::IsNullOrEmpty($bindingHostDefault)) {
+                                    $bindingHostPrompt = 'HTTPS binding host header (blank for all hosts)'
+                                }
+                                else {
+                                    $bindingHostPrompt = 'HTTPS binding host header (Enter for "{0}", "*" for all hosts)' -f $bindingHostDefault
+                                }
+                                $bindingHostInput = ([string](Read-Host $bindingHostPrompt)).Trim()
+                                if ([string]::IsNullOrEmpty($bindingHostInput)) {
+                                    $bindingHost = $bindingHostDefault
+                                }
+                                elseif ($bindingHostInput -eq '*') {
+                                    $bindingHost = ''
+                                }
+                                else {
+                                    $bindingHost = $bindingHostInput
+                                }
+
+                                $dryRunAnswer = ([string](Read-Host 'Dry-run against staging? Makes no IIS changes. (y/N)')).Trim()
+                                $dryRun = ($dryRunAnswer -eq 'y')
+
+                                $httpsParams = @{
+                                    SiteName   = $chosenBinding.SiteName
+                                    Domain     = $cn
+                                    San        = $san
+                                    Port       = $port
+                                    HostHeader = $bindingHost
+                                }
+                                if ($dryRun) {
+                                    $httpsParams['DryRun'] = $true
+                                }
+                                $result = New-TUACMEIISHttpsBinding @httpsParams
+                                if ($dryRun) {
+                                    Write-Host ('Dry-run issued {0} against staging (thumbprint {1}). Production and IIS are unchanged.' -f $result.Domain, $result.Thumbprint) -ForegroundColor Cyan
+                                }
+                                elseif ($result.BindingCreated -or $result.BindingUpdated) {
+                                    Write-Host ('HTTPS provisioned for {0} on site ''{1}'' (port {2}, thumbprint {3}).' -f $result.Domain, $result.SiteName, $result.Port, $result.Thumbprint) -ForegroundColor Cyan
+                                }
+                                else {
+                                    Write-Host ('Certificate ordered for {0} (thumbprint {1}); no HTTPS binding was created.' -f $result.Domain, $result.Thumbprint) -ForegroundColor Cyan
                                 }
                             }
                         }

@@ -11,7 +11,7 @@ Describe 'TU-ACME module (UC-1.01)' -Tag 'Unit' {
     }
 
     It 'exposes a readable module version' {
-        (Test-ModuleManifest -Path $manifestPath).Version | Should -Be ([version]'0.2.0')
+        (Test-ModuleManifest -Path $manifestPath).Version | Should -Be ([version]'0.2.1')
     }
 
     It 'imports without errors' {

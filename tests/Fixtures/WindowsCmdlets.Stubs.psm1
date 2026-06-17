@@ -33,6 +33,19 @@ function Set-WebBinding {
     throw 'Stub Set-WebBinding called without a Pester mock.'
 }
 
+function New-WebBinding {
+    [CmdletBinding()]
+    param(
+        [string]$Name,
+        [string]$Protocol,
+        [int]$Port,
+        [string]$IPAddress,
+        [string]$HostHeader,
+        [int]$SslFlags
+    )
+    throw 'Stub New-WebBinding called without a Pester mock.'
+}
+
 function Get-IISSite {
     [CmdletBinding()]
     param(
@@ -94,6 +107,7 @@ Export-ModuleMember -Function @(
     'Import-PfxCertificate'
     'Get-WebBinding'
     'Set-WebBinding'
+    'New-WebBinding'
     'Get-IISSite'
     'Get-IISServerManager'
     'Register-ScheduledTask'

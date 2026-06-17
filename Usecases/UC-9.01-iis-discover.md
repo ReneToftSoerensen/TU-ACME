@@ -21,7 +21,7 @@ Dry-run is supported through the same dispatch: when the IIS order flow is enter
 - [x] AD CS template name is displayed next to each HTTPS binding
 - [x] Bindings without a resolvable certificate leave `Expires` / `Template` blank rather than throwing
 - [ ] Discovery works on IIS 7.5+ (Server 2008 R2+)
-- [ ] Dashboard is keyboard-navigable; the menu also exposes the manual rebind action (UC-9.02). An order-from-bindings flow remains future scope.
+- [x] Dashboard is keyboard-navigable; the menu also exposes the manual rebind action (UC-9.02) and the order-from-bindings flow (UC-9.04).
 
 ## Implementation Notes
 
@@ -30,7 +30,7 @@ Dry-run is supported through the same dispatch: when the IIS order flow is enter
 - Binding info: site name, host header, binding information, protocol, thumbprint
 - Thumbprint resolved via `Cert:\LocalMachine\WebHosting` first, then `Cert:\LocalMachine\My`
 - The menu is read-only; mutating actions (order, rebind) are explicit sub-flows
-- CN/SAN derivation for an order-from-bindings flow is future scope, not part of the discovery render
+- CN/SAN derivation for the order-from-bindings flow is implemented as UC-9.04 ("Add HTTPS to an IIS site"), not part of this discovery render
 
 ## Test Coverage
 

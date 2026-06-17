@@ -20,6 +20,9 @@ As an **operator**, I want to **order a new certificate for a domain**, so that 
 - Contact email comes from config (set during first-run)
 - Domain validation is delegated to Posh-ACME
 - Certificate import to LocalMachine\My happens separately (not in this UC)
+- The order helper now accepts multiple domains (`-Domain` is `[string[]]`: CN
+  first, SANs after) while keeping `.Domain` a scalar primary for single-name
+  callers. See **UC-5.03** for the FQDN-as-CN + short-hostname-as-SAN flow.
 
 ## Test Coverage
 

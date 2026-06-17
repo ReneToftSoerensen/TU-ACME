@@ -1,6 +1,6 @@
 ﻿@{
     RootModule           = 'TU-ACME.psm1'
-    ModuleVersion        = '0.2.0'
+    ModuleVersion        = '0.2.1'
     GUID                 = 'abeca80b-aa7e-476b-9997-413bb7b01e37'
     Author               = 'TU-ACME maintainers'
     CompanyName          = 'Fragt'
