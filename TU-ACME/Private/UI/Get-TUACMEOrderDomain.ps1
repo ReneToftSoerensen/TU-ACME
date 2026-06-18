@@ -4,11 +4,19 @@
     Prompts the operator for the certificate domains to order (CN + optional SAN).
 
     .DESCRIPTION
-    Collects the FQDN that becomes the certificate CN / primary domain, then
-    offers a short-hostname Subject Alternative Name defaulted to the first DNS
-    label of the FQDN. Convention for the SAN prompt: pressing Enter accepts the
-    proposed default, typing '-' skips the SAN entirely, and any other value
-    overrides the default. Returns an array suitable for
+    First offers a quick-pick step: when system name candidates are available
+    (machine FQDN, short hostname, IIS bound host headers via
+    Get-TUACMESystemNameCandidate) the operator multi-selects names from a
+    filterable menu instead of typing. A single pick becomes the CN; picking two
+    or more prompts for which name is the CN, with the rest returned as SANs.
+    Cancelling (Esc), confirming an empty selection, or having no candidates
+    falls back to the manual entry flow below.
+
+    Manual fallback: collects the FQDN that becomes the certificate CN / primary
+    domain, then offers a short-hostname Subject Alternative Name defaulted to
+    the first DNS label of the FQDN. Convention for the SAN prompt: pressing
+    Enter accepts the proposed default, typing '-' skips the SAN entirely, and
+    any other value overrides the default. Returns an array suitable for
     Invoke-TUACMEOrderCertificate -Domain: the first element is the CN and any
     second element is the short-hostname SAN. Returns an empty array when the
     operator leaves the FQDN blank (the menu treats this as "do nothing").
@@ -22,6 +30,38 @@
         [Parameter(Mandatory = $true)]
         [string]$Prompt
     )
+
+    # Quick-pick: let the operator select known names rather than type them.
+    # Esc, an empty confirmation, or no candidates fall through to manual entry.
+    $candidates = @(Get-TUACMESystemNameCandidate)
+    if ($candidates.Count -gt 0) {
+        $labels = @($candidates | ForEach-Object { '{0}  [{1}]' -f $_.Name, $_.Source })
+
+        # Pre-select the FQDN row so the common single-Enter case picks it.
+        $preSelected = @()
+        for ($i = 0; $i -lt $candidates.Count; $i++) {
+            if ($candidates[$i].Source -eq 'FQDN') {
+                $preSelected = @($i)
+                break
+            }
+        }
+
+        $picked = Show-TUACMEMultiSelectMenu -Title 'Pick names for the certificate (Space toggles, / filters)' -Items $labels -PreSelectedIndices $preSelected
+        if (($null -ne $picked) -and (@($picked).Count -gt 0)) {
+            $names = @($picked | ForEach-Object { $candidates[$_].Name })
+            if ($names.Count -eq 1) {
+                return @($names[0])
+            }
+
+            $cnIndex = Show-TUACMEMenu -Title 'Select the Common Name (CN); the rest become SANs' -Items $names
+            if ($cnIndex -lt 0) {
+                return @()
+            }
+            $cn = $names[$cnIndex]
+            $sans = @($names | Where-Object { $_ -ne $cn })
+            return @($cn) + $sans
+        }
+    }
 
     $fqdn = ([string](Read-Host $Prompt)).Trim()
     if ([string]::IsNullOrEmpty($fqdn)) {

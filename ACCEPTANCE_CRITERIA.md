@@ -67,6 +67,11 @@
 - **When** color output is applied
 - **Then** only Cyan and DarkCyan are used (no Red, Green, Yellow, etc.)
 
+### AC-C.5: Filterable multi-select menu
+- **Given** a multi-select menu is shown
+- **When** the operator filters with `/`, toggles items with Space, and presses Enter
+- **Then** the selected items are returned; colors stay Cyan/DarkCyan and the title is ≤79 chars
+
 ## D. Certificate Operations
 
 ### AC-D.1: Order certificate (prod)
@@ -93,6 +98,12 @@
 - **Given** an existing certificate in the prod store
 - **When** force-renew with `-NewKey` is requested
 - **Then** a new key is generated and a new certificate is ordered
+
+### AC-D.6: Quick-select known names as CN/SAN
+- **Given** known names exist (FQDN, hostname, IIS host headers)
+- **When** ordering or dry-running a certificate
+- **Then** the operator can multi-select them, choose the CN, and the rest become SANs;
+  falling back to manual entry when none exist or the selection is cancelled
 
 ## E. Scheduled Renewal
 
@@ -234,11 +245,13 @@
 | AC-C.2 | UC-4.02-menu-search | P1 | [x] |
 | AC-C.3 | UC-4.03-menu-format | P0 | [x] |
 | AC-C.4 | UC-4.03-menu-format | P0 | [x] |
+| AC-C.5 | UC-5.04-order-quick-select | P2 | [x] |
 | AC-D.1 | UC-5.01-order-cert | P0 | [x] |
 | AC-D.2 | UC-5.02-order-dryrun | P1 | [x] |
 | AC-D.3 | UC-6.01-renew-cert | P1 | [x] |
 | AC-D.4 | UC-6.02-revoke-cert | P2 | [x] |
 | AC-D.5 | UC-6.03-force-renew | P2 | [x] |
+| AC-D.6 | UC-5.04-order-quick-select | P2 | [x] |
 | AC-E.1 | UC-7.01-scheduled-task | P1 | [x] |
 | AC-E.2 | UC-7.02-renewal-script | P1 | [x] |
 | AC-E.3 | UC-7.02-renewal-script | P1 | [x] |

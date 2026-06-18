@@ -118,6 +118,12 @@ This folder contains the specification, acceptance criteria, and atomic use case
 | UC-9.03 | IIS Recovery | [x] |
 | UC-12.02 | Renewal Status | [x] |
 
+### Phase 4: UX Enhancements
+
+| UC | Title | Status |
+|----|-------|--------|
+| UC-5.04 | Quick-Select Known Names (CN/SAN) | [x] |
+
 ## Development Checklist
 
 - [x] **Plan** — Review SPEC and AC matrix; prioritize Phase 1 usecases.

@@ -16,8 +16,8 @@
 |------|-----|-----|--------|
 | **A. Module Initialization** | UC-1.01–02 | 4 | [x] |
 | **B. Two-Account Model** | UC-2.01, 3.01 | 4 | [x] |
-| **C. TUI Menu** | UC-4.01–03 | 4 | [x] |
-| **D. Cert Operations** | UC-5–6 | 5 | [x] |
+| **C. TUI Menu** | UC-4.01–03, 5.04 (multi-select) | 5 | [x] |
+| **D. Cert Operations** | UC-5–6, 5.04 | 6 | [x] |
 | **E. Scheduled Renewal** | UC-7.01–02 | 3 | [x] |
 | **F. Event Logging** | UC-8.01 | 4 | [x] |
 | **G. IIS Integration** | UC-9.01–03 | 3 | [x] |
@@ -51,6 +51,8 @@ See `ACCEPTANCE_CRITERIA.md` for the full traceability matrix.
   - [x] UC-9.02 — IIS rebind
   - [x] UC-9.03 — IIS rebind failure recovery
   - [x] UC-12.02 — Renewal status (advanced)
+- [x] **Phase 4** — UX Enhancements
+  - [x] UC-5.04 — Quick-select known names (FQDN / hostname / IIS host headers) as CN/SAN (AC-C.5, AC-D.6)
 - [ ] **Verification**
   - [ ] All tests pass (Unit, Integration, Scripts) — validate on CI
   - [ ] PS 5.1 and PS 7+ both green on CI
