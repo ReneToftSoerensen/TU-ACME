@@ -113,6 +113,7 @@ Describe 'Start-TUACME main menu dispatch (UC-4.01, UC-12.01 / AC-J.1, AC-J.2, A
         $script:menuQueue.Enqueue(1)
         $script:menuQueue.Enqueue(-1)
         Mock -ModuleName 'TU-ACME' Show-TUACMEMenu { $script:menuQueue.Dequeue() }
+        Mock -ModuleName 'TU-ACME' Get-TUACMEKnownName { @() }
         Mock -ModuleName 'TU-ACME' Read-Host { 'www.example.com' }
         Mock -ModuleName 'TU-ACME' Invoke-TUACMEOrderCertificate {
             [pscustomobject]@{ Domain = 'www.example.com'; Thumbprint = 'AAA'; NotAfter = (Get-Date).AddDays(90) }
@@ -130,6 +131,7 @@ Describe 'Start-TUACME main menu dispatch (UC-4.01, UC-12.01 / AC-J.1, AC-J.2, A
         $script:menuQueue.Enqueue(2)
         $script:menuQueue.Enqueue(-1)
         Mock -ModuleName 'TU-ACME' Show-TUACMEMenu { $script:menuQueue.Dequeue() }
+        Mock -ModuleName 'TU-ACME' Get-TUACMEKnownName { @() }
         Mock -ModuleName 'TU-ACME' Read-Host { 'www.example.com' }
         Mock -ModuleName 'TU-ACME' Invoke-TUACMEOrderCertificate {
             [pscustomobject]@{ Domain = 'www.example.com'; Thumbprint = 'AAA'; NotAfter = (Get-Date).AddDays(90) }
@@ -219,6 +221,7 @@ Describe 'Start-TUACME main menu dispatch (UC-4.01, UC-12.01 / AC-J.1, AC-J.2, A
         $script:menuQueue.Enqueue(1)
         $script:menuQueue.Enqueue(-1)
         Mock -ModuleName 'TU-ACME' Show-TUACMEMenu { $script:menuQueue.Dequeue() }
+        Mock -ModuleName 'TU-ACME' Get-TUACMEKnownName { @() }
         Mock -ModuleName 'TU-ACME' Read-Host { 'www.example.com' }
         Mock -ModuleName 'TU-ACME' Invoke-TUACMEOrderCertificate { throw 'CA unreachable' }
 
