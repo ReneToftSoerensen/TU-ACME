@@ -96,6 +96,8 @@ This folder contains the specification, acceptance criteria, and atomic use case
 | UC-4.03 | Menu Format | [x] |
 | UC-5.01 | Order Certificate (Prod) | [x] |
 | UC-5.02 | Order Certificate (Dry-Run) | [x] |
+| UC-5.03 | Order Certificate (FQDN CN + Short Hostname SAN) | [x] |
+| UC-5.04 | Quick Selection of Known Names as CN/SAN | [x] |
 | UC-6.01 | Renew Certificate | [x] |
 | UC-7.01 | Scheduled Task | [x] |
 | UC-7.02 | Renewal Script | [x] |
