@@ -1,7 +1,0 @@
-{
-  "ContactEmail": "certs@example.com",
-  "ProdDirectoryUrl": "https://acme.example.com/prod/directory",
-  "ProdAccountId": "prod-account-1",
-  "StagingDirectoryUrl": "https://acme.example.com/staging/directory",
-  "StagingAccountId": "staging-account-1"
-}

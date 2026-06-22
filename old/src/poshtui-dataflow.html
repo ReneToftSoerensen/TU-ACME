@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PoshTUI Data Flow</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --text: #111827;
+    --text-sub: #4B5563;
+    --text-muted: #6B7280;
+    --bg: #FFFFFF;
+    --surface: #F9FAFB;
+    --border: #E5E7EB;
+    --connector: #94A3B8;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                 'PingFang SC', 'SimHei', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #root {
+    width: 1280px;
+    margin: 0 auto;
+    padding: 40px 44px 48px;
+  }
+
+  /* ── Title block ── */
+  .title {
+    font-size: 26px; font-weight: 700; color: var(--text);
+    text-align: center; letter-spacing: -0.3px;
+  }
+  .subtitle {
+    font-size: 14px; color: var(--text-sub);
+    text-align: center; margin-top: 8px;
+    font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace;
+  }
+  .title-rule {
+    width: 80px; height: 3px; background: #4C6EF5;
+    margin: 16px auto 32px; border-radius: 2px;
+  }
+
+  /* ── Phase group (Layout C — Phased Vertical) ── */
+  .phase-group {
+    background: #F8FAFC;
+    border-radius: 12px;
+    padding: 18px 22px 22px;
+    margin-bottom: 18px;
+    border: 1px solid #EEF2F7;
+  }
+  .phase-title {
+    font-size: 15px; font-weight: 700;
+    padding: 9px 14px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .phase-title .phase-num {
+    display: inline-block; width: 22px; height: 22px;
+    line-height: 22px; text-align: center;
+    border-radius: 50%; font-size: 12px; font-weight: 700;
+    background: rgba(255,255,255,0.55);
+  }
+  .phase-title .phase-name { flex: 1; }
+  .phase-title .phase-hint {
+    font-size: 11px; font-weight: 500;
+    color: var(--text-muted);
+    font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace;
+  }
+
+  /* Same-hue blue-gray progression — no rainbow */
+  .phase-1 .phase-title { background: #F0F4F8; color: #334155; border-left: 4px solid #64748B; }
+  .phase-2 .phase-title { background: #E8EDF2; color: #1E3A5F; border-left: 4px solid #5B7A99; }
+  .phase-3 .phase-title { background: #E0E7EF; color: #1E3050; border-left: 4px solid #4A6B8A; }
+  .phase-4 .phase-title { background: #D8E0EA; color: #172540; border-left: 4px solid #3A5C7A; }
+  .phase-5 .phase-title { background: #CFD8E4; color: #11203B; border-left: 4px solid #2C4D6E; }
+  .phase-6 .phase-title { background: #C5D0DE; color: #0C1A33; border-left: 4px solid #1F4060; }
+
+  /* ── Step rows inside a phase ── */
+  .phase-steps {
+    display: grid;
+    gap: 10px;
+  }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+  .step {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 14px;
+    min-height: 64px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .step-head {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    line-height: 1.35;
+  }
+  .step-body {
+    font-size: 11.5px; color: var(--text-sub);
+    line-height: 1.5;
+  }
+  .step-body code {
+    font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace;
+    font-size: 10.5px;
+    background: #F1F5F9;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #1E3A5F;
+  }
+
+  /* Highlighted "external actor" step */
+  .step.actor {
+    background: #FFF7ED;
+    border-color: #F59E0B;
+  }
+  .step.actor .step-head { color: #92400E; }
+
+  /* Highlighted "external system" step */
+  .step.external {
+    background: #F5F3FF;
+    border-color: #8B5CF6;
+  }
+  .step.external .step-head { color: #5B21B6; }
+
+  /* Highlighted "data store" step */
+  .step.store {
+    background: #F0FDF4;
+    border-color: #10B981;
+  }
+  .step.store .step-head { color: #065F46; }
+  .step.store .step-body code { background: #ECFDF5; color: #065F46; }
+
+  /* ── Inter-phase connector arrow ── */
+  .arrow {
+    text-align: center;
+    color: #94A3B8;
+    font-size: 22px;
+    line-height: 1;
+    margin: 4px 0 8px;
+    font-weight: 300;
+  }
+
+  /* ── Parallel track indicator ── */
+  .parallel-tag {
+    display: inline-block;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px;
+    background: #DBEAFE; color: #1E3A5F;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .parallel-tag.sched { background: #FCE7F3; color: #831843; }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex; gap: 22px; justify-content: center;
+    margin-top: 28px;
+    padding: 14px 18px;
+    background: #F8FAFC;
+    border: 1px solid #EEF2F7;
+    border-radius: 10px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text-sub);
+  }
+  .legend-swatch {
+    width: 14px; height: 14px; border-radius: 4px;
+    border: 2px solid;
+  }
+  .sw-actor    { background: #FFF7ED; border-color: #F59E0B; }
+  .sw-script   { background: white;   border-color: #94A3B8; }
+  .sw-pa       { background: white;   border-color: #3B82F6; }
+  .sw-iis      { background: white;   border-color: #4A6B8A; }
+  .sw-store    { background: #F0FDF4; border-color: #10B981; }
+  .sw-external { background: #F5F3FF; border-color: #8B5CF6; }
+
+  /* Footer */
+  .footer {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace;
+  }
+</style>
+</head>
+<body>
+<div id="root">
+
+  <div class="title">PoshTUI &mdash; Data Flow Diagram</div>
+  <div class="subtitle">PoshAcmeTui.ps1  &middot;  PoshAcme-Renew.ps1  &middot;  PowerShell 7 / Windows</div>
+  <div class="title-rule"></div>
+
+  <!-- ───────── Phase 1: Triggers ───────── -->
+  <div class="phase-group phase-1">
+    <div class="phase-title">
+      <span class="phase-num">1</span>
+      <span class="phase-name">Entry Points / Triggers</span>
+      <span class="phase-hint">who kicks off the work</span>
+    </div>
+    <div class="phase-steps cols-2">
+      <div class="step actor">
+        <div class="step-head">Administrator <span class="parallel-tag">interactive</span></div>
+        <div class="step-body">Launches <code>pwsh -File PoshAcmeTui.ps1</code> from an elevated PowerShell 7 console. Selects a menu option (N / R / A / M / B / S / T / D / W / Q).</div>
+      </div>
+      <div class="step actor">
+        <div class="step-head">Windows Task Scheduler <span class="parallel-tag sched">scheduled</span></div>
+        <div class="step-body">Fires registered <code>PoshTUI-*</code> task (default: weekly Monday 09:00) running as <code>SYSTEM</code> with highest privileges.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&darr;</div>
+
+  <!-- ───────── Phase 2: Script Layer ───────── -->
+  <div class="phase-group phase-2">
+    <div class="phase-title">
+      <span class="phase-num">2</span>
+      <span class="phase-name">Script Layer</span>
+      <span class="phase-hint">two thin entry-point scripts</span>
+    </div>
+    <div class="phase-steps cols-2">
+      <div class="step">
+        <div class="step-head">PoshAcmeTui.ps1 <span class="parallel-tag">interactive</span></div>
+        <div class="step-body">Loads <code>~/.poshtui/config.json</code> &rarr; <code>Show-MainMenu</code> loop &rarr; dispatches to <code>Invoke-CreateCertificate</code>, <code>Invoke-RenewSingle</code>, <code>Invoke-RenewAll</code>, <code>Invoke-ManageRenewals</code>, <code>Invoke-BrowseIISBindings</code>, <code>Invoke-SelectAccount</code>, or <code>Invoke-ManageScheduledTasks</code>.</div>
+      </div>
+      <div class="step">
+        <div class="step-head">PoshAcme-Renew.ps1 <span class="parallel-tag sched">scheduled</span></div>
+        <div class="step-body">Accepts <code>-ServerName</code> / <code>-AccountID</code> / <code>-LogPath</code>. No TUI, no menu. Activates context &rarr; snapshots old thumbprints &rarr; <code>Submit-Renewal -RenewAll</code> &rarr; rebinds IIS &rarr; appends to <code>renewal.log</code>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&darr;</div>
+
+  <!-- ───────── Phase 3: Posh-ACME Operations ───────── -->
+  <div class="phase-group phase-3">
+    <div class="phase-title">
+      <span class="phase-num">3</span>
+      <span class="phase-name">Posh-ACME Cmdlets</span>
+      <span class="phase-hint">ACME protocol layer</span>
+    </div>
+    <div class="phase-steps cols-3">
+      <div class="step">
+        <div class="step-head">Account context</div>
+        <div class="step-body"><code>Get-PAServer -List</code> &rarr; <code>Set-PAServer</code> (via <code>Resolve-PAServerArg</code>) &rarr; <code>Get-PAAccount -List</code> &rarr; <code>Set-PAAccount -ID</code> or <code>New-PAAccount -Contact -AcceptTos</code>.</div>
+      </div>
+      <div class="step">
+        <div class="step-head">Cert lifecycle</div>
+        <div class="step-body"><code>New-PACertificate -Domain &hellip; -Install</code> (issue + import) &middot; <code>Submit-Renewal -RenewAll</code> or <code>-Force</code> (renew due orders only).</div>
+      </div>
+      <div class="step">
+        <div class="step-head">Queries</div>
+        <div class="step-body"><code>Get-PAOrder -List -Refresh</code> (orders on active server) &middot; <code>Get-PACertificate</code> (thumbprint, NotAfter) &middot; <code>Remove-PAOrder</code> (delete order).</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&darr;</div>
+
+  <!-- ───────── Phase 4: IIS Integration ───────── -->
+  <div class="phase-group phase-4">
+    <div class="phase-title">
+      <span class="phase-num">4</span>
+      <span class="phase-name">IIS Integration (Microsoft.Web.Administration)</span>
+      <span class="phase-hint">read bindings &middot; rebind HTTPS</span>
+    </div>
+    <div class="phase-steps cols-2">
+      <div class="step">
+        <div class="step-head">Read bindings</div>
+        <div class="step-body"><code>Get-IISServerManager</code> &rarr; enumerate <code>Sites &rarr; Bindings</code> &rarr; parse <code>bindingInformation</code> (IP:Port:Host) and <code>CertificateHash</code>. Powers the IIS pickers (<code>Select-IISSitesUI</code>, <code>Select-IISBindingsUI</code>) and the Browse screen.</div>
+      </div>
+      <div class="step">
+        <div class="step-head">Re-bind on renewal</div>
+        <div class="step-body"><code>Set-IISBindingCertificate</code>: locate the HTTPS binding by <code>BindingInformation</code>, set <code>CertificateHash</code> = new thumbprint, <code>CertificateStore</code> = <code>WebHosting</code>, preserve <code>SslFlags</code> (SNI / central store). <code>mgr.CommitChanges()</code> writes <code>applicationHost.config</code>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&darr;</div>
+
+  <!-- ───────── Phase 5: Persistent Data Stores ───────── -->
+  <div class="phase-group phase-5">
+    <div class="phase-title">
+      <span class="phase-num">5</span>
+      <span class="phase-name">Persistent Data Stores</span>
+      <span class="phase-hint">state that survives between runs</span>
+    </div>
+    <div class="phase-steps cols-2">
+      <div class="step store">
+        <div class="step-head">C:\ProgramData\PoshTUI\config.json</div>
+        <div class="step-body">System-wide TUI settings: <code>ACMEServer</code>, <code>ContactEmail</code>, <code>KeyType</code>/<code>KeyLength</code>, <code>ValidationPlugin</code>, <code>CertStore</code>. ACL: <code>Administrators:FullControl</code>, <code>SYSTEM:FullControl</code>, <code>Users:Read</code>. Read by <code>Load-Config</code>, written by <code>Save-Config</code>.</div>
+      </div>
+      <div class="step store">
+        <div class="step-head">C:\ProgramData\PoshTUI\ACME\ <span class="parallel-tag">POSHACME_HOME</span></div>
+        <div class="step-body">Shared Posh-ACME data store (set via machine-wide <code>POSHACME_HOME</code> env var). Holds <code>servers/&lt;srv&gt;/</code>, <code>acct/&lt;id&gt;/acct.json</code>, <code>orders/&lt;order&gt;/</code>. Visible to BOTH the admin user and SYSTEM &mdash; master for ACME state.</div>
+      </div>
+      <div class="step store">
+        <div class="step-head">Windows Certificate Store</div>
+        <div class="step-body"><code>Cert:\LocalMachine\WebHosting</code> (default). Posh-ACME imports issued certs here via <code>-Install</code>. IIS HTTPS bindings reference these by thumbprint.</div>
+      </div>
+      <div class="step store">
+        <div class="step-head">applicationHost.config</div>
+        <div class="step-body">IIS metabase (<code>C:\Windows\System32\inetsrv\config\applicationHost.config</code>). Stores HTTPS bindings &mdash; each carries a <code>certificateHash</code> + <code>certificateStore</code> + <code>sslFlags</code>.</div>
+      </div>
+      <div class="step store">
+        <div class="step-head">C:\ProgramData\PoshTUI\renewal.log</div>
+        <div class="step-body">Append-only structured log written by <code>PoshAcme-Renew.ps1</code>. One line per event: <code>ts [INFO|OK|WARN|ERROR] msg</code>. Viewed via <code>T &rarr; l &lt;n&gt;</code>.</div>
+      </div>
+      <div class="step store">
+        <div class="step-head">Windows Task Scheduler</div>
+        <div class="step-body">Registered tasks named <code>PoshTUI-*</code>. Action: <code>pwsh.exe -NoProfile -ExecutionPolicy Bypass -File PoshAcme-Renew.ps1 -ServerName &hellip; -AccountID &hellip;</code>. Managed via <code>Register-ScheduledTask</code> / <code>Unregister-ScheduledTask</code>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&darr;</div>
+
+  <!-- ───────── Phase 6: External ACME Server ───────── -->
+  <div class="phase-group phase-6">
+    <div class="phase-title">
+      <span class="phase-num">6</span>
+      <span class="phase-name">External ACME Server</span>
+      <span class="phase-hint">the actual CA endpoint</span>
+    </div>
+    <div class="phase-steps">
+      <div class="step external">
+        <div class="step-head">ACME directory endpoint</div>
+        <div class="step-body">Built-in aliases: <code>LE_PROD</code>, <code>LE_STAGE</code>, <code>ZEROSSL_PROD</code>, <code>GOOGLE_PROD</code>, <code>GOOGLE_STAGE</code>, <code>SSLCOM_RSA</code>, <code>SSLCOM_ECC</code>, <code>ACTALIS_PROD</code> &mdash; or any custom HTTPS URL such as <code>https://acme.fragt.root.local</code>. Posh-ACME handles ACME protocol (account registration, order placement, challenge validation, cert fetch) over HTTPS.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────── Legend ───────── -->
+  <div class="legend">
+    <div class="legend-item"><span class="legend-swatch sw-actor"></span>External actor</div>
+    <div class="legend-item"><span class="legend-swatch sw-script"></span>Script / process</div>
+    <div class="legend-item"><span class="legend-swatch sw-pa"></span>Posh-ACME cmdlet</div>
+    <div class="legend-item"><span class="legend-swatch sw-iis"></span>IIS operation</div>
+    <div class="legend-item"><span class="legend-swatch sw-store"></span>Data store</div>
+    <div class="legend-item"><span class="legend-swatch sw-external"></span>External system</div>
+  </div>
+
+  <div class="footer">
+    PoshTUI  &middot;  Interactive TUI + Scheduled Renewal  &middot;  PowerShell 7 / Windows / IIS / Posh-ACME 4.x
+  </div>
+
+</div>
+</body>
+</html>
