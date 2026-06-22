@@ -7,7 +7,7 @@ BeforeAll {
     # On non-Windows CI the Posh-ACME module is not installed, so define guarded
     # stubs for the cmdlets the tested functions call, allowing Mock to target them.
     if (-not (Get-Command Get-PAServer -ErrorAction SilentlyContinue)) {
-        function global:Get-PAServer { }
+        function global:Get-PAServer { [CmdletBinding()] param([switch]$List) }
     }
 }
 

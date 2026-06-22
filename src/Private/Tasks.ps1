@@ -23,8 +23,8 @@ function Get-RenewalScheduledTaskCommand {
     )
     $renewScript = Get-RenewalScriptPath
     $argLine = "-NoProfile -ExecutionPolicy Bypass -File `"$renewScript`""
-    if ($ServerName) { $argLine += " -ServerName $ServerName" }
-    if ($AccountID)  { $argLine += " -AccountID $AccountID" }
+    if ($ServerName) { $argLine += " -ServerName '$($ServerName -replace "'", "''")'" }
+    if ($AccountID)  { $argLine += " -AccountID '$($AccountID -replace "'", "''")'" }
 
     $actionCmd = "pwsh.exe $argLine"
     $schtasks  = "schtasks /Create /TN `"$TaskName`" /TR `"$actionCmd`" /SC WEEKLY /D MON /ST 09:00 /RU SYSTEM /RL HIGHEST /F"
@@ -79,8 +79,8 @@ function Register-TUACMERenewalTask {
     }
 
     $argLine = "-NoProfile -ExecutionPolicy Bypass -File `"$renewScript`""
-    if ($ServerName) { $argLine += " -ServerName $ServerName" }
-    if ($AccountID)  { $argLine += " -AccountID $AccountID" }
+    if ($ServerName) { $argLine += " -ServerName '$($ServerName -replace "'", "''")'" }
+    if ($AccountID)  { $argLine += " -AccountID '$($AccountID -replace "'", "''")'" }
     $action = New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument $argLine
 
     switch ($ScheduleType) {

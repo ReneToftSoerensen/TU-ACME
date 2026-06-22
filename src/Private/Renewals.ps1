@@ -104,8 +104,9 @@ function Invoke-RenewSingle {
         -DryRunCommand 'Submit-Renewal -Force' `
         -Action { Submit-Renewal -Force }
 
-    if ($script:DryRun) {
-        Write-Warn 'DRY-RUN: after a real renewal, IIS bindings using the old thumbprint would be re-pointed.'
+    if ($script:DryRun -or $script:WhatIf) {
+        $label = if ($script:DryRun) { 'DRY-RUN' } else { 'WHAT-IF' }
+        Write-Warn "${label}: after a real renewal, IIS bindings using the old thumbprint would be re-pointed."
         return
     }
 
@@ -162,8 +163,9 @@ function Invoke-RenewAll {
         -DryRunCommand 'Submit-Renewal -AllOrders' `
         -Action { Submit-Renewal -AllOrders }
 
-    if ($script:DryRun) {
-        Write-Warn 'DRY-RUN: each due order would be renewed and its IIS bindings re-pointed.'
+    if ($script:DryRun -or $script:WhatIf) {
+        $label = if ($script:DryRun) { 'DRY-RUN' } else { 'WHAT-IF' }
+        Write-Warn "${label}: each due order would be renewed and its IIS bindings re-pointed."
         Wait-UI
         return
     }

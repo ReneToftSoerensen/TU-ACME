@@ -84,9 +84,10 @@ function Invoke-SelectAccount {
             -DryRunCommand "Set-PAAccount -ID '$($sel.AccountID)'" `
             -Action { Set-PAAccount -ID $sel.AccountID }
 
-        if ($script:DryRun) {
+        if ($script:DryRun -or $script:WhatIf) {
             Write-Host ''
-            Write-Warn 'DRY-RUN: no context change applied.'
+            $label = if ($script:DryRun) { 'DRY-RUN' } else { 'WHAT-IF' }
+            Write-Warn "${label}: no context change applied."
         } else {
             $script:Config.ACMEServer = $sel.ServerName
             Save-TUACMEConfig
@@ -127,7 +128,7 @@ function Enable-PAAccountAltEncryption {
         -DryRunCommand 'Set-PAAccount -UseAltPluginEncryption' `
         -Action { Set-PAAccount -UseAltPluginEncryption }
 
-    if (-not $script:DryRun) { Write-Ok 'Portable plugin encryption enabled.' }
+    if (-not $script:DryRun -and -not $script:WhatIf) { Write-Ok 'Portable plugin encryption enabled.' }
 }
 
 function Invoke-CreateNewAccount {
@@ -201,9 +202,10 @@ function Invoke-CreateNewAccount {
         -DryRunCommand "New-PAAccount -Contact '$email' -AcceptTOS" `
         -Action { New-PAAccount -Contact $email -AcceptTOS }
 
-    if ($script:DryRun) {
+    if ($script:DryRun -or $script:WhatIf) {
         Write-Host ''
-        Write-Warn 'DRY-RUN: no account was created.'
+        $label = if ($script:DryRun) { 'DRY-RUN' } else { 'WHAT-IF' }
+        Write-Warn "${label}: no account was created."
     } else {
         $script:Config.ACMEServer   = $srvName
         $script:Config.ContactEmail = $email
