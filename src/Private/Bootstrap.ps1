@@ -58,7 +58,10 @@ function Set-TUACMEAcl {
     if (-not $PSCmdlet.ShouldProcess($Path, 'Apply TU-ACME ACL')) { return }
 
     $acl = Get-Acl $Path
-    $acl.SetAccessRuleProtection($false, $false)   # keep inheritance from parent
+    # isProtected=$false keeps inheritance from the parent; preserveInheritance is
+    # moot when not protected. Explicit (non-inherited) rules are cleared below so
+    # the rules we add are the only explicit ACEs.
+    $acl.SetAccessRuleProtection($false, $false)
     $acl.Access |
         Where-Object { -not $_.IsInherited } |
         ForEach-Object { [void]$acl.RemoveAccessRule($_) }

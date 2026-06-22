@@ -173,10 +173,6 @@ function Invoke-RenewAll {
         if (-not $cert -or -not $cert.Thumbprint) { continue }
         $newTP = $cert.Thumbprint
         $oldTP = ''
-        foreach ($k in $thumbBefore.Keys) {
-            # Best-effort: match the renewed cert to a prior order by SAN overlap.
-            if (@($cert.AllSANs) -and (Get-PAOrdersList | Where-Object { $_.Name -eq $k })) { }
-        }
         $sans = @($cert.AllSANs)
         # Find old thumbprint via any order whose identifiers overlap the SANs.
         $match = $Orders | Where-Object { @($_.Identifiers -split ',' | Where-Object { $_ -in $sans }).Count -gt 0 } | Select-Object -First 1

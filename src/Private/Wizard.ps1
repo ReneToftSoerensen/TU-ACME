@@ -56,7 +56,7 @@ function Select-IISSitesUI {
             'c' {
                 if (-not $selectedSites) {
                     Write-Warn 'No sites selected yet; defaulting to ALL sites.'
-                    Start-Sleep -Seconds 1
+                    Start-Sleep -Milliseconds 300
                     $mgr = Get-IISServerManagerSafe
                     return @(foreach ($s in $mgr.Sites) {
                         [pscustomobject]@{ Id = $s.Id; Name = $s.Name; State = [string]$s.State }
