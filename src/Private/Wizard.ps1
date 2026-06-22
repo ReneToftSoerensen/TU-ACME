@@ -391,9 +391,13 @@ function Invoke-NewCertificate {
         -DryRunCommand "New-PACertificate -Domain '$domains' -Plugin $plugin" `
         -Action { New-PACertificate -Domain $identifiers -Plugin $plugin }
 
-    if ($script:DryRun) {
+    if ($script:DryRun -or $script:WhatIf) {
         Write-Host ''
-        Write-Warn 'DRY-RUN: No certificate was generated. Review the command above.'
+        if ($script:DryRun) {
+            Write-Warn 'DRY-RUN: No certificate was generated. Review the command above.'
+        } else {
+            Write-Warn 'WHAT-IF: No certificate was generated. Review the command above.'
+        }
         Write-Host 'Bindings that would be re-pointed (one per identifier):' -ForegroundColor Cyan
         foreach ($h in $identifiers) {
             $matching = Get-IISSslBindings | Where-Object { $_.HostHeader -ieq $h }
