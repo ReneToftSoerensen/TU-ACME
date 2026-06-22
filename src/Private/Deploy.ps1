@@ -22,8 +22,12 @@ function Install-TUACMECertificate {
         [string]$StoreName = 'WebHosting'
     )
     if (-not $PSCmdlet.ShouldProcess("$OrderName", "Install into LocalMachine\$StoreName")) { return }
-    Get-PACertificate $OrderName |
-        Install-PACertificate -StoreLocation 'LocalMachine' -StoreName $StoreName
+    # Positional Get-PACertificate binds to MainDomain, not the order name. Look up
+    # by -Order first (handles order names that differ from the main domain, e.g.
+    # the renew-single flow), falling back to -MainDomain for older single-name orders.
+    $cert = Get-PACertificate -Order $OrderName -ErrorAction SilentlyContinue
+    if (-not $cert) { $cert = Get-PACertificate -MainDomain $OrderName -ErrorAction Stop }
+    $cert | Install-PACertificate -StoreLocation 'LocalMachine' -StoreName $StoreName
 }
 
 function Update-IISCertificateBinding {

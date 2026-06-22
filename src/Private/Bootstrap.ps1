@@ -49,7 +49,8 @@ function Set-TUACMEAcl {
               Administrators : FullControl
               SYSTEM         : FullControl
               Users          : ReadAndExecute
-            inherited to children.
+            Inheritance from the parent is disabled so inherited ACEs (e.g. from
+            %ProgramData%) cannot grant broader rights than intended.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][string]$Path)
@@ -58,12 +59,11 @@ function Set-TUACMEAcl {
     if (-not $PSCmdlet.ShouldProcess($Path, 'Apply TU-ACME ACL')) { return }
 
     $acl = Get-Acl $Path
-    # isProtected=$false keeps inheritance from the parent; preserveInheritance is
-    # moot when not protected. Explicit (non-inherited) rules are cleared below so
-    # the rules we add are the only explicit ACEs.
-    $acl.SetAccessRuleProtection($false, $false)
+    # Protect the ACL (isProtected=$true) and do NOT copy inherited rules
+    # (preserveInheritance=$false), then strip any remaining explicit ACEs so the
+    # rules we add below are the only ACEs that apply.
+    $acl.SetAccessRuleProtection($true, $false)
     $acl.Access |
-        Where-Object { -not $_.IsInherited } |
         ForEach-Object { [void]$acl.RemoveAccessRule($_) }
 
     $rules = @(

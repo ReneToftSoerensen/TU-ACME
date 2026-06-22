@@ -229,7 +229,9 @@ function Invoke-PAAction {
         .SYNOPSIS
             Runs (or simulates) a Posh-ACME / state-changing action.
             - Dry-Run:  prints the equivalent command, executes nothing.
-            - What-If:  calls the scriptblock with -WhatIf (best effort).
+            - What-If:  simulation only; prints the equivalent command, executes
+                        nothing. (-WhatIf is NOT forwarded into the scriptblock,
+                        which would silently run the action for real.)
             - Otherwise: invokes the scriptblock.
     #>
     param(
@@ -249,13 +251,9 @@ function Invoke-PAAction {
     }
 
     if ($script:WhatIf -and -not $NoWhatIf) {
-        Write-Warn 'WHAT-IF: passing -WhatIf to underlying cmdlet where supported.'
-        try {
-            & $Action -WhatIf
-        } catch {
-            Write-Info "Command rejected -WhatIf: $_ -- showing simulated command."
-            Write-Host "  $DryRunCommand" -ForegroundColor Gray
-        }
+        Write-Warn 'WHAT-IF: no changes will be made.'
+        Write-Host '  Equivalent command:' -ForegroundColor DarkCyan
+        Write-Host "  $DryRunCommand" -ForegroundColor Gray
         return $null
     }
 

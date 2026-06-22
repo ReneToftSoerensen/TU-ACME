@@ -183,7 +183,7 @@ function Select-IISBindingsUI {
                         @($filtered | Select-Object -ExpandProperty HostHeader -Unique)
                     } else { @($manual) }
                     if (-not $final) {
-                        Write-Warn "No bindings selected. Press 'c' again to continue empty or 'clear' to reset."
+                        Write-Warn "No bindings selected. Select at least one host, or 'clear' to reset filters."
                         Wait-UI
                     } else {
                         return $final
@@ -379,6 +379,13 @@ function Invoke-NewCertificate {
     Write-Host "  $cmdLine" -ForegroundColor Gray
     Write-Host ''
     if (-not (Confirm-Prompt 'Proceed?')) { Write-Warn 'Cancelled.'; Wait-UI; return }
+
+    # Activate the displayed server so the certificate is requested against the
+    # server shown above, not whatever happens to be the active Posh-ACME context
+    # (or the default on a fresh machine).
+    Invoke-PAAction -Description "Activate ACME server '$server'" `
+        -DryRunCommand "Set-PAServer $serverArg" `
+        -Action { Set-PAServer $serverArg }
 
     $newCert = Invoke-PAAction -Description 'Request certificate' `
         -DryRunCommand "New-PACertificate -Domain '$domains' -Plugin $plugin" `
