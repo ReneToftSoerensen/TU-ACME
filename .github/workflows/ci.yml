@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Analyze and test (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PowerShell modules
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name Pester -MinimumVersion 5.0 -Force -Scope CurrentUser
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          Install-Module -Name Posh-ACME -MinimumVersion 4.0 -Force -Scope CurrentUser
+
+      - name: Import module
+        shell: pwsh
+        run: Import-Module ./src/TU-ACME.psd1 -Force
+
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path ./src -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
+          if ($results) {
+              $results | Format-Table -AutoSize | Out-String | Write-Host
+              throw "PSScriptAnalyzer reported $($results.Count) issue(s)."
+          }
+          Write-Host 'PSScriptAnalyzer clean.'
+
+      - name: Run Pester
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests'
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $config
