@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Analyze and test (Windows)
+    runs-on: windows-latest
+
+    env:
+      # Native Pebble release to download for the full-scale issuance test.
+      PEBBLE_VERSION: v2.10.1
+      # The integration suite (tagged 'Integration') self-enables when this is set.
+      TUACME_ACME_DIRECTORY: https://localhost:14000/dir
+      TUACME_CHALLTESTSRV: http://localhost:8055
+      POSHACME_PLUGINS: ${{ github.workspace }}/tests/Integration/plugins
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PowerShell modules
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name Pester -MinimumVersion 5.0 -Force -Scope CurrentUser
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          Install-Module -Name Posh-ACME -MinimumVersion 4.0 -Force -Scope CurrentUser
+
+      - name: Import module
+        shell: pwsh
+        run: Import-Module ./src/TU-ACME.psd1 -Force
+
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path ./src -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
+          if ($results) {
+              $results | Format-Table -AutoSize | Out-String | Write-Host
+              throw "PSScriptAnalyzer reported $($results.Count) issue(s)."
+          }
+          Write-Host 'PSScriptAnalyzer clean.'
+
+      - name: Download Pebble and challtestsrv (native Windows binaries)
+        shell: pwsh
+        run: |
+          $base = "https://github.com/letsencrypt/pebble/releases/download/$env:PEBBLE_VERSION"
+          Invoke-WebRequest "$base/pebble-windows-amd64.zip" -OutFile pebble.zip
+          Invoke-WebRequest "$base/pebble-challtestsrv-windows-amd64.zip" -OutFile challtestsrv.zip
+          Expand-Archive -Path pebble.zip -DestinationPath pebble -Force
+          Expand-Archive -Path challtestsrv.zip -DestinationPath challtestsrv -Force
+
+      - name: Start Pebble and challtestsrv
+        shell: pwsh
+        run: |
+          $cts = Join-Path $PWD 'challtestsrv/pebble-challtestsrv-windows-amd64/windows/amd64/pebble-challtestsrv.exe'
+          $pebble = Join-Path $PWD 'pebble/pebble-windows-amd64/windows/amd64/pebble.exe'
+          $config = Join-Path $PWD 'tests/Integration/pebble-config.json'
+
+          # pebble-challtestsrv answers DNS-01 lookups and exposes a management API
+          # the ChallTestSrv test plugin uses to publish/clear TXT records. The
+          # HTTP/HTTPS/TLS-ALPN challenge servers are disabled (empty addresses).
+          # A single command-line string is passed verbatim, so the empty "" tokens
+          # reach challtestsrv as genuine empty arguments that disable those servers.
+          Start-Process -FilePath $cts `
+            -ArgumentList '-management :8055 -dnsserver :8053 -http01 "" -https01 "" -tlsalpn01 "" -doh ""' `
+            -RedirectStandardOutput challtestsrv.out.log -RedirectStandardError challtestsrv.err.log
+
+          # Pebble is the official test ACME CA; point it at challtestsrv for DNS.
+          # PEBBLE_VA_NOSLEEP removes the randomized validation delay so the test
+          # finishes quickly. The config omits certificate/privateKey, so Pebble
+          # generates an ephemeral self-signed cert (the suite uses -SkipCertificateCheck).
+          $env:PEBBLE_VA_NOSLEEP = '1'
+          Start-Process -FilePath $pebble `
+            -ArgumentList "-config `"$config`" -dnsserver 127.0.0.1:8053" `
+            -RedirectStandardOutput pebble.out.log -RedirectStandardError pebble.err.log
+
+      - name: Wait for the ACME directory
+        shell: pwsh
+        run: |
+          for ($i = 0; $i -lt 30; $i++) {
+              try {
+                  Invoke-WebRequest -Uri $env:TUACME_ACME_DIRECTORY -SkipCertificateCheck -UseBasicParsing | Out-Null
+                  Write-Host 'ACME directory is up.'
+                  exit 0
+              } catch {
+                  Start-Sleep -Seconds 2
+              }
+          }
+          Write-Error 'Pebble did not become ready in time.'
+          if (Test-Path pebble.err.log) { Get-Content pebble.err.log | Write-Host }
+          exit 1
+
+      - name: Run Pester (unit and integration)
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests'
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $config
+
+      - name: Test server logs on failure
+        if: failure()
+        shell: pwsh
+        run: |
+          foreach ($log in 'pebble.out.log', 'pebble.err.log', 'challtestsrv.out.log', 'challtestsrv.err.log') {
+              if (Test-Path $log) {
+                  Write-Host "::group::$log"
+                  Get-Content $log | Write-Host
+                  Write-Host '::endgroup::'
+              }
+          }
