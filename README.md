@@ -10,9 +10,10 @@ hosts, choose a common name, issue, then re-point the IIS HTTPS bindings — all
 from a keyboard-driven menu.
 
 > A headless renewal runner (`PoshAcme-Renew.ps1`, driven by a SYSTEM scheduled
-> task) is specified in `ISSUE-02-renewal-runner.md` and is a follow-up. This
-> repository already ships the shared deployment seam (`Private/Deploy.ps1`) and
-> the scheduled-task registration the runner will use.
+> task) is provided for unattended renewal — see
+> [Unattended renewal runner](#unattended-renewal-runner) below. It reuses the
+> shared deployment seam (`Private/Deploy.ps1`) so unattended and interactive
+> renewals behave identically.
 
 ## Requirements
 
@@ -89,6 +90,55 @@ On first run, `Initialize-TUACMEHome`:
 | `CertStore`         | `WebHosting`               | Single source of truth: drives import store, binding store, and the UI label. |
 | `PostDeployHook`    | *(empty)*                  | Optional `.ps1` for non-IIS deployment targets.             |
 | `RenewalDaysBefore` | `30`                       | Renew this many days before expiry.                         |
+
+## Unattended renewal runner
+
+`PoshAcme-Renew.ps1` (repo root) is a headless, non-interactive renewal runner.
+It is what the **T** menu registers as a SYSTEM Windows Scheduled Task, but it can
+also be run by hand. It renews due Posh-ACME orders, re-installs the renewed
+certificates into the configured store, and re-points the matching IIS HTTPS
+bindings — reusing the same `Private/Deploy.ps1` helpers as the wizard, with no
+console output (logging only).
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\PoshAcme-Renew.ps1
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\PoshAcme-Renew.ps1 -ServerName LE_PROD -AccountID abc123
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\PoshAcme-Renew.ps1 -Force        # ignore RenewAfter
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\PoshAcme-Renew.ps1 -NoCache      # refresh order state first
+```
+
+| Parameter         | Purpose                                                                                  |
+| ----------------- | ---------------------------------------------------------------------------------------- |
+| `-ServerName`     | ACME alias or directory URL. Omit = all servers. (Stable scheduled-task seam.)           |
+| `-AccountID`      | Restrict to one account. Omit = all accounts. (Stable scheduled-task seam.)              |
+| `-Force`          | Renew regardless of `RenewAfter` (`Submit-Renewal -AllOrders -Force`).                   |
+| `-NoCache`        | Refresh orders from the server (`-Refresh`) before deciding what is due. Not a force.    |
+| `-CertStore`      | LocalMachine store for import + binding. Default: config `CertStore`.                    |
+| `-PostDeployHook` | Optional `.ps1` run per renewed cert for non-IIS targets. Empty = off.                   |
+| `-LogPath`        | Log file. Default: `%ProgramData%\TU-ACME\renewal.log`.                                  |
+| `-WhatIf`         | Make no changes; log the intended actions only.                                          |
+
+When `-AccountID` is supplied **without** `-ServerName`, the server is inferred
+from the single matching account; the run aborts (exit 2) if zero or multiple
+accounts share that ID (disambiguate with `-ServerName`).
+
+**Exit codes** (surfaced as Task Scheduler "Last run result"):
+
+| Code | Meaning                                                                 |
+| ---- | ---------------------------------------------------------------------- |
+| `0`  | Success, including "nothing was due" (a no-op is success).             |
+| `1`  | One or more renewals, rebinds, or post-deploy hooks failed (partial). |
+| `2`  | Fatal/setup error (module/`POSHACME_HOME` unavailable, no/ambiguous/unknown account). |
+
+Output goes to the shared ISO-8601 file log and to the Windows **Application**
+event log under source `TU-ACME` (Information on success, Warning on partial,
+Error on fatal).
+
+> **DPAPI note:** accounts that store secure plugin args (DNS plugins) must be
+> switched to portable AES encryption (`Set-PAAccount -UseAltPluginEncryption`,
+> via the **S** menu) or `Submit-Renewal` cannot decrypt them under SYSTEM. The
+> runner detects a decryption failure and logs a clear remediation message
+> instead of a stack trace.
 
 ## Development
 

@@ -16,7 +16,7 @@
     # CI runners where IIS / Posh-ACME are not installed. Presence is asserted at
     # runtime by the bootstrap (see Private/Bootstrap.ps1).
 
-    FunctionsToExport = @('Start-TUACME')
+    FunctionsToExport = @('Start-TUACME', 'Invoke-TUACMERenewal')
     CmdletsToExport   = @()
     VariablesToExport = @()
     AliasesToExport   = @()

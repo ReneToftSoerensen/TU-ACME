@@ -57,4 +57,6 @@ foreach ($file in @($privateFiles + $publicFiles)) {
     . $file.FullName
 }
 
-Export-ModuleMember -Function 'Start-TUACME'
+# Start-TUACME is the interactive entry point; Invoke-TUACMERenewal is the
+# headless orchestrator called by PoshAcme-Renew.ps1 (ISSUE-02).
+Export-ModuleMember -Function 'Start-TUACME', 'Invoke-TUACMERenewal'
