@@ -100,6 +100,10 @@ certificates into the configured store, and re-points the matching IIS HTTPS
 bindings — reusing the same `Private/Deploy.ps1` helpers as the wizard, with no
 console output (logging only).
 
+By default it renews orders Posh-ACME reports as due (`RenewAfter`/ARI) **and**,
+as a safety net, force-renews any certificate within `RenewalDaysBefore` (default
+`30`) days of expiry even if `RenewAfter` has not yet elapsed.
+
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\PoshAcme-Renew.ps1
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\PoshAcme-Renew.ps1 -ServerName LE_PROD -AccountID abc123

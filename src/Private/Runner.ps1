@@ -101,6 +101,47 @@ function Resolve-TUACMERenewalTargets {
     return [pscustomobject]@{ Targets = @($targets); Status = 'ok'; Message = '' }
 }
 
+function Get-TUACMEExpiringOrderNames {
+    <#
+        .SYNOPSIS
+            Returns the orders on the current Posh-ACME server whose certificate
+            expires within $DaysBefore days. Used to guarantee renewal before
+            expiry: Posh-ACME's RenewAfter (ARI) may not flag such a cert as due,
+            so the runner force-renews these by name regardless. Read-only.
+        .OUTPUTS
+            Objects @{ Name; MainDomain; NotAfter } for each expiring, non-invalid
+            order (empty array when none / on listing failure).
+    #>
+    [CmdletBinding()]
+    param([int]$DaysBefore = 30)
+
+    $expiring = @()
+    $cutoff   = (Get-Date).AddDays($DaysBefore)
+    $orders   = @()
+    try {
+        $orders = @(Get-PAOrder -List -ErrorAction Stop)
+    } catch {
+        Write-TUACMELog -Level WARN -Message "Could not list orders to evaluate the expiry window: $_"
+        return $expiring
+    }
+
+    foreach ($o in $orders) {
+        if ($o.status -ieq 'invalid') { continue }
+        $cert = $null
+        try { $cert = $o | Get-PACertificate -ErrorAction SilentlyContinue } catch { }
+        if (-not $cert) { continue }
+        $notAfter = ConvertTo-DateTime $cert.NotAfter
+        if ($notAfter -and $notAfter -le $cutoff) {
+            $expiring += [pscustomobject]@{
+                Name       = $o.Name
+                MainDomain = $o.MainDomain
+                NotAfter   = $notAfter
+            }
+        }
+    }
+    return $expiring
+}
+
 function Invoke-TUACMERenewal {
     <#
         .SYNOPSIS
@@ -138,6 +179,7 @@ function Invoke-TUACMERenewal {
              else { $script:Config.PostDeployHook }
 
     Write-TUACMELog -Message '====== TU-ACME unattended renewal: start ======'
+    Write-TUACMELog -Message "Renewal policy: due orders plus any cert expiring within $($script:Config.RenewalDaysBefore) days."
     if ($WhatIf)  { Write-TUACMELog -Message 'WHAT-IF: no changes will be made.' }
     if ($NoCache) { Write-TUACMELog -Message 'NoCache: bypassing cached state; orders will be refreshed from the server.' }
 
@@ -205,19 +247,43 @@ function Invoke-TUACMERenewal {
                 }
             }
 
+            # Hard expiry rule: any certificate within RenewalDaysBefore days of
+            # expiry must be renewed even if RenewAfter (ARI) says it is not yet
+            # due. Force-renew those orders by name. When -Force is set every order
+            # is renewed anyway, so this targeted pass is unnecessary.
+            $expiring = @()
+            if (-not $Force) {
+                $expiring = @(Get-TUACMEExpiringOrderNames -DaysBefore ([int]$script:Config.RenewalDaysBefore))
+                foreach ($e in $expiring) {
+                    Write-TUACMELog -Message ("Order '$($e.MainDomain)' expires $($e.NotAfter.ToString('yyyy-MM-dd HH:mm')); " +
+                        "within $($script:Config.RenewalDaysBefore)-day window - forcing renewal.")
+                }
+            }
+
             if ($WhatIf) {
-                $cmd = if ($Force) { 'Submit-Renewal -AllOrders -Force' } else { 'Submit-Renewal -AllOrders' }
-                Write-TUACMELog -Message "WHAT-IF: would run '$cmd' for [$($acct.ServerName)] $($acct.AccountID)."
+                if ($Force) {
+                    Write-TUACMELog -Message "WHAT-IF: would run 'Submit-Renewal -AllOrders -Force' for [$($acct.ServerName)] $($acct.AccountID)."
+                } else {
+                    foreach ($e in $expiring) {
+                        Write-TUACMELog -Message "WHAT-IF: would run 'Submit-Renewal -Name $($e.Name) -Force' for [$($acct.ServerName)] $($acct.AccountID)."
+                    }
+                    Write-TUACMELog -Message "WHAT-IF: would run 'Submit-Renewal -AllOrders' for [$($acct.ServerName)] $($acct.AccountID)."
+                }
                 continue
             }
 
             # ----- Renew -----
             $renewed = @()
             try {
+                # Targeted force-renewal of certs inside the expiry window first;
+                # this bumps their RenewAfter so the -AllOrders pass below skips them.
+                foreach ($e in $expiring) {
+                    $renewed += @(Submit-Renewal -Name $e.Name -Force -ErrorAction Stop)
+                }
                 if ($Force) {
-                    $renewed = @(Submit-Renewal -AllOrders -Force -ErrorAction Stop)
+                    $renewed += @(Submit-Renewal -AllOrders -Force -ErrorAction Stop)
                 } else {
-                    $renewed = @(Submit-Renewal -AllOrders -ErrorAction Stop)
+                    $renewed += @(Submit-Renewal -AllOrders -ErrorAction Stop)
                 }
             } catch {
                 $msg = "$_"

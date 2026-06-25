@@ -21,7 +21,10 @@ BeforeAll {
         function global:Get-PAOrder { [CmdletBinding()] param([switch]$List, [switch]$Refresh, [string]$Name) }
     }
     if (-not (Get-Command Submit-Renewal -ErrorAction SilentlyContinue)) {
-        function global:Submit-Renewal { [CmdletBinding()] param([switch]$AllOrders, [switch]$Force) }
+        function global:Submit-Renewal { [CmdletBinding()] param([switch]$AllOrders, [switch]$Force, [string]$Name, [string]$MainDomain) }
+    }
+    if (-not (Get-Command Get-PACertificate -ErrorAction SilentlyContinue)) {
+        function global:Get-PACertificate { [CmdletBinding()] param([Parameter(ValueFromPipeline)]$Order, [string]$MainDomain) }
     }
 }
 
@@ -382,6 +385,46 @@ Describe 'Invoke-TUACMERenewal' {
 
             Invoke-TUACMERenewal -NoCache | Should -Be 0
             Should -Invoke Get-PAOrder -Times 1 -ParameterFilter { $Refresh -eq $true }
+        }
+    }
+
+    It 'force-renews a cert expiring within the RenewalDaysBefore window' {
+        InModuleScope TU-ACME -Parameters @{ accounts = $script:oneAccount } {
+            param($accounts)
+            Mock Write-TUACMELog {}
+            Mock Write-TUACMEEventLog {}
+            Mock Get-AllPAAccounts { $accounts }
+            Mock Set-PAServer {}
+            Mock Set-PAAccount {}
+            Mock Get-IISSslBindings { @() }
+            Mock Get-PAOrder { @([pscustomobject]@{ Name = 'soon'; MainDomain = 'soon.example.com'; status = 'valid' }) }
+            Mock Get-PACertificate { [pscustomobject]@{ NotAfter = (Get-Date).AddDays(10) } }
+            Mock Submit-Renewal { @() }
+            Mock Install-TUACMECertificate {}
+            Mock Update-IISCertificateBinding {}
+
+            Invoke-TUACMERenewal | Should -Be 0
+            Should -Invoke Submit-Renewal -Times 1 -ParameterFilter { $Name -eq 'soon' -and $Force -eq $true }
+        }
+    }
+
+    It 'does not force-renew a cert outside the RenewalDaysBefore window' {
+        InModuleScope TU-ACME -Parameters @{ accounts = $script:oneAccount } {
+            param($accounts)
+            Mock Write-TUACMELog {}
+            Mock Write-TUACMEEventLog {}
+            Mock Get-AllPAAccounts { $accounts }
+            Mock Set-PAServer {}
+            Mock Set-PAAccount {}
+            Mock Get-IISSslBindings { @() }
+            Mock Get-PAOrder { @([pscustomobject]@{ Name = 'later'; MainDomain = 'later.example.com'; status = 'valid' }) }
+            Mock Get-PACertificate { [pscustomobject]@{ NotAfter = (Get-Date).AddDays(60) } }
+            Mock Submit-Renewal { @() }
+            Mock Install-TUACMECertificate {}
+            Mock Update-IISCertificateBinding {}
+
+            Invoke-TUACMERenewal | Should -Be 0
+            Should -Invoke Submit-Renewal -Times 0 -ParameterFilter { $Name -eq 'later' }
         }
     }
 }

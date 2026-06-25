@@ -12,6 +12,11 @@
     shared orchestrator Invoke-TUACMERenewal, so unattended and interactive
     renewals reuse the exact same install/rebind helpers (Private/Deploy.ps1).
 
+    By default it renews orders Posh-ACME reports as due (RenewAfter/ARI) and, as
+    a safety net, force-renews any certificate within the configured
+    RenewalDaysBefore (default 30) days of expiry even if RenewAfter has not yet
+    elapsed. Use -Force to renew every order regardless of RenewAfter.
+
     Exit codes:
         0 = success, including "nothing was due" (no-op is success).
         1 = one or more renewals, rebinds, or post-deploy hooks failed (partial).
