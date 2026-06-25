@@ -113,18 +113,21 @@ and order enumeration, ISO-8601 date formatting, invalid-order detection). It
 self-skips unless `TUACME_ACME_DIRECTORY` is set, so it never affects the
 mocked unit run.
 
-CI runs it automatically in the `integration` job on `ubuntu-latest`, which
-boots Pebble and `pebble-challtestsrv` in Docker. To run it locally (Docker
-required):
+CI runs it automatically in the single `build` job on `windows-latest`, which
+downloads the native Pebble and `pebble-challtestsrv` Windows binaries and runs
+them as background processes (no Docker). To run it locally on Windows, download
+the matching release from
+[Pebble releases](https://github.com/letsencrypt/pebble/releases) and start both
+servers (the config omits a certificate/private key, so Pebble generates an
+ephemeral self-signed cert):
 
-```bash
-docker network create acmenet
-docker run -d --name challtestsrv --network acmenet -p 8055:8055 \
-  ghcr.io/letsencrypt/pebble-challtestsrv:latest \
-  -management :8055 -dnsserver :8053 -http01 "" -https01 "" -tlsalpn01 "" -doh ""
-docker run -d --name pebble --network acmenet -p 14000:14000 -p 15000:15000 \
-  -e PEBBLE_VA_NOSLEEP=1 ghcr.io/letsencrypt/pebble:latest \
-  -config /test/config/pebble-config.json -dnsserver challtestsrv:8053
+```powershell
+# pebble-challtestsrv answers DNS-01 and exposes the management API on :8055.
+Start-Process .\pebble-challtestsrv.exe -ArgumentList `
+  '-management :8055 -dnsserver :8053 -http01 "" -https01 "" -tlsalpn01 "" -doh ""'
+$env:PEBBLE_VA_NOSLEEP = '1'
+Start-Process .\pebble.exe -ArgumentList `
+  '-config .\tests\Integration\pebble-config.json -dnsserver 127.0.0.1:8053'
 ```
 
 ```powershell
