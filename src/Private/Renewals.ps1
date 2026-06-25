@@ -140,8 +140,14 @@ function Invoke-RenewAll {
         .SYNOPSIS
             Batch-renews all due orders via Submit-Renewal -AllOrders, then
             re-points IIS bindings for each renewed cert.
+        .PARAMETER Force
+            When set, passes -Force to Submit-Renewal so every order is renewed
+            regardless of Posh-ACME's RenewAfter / ARI schedule.
     #>
-    param([object[]]$Orders)
+    param(
+        [object[]]$Orders,
+        [switch]$Force
+    )
 
     if (-not $Orders) { $Orders = Get-PAOrdersList }
     Write-Host ''
@@ -159,9 +165,10 @@ function Invoke-RenewAll {
     $thumbBefore = @{}
     foreach ($o in $Orders) { if ($o.CertThumb) { $thumbBefore[$o.Name] = $o.CertThumb } }
 
+    $dryRunCmd = if ($Force) { 'Submit-Renewal -AllOrders -Force' } else { 'Submit-Renewal -AllOrders' }
     $renewed = Invoke-PAAction -Description 'Submit renewal for all due orders' `
-        -DryRunCommand 'Submit-Renewal -AllOrders' `
-        -Action { Submit-Renewal -AllOrders }
+        -DryRunCommand $dryRunCmd `
+        -Action { if ($Force) { Submit-Renewal -AllOrders -Force } else { Submit-Renewal -AllOrders } }
 
     if ($script:DryRun -or $script:WhatIf) {
         $label = if ($script:DryRun) { 'DRY-RUN' } else { 'WHAT-IF' }

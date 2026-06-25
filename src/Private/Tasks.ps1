@@ -19,12 +19,14 @@ function Get-RenewalScheduledTaskCommand {
     param(
         [string]$TaskName   = "$($script:TaskPrefix)RenewAll",
         [string]$ServerName = '',
-        [string]$AccountID  = ''
+        [string]$AccountID  = '',
+        [switch]$Force
     )
     $renewScript = Get-RenewalScriptPath
     $argLine = "-NoProfile -ExecutionPolicy Bypass -File `"$renewScript`""
     if ($ServerName) { $argLine += " -ServerName '$($ServerName -replace "'", "''")'" }
     if ($AccountID)  { $argLine += " -AccountID '$($AccountID -replace "'", "''")'" }
+    if ($Force)      { $argLine += ' -Force' }
 
     $actionCmd = "pwsh.exe $argLine"
     $schtasks  = "schtasks /Create /TN `"$TaskName`" /TR `"$actionCmd`" /SC WEEKLY /D MON /ST 09:00 /RU SYSTEM /RL HIGHEST /F"
@@ -70,7 +72,8 @@ function Register-TUACMERenewalTask {
         [ValidateSet('Daily', 'Weekly')][string]$ScheduleType = 'Weekly',
         [string]$DayOfWeek = 'Monday',
         [string]$ServerName = '',
-        [string]$AccountID  = ''
+        [string]$AccountID  = '',
+        [switch]$Force
     )
 
     $renewScript = Get-RenewalScriptPath
@@ -81,6 +84,7 @@ function Register-TUACMERenewalTask {
     $argLine = "-NoProfile -ExecutionPolicy Bypass -File `"$renewScript`""
     if ($ServerName) { $argLine += " -ServerName '$($ServerName -replace "'", "''")'" }
     if ($AccountID)  { $argLine += " -AccountID '$($AccountID -replace "'", "''")'" }
+    if ($Force)      { $argLine += ' -Force' }
     $action = New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument $argLine
 
     switch ($ScheduleType) {
@@ -225,6 +229,8 @@ function Invoke-CreateScheduledTask {
         default { Write-Warn 'Invalid choice, using Weekly Monday 09:00' }
     }
 
+    $forceFlag = Confirm-Prompt 'Always force-renew regardless of Posh-ACME schedule?'
+
     $renewScript = Get-RenewalScriptPath
     Write-Host ''
     Write-Step 'Confirm new scheduled task'
@@ -235,6 +241,7 @@ function Invoke-CreateScheduledTask {
     $schedLabel = if ($schedType -eq 'Weekly') { "$schedType on $dayOfWeek at $($startTime.ToString('HH:mm'))" }
                   else { "$schedType at $($startTime.ToString('HH:mm'))" }
     Write-Host "Schedule       : $schedLabel"
+    Write-Host "Force-renew    : $(if ($forceFlag) { 'Yes (-Force)' } else { 'No (Posh-ACME schedule)' })"
     Write-Host 'Run as         : SYSTEM (highest privileges)'
     if (-not (Test-Path $renewScript)) {
         Write-Warn "WARNING: PoshAcme-Renew.ps1 not found at $renewScript"
@@ -243,7 +250,7 @@ function Invoke-CreateScheduledTask {
     if (-not (Confirm-Prompt 'Register this task?')) { return }
 
     if ($script:DryRun) {
-        $cmds = Get-RenewalScheduledTaskCommand -TaskName $taskName -ServerName $srvName -AccountID $acctID
+        $cmds = Get-RenewalScheduledTaskCommand -TaskName $taskName -ServerName $srvName -AccountID $acctID -Force:$forceFlag
         Write-Warn 'DRY-RUN: no task registered.'
         Write-Host 'Equivalent pwsh.exe action:' -ForegroundColor DarkCyan
         Write-Host "  $($cmds.ActionCmd)" -ForegroundColor Gray
@@ -255,7 +262,7 @@ function Invoke-CreateScheduledTask {
 
     try {
         $registered = Register-TUACMERenewalTask -TaskName $taskName -StartTime $startTime `
-            -ScheduleType $schedType -DayOfWeek $dayOfWeek -ServerName $srvName -AccountID $acctID
+            -ScheduleType $schedType -DayOfWeek $dayOfWeek -ServerName $srvName -AccountID $acctID -Force:$forceFlag
         Write-Ok "Task registered: $registered"
     } catch {
         Write-Err "Failed to register task: $_"
