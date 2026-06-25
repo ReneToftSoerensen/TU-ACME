@@ -253,18 +253,10 @@ function Invoke-TUACMERenewal {
             # is renewed anyway, so this targeted pass is unnecessary.
             $expiring = @()
             if (-not $Force) {
-                $daysBefore = 30
-                try {
-                    if ($null -ne $script:Config.RenewalDaysBefore -and "$($script:Config.RenewalDaysBefore)" -ne '') {
-                        $daysBefore = [int]$script:Config.RenewalDaysBefore
-                    }
-                } catch {
-                    Write-TUACMELog -Level WARN -Message "Invalid RenewalDaysBefore config '$($script:Config.RenewalDaysBefore)'; using default $daysBefore."
-                }
-                $expiring = @(Get-TUACMEExpiringOrderNames -DaysBefore $daysBefore)
+                $expiring = @(Get-TUACMEExpiringOrderNames -DaysBefore ([int]$script:Config.RenewalDaysBefore))
                 foreach ($e in $expiring) {
                     Write-TUACMELog -Message ("Order '$($e.MainDomain)' expires $($e.NotAfter.ToString('yyyy-MM-dd HH:mm')); " +
-                        "within $daysBefore-day window - forcing renewal.")
+                        "within $($script:Config.RenewalDaysBefore)-day window - forcing renewal.")
                 }
             }
 
