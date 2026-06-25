@@ -111,7 +111,9 @@ that issues a **real** certificate against a test ACME server
 then exercises the module's live Posh-ACME helpers (server resolution, account
 and order enumeration, ISO-8601 date formatting, invalid-order detection). It
 self-skips unless `TUACME_ACME_DIRECTORY` is set, so it never affects the
-mocked unit run.
+mocked unit run. Because of this, a plain `Invoke-Pester ./tests` (locally or in
+CI) runs the integration suite only when those environment variables point at a
+reachable test ACME server, and runs just the mocked unit tests otherwise.
 
 CI runs it automatically in the single `build` job on `windows-latest`, which
 downloads the native Pebble and `pebble-challtestsrv` Windows binaries and runs
