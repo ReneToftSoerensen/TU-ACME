@@ -40,11 +40,77 @@ jobs:
           }
           Write-Host 'PSScriptAnalyzer clean.'
 
-      - name: Run Pester
+      - name: Run Pester (unit)
         shell: pwsh
         run: |
           $config = New-PesterConfiguration
           $config.Run.Path = './tests'
           $config.Run.Exit = $true
+          # The full-scale integration suite needs a live test ACME server and is
+          # run by the dedicated 'integration' job below.
+          $config.Filter.ExcludeTag = 'Integration'
           $config.Output.Verbosity = 'Detailed'
           Invoke-Pester -Configuration $config
+
+  integration:
+    name: Full-scale issuance (Pebble test ACME server)
+    runs-on: ubuntu-latest
+
+    env:
+      TUACME_ACME_DIRECTORY: https://localhost:14000/dir
+      TUACME_CHALLTESTSRV: http://localhost:8055
+      POSHACME_PLUGINS: ${{ github.workspace }}/tests/Integration/plugins
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start Pebble and challtestsrv
+        run: |
+          docker network create acmenet
+          # pebble-challtestsrv answers DNS-01 lookups and exposes a management API
+          # the ChallTestSrv test plugin uses to publish/clear TXT records.
+          docker run -d --name challtestsrv --network acmenet -p 8055:8055 \
+            ghcr.io/letsencrypt/pebble-challtestsrv:latest \
+            -management :8055 -dnsserver :8053 -http01 "" -https01 "" -tlsalpn01 "" -doh ""
+          # Pebble is the official test ACME CA; point it at challtestsrv for DNS.
+          docker run -d --name pebble --network acmenet -p 14000:14000 -p 15000:15000 \
+            -e PEBBLE_VA_NOSLEEP=1 \
+            ghcr.io/letsencrypt/pebble:latest \
+            -config /test/config/pebble-config.json -dnsserver challtestsrv:8053
+
+      - name: Wait for the ACME directory
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sk "$TUACME_ACME_DIRECTORY" >/dev/null; then
+              echo "ACME directory is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Pebble did not become ready in time." >&2
+          docker logs pebble || true
+          exit 1
+
+      - name: Install PowerShell modules
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name Pester -MinimumVersion 5.0 -Force -Scope CurrentUser
+          Install-Module -Name Posh-ACME -MinimumVersion 4.0 -Force -Scope CurrentUser
+
+      - name: Run Pester (integration)
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests/Integration'
+          $config.Run.Exit = $true
+          $config.Filter.Tag = 'Integration'
+          $config.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $config
+
+      - name: Pebble logs on failure
+        if: failure()
+        run: |
+          echo "::group::pebble"; docker logs pebble || true; echo "::endgroup::"
+          echo "::group::challtestsrv"; docker logs challtestsrv || true; echo "::endgroup::"

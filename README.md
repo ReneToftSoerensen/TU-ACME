@@ -102,3 +102,37 @@ CI runs the analyzer and the Pester suite on `windows-latest`
 (`.github/workflows/ci.yml`). Live IIS / Posh-ACME paths are exercised by mocks
 only; full integration is manual on Windows (e.g. against a Pebble/Boulder test
 CA).
+
+### Full-scale integration test
+
+`tests/Integration/TU-ACME.Integration.Tests.ps1` is an opt-in, end-to-end test
+that issues a **real** certificate against a test ACME server
+([Pebble](https://github.com/letsencrypt/pebble) + `pebble-challtestsrv`) and
+then exercises the module's live Posh-ACME helpers (server resolution, account
+and order enumeration, ISO-8601 date formatting, invalid-order detection). It
+self-skips unless `TUACME_ACME_DIRECTORY` is set, so it never affects the
+mocked unit run.
+
+CI runs it automatically in the `integration` job on `ubuntu-latest`, which
+boots Pebble and `pebble-challtestsrv` in Docker. To run it locally (Docker
+required):
+
+```bash
+docker network create acmenet
+docker run -d --name challtestsrv --network acmenet -p 8055:8055 \
+  ghcr.io/letsencrypt/pebble-challtestsrv:latest \
+  -management :8055 -dnsserver :8053 -http01 "" -https01 "" -tlsalpn01 "" -doh ""
+docker run -d --name pebble --network acmenet -p 14000:14000 -p 15000:15000 \
+  -e PEBBLE_VA_NOSLEEP=1 ghcr.io/letsencrypt/pebble:latest \
+  -config /test/config/pebble-config.json -dnsserver challtestsrv:8053
+```
+
+```powershell
+$env:TUACME_ACME_DIRECTORY = 'https://localhost:14000/dir'
+$env:TUACME_CHALLTESTSRV   = 'http://localhost:8055'
+$env:POSHACME_PLUGINS      = "$PWD/tests/Integration/plugins"
+$config = New-PesterConfiguration
+$config.Run.Path = './tests/Integration'
+$config.Filter.Tag = 'Integration'
+Invoke-Pester -Configuration $config
+```
