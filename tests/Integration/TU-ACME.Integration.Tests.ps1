@@ -29,7 +29,20 @@
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0' }
 
 BeforeDiscovery {
-    $script:IntegrationEnabled = -not [string]::IsNullOrWhiteSpace($env:TUACME_ACME_DIRECTORY)
+    # The suite is opt-in: it self-skips unless TUACME_ACME_DIRECTORY points at a
+    # *reachable* ACME directory. Checking only for a non-empty value would make a
+    # developer who exports the variable but hasn't started Pebble see hard
+    # failures instead of the documented skip, so probe the URL here.
+    $script:IntegrationEnabled = $false
+    if (-not [string]::IsNullOrWhiteSpace($env:TUACME_ACME_DIRECTORY)) {
+        try {
+            Invoke-WebRequest -Uri $env:TUACME_ACME_DIRECTORY -SkipCertificateCheck `
+                -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop | Out-Null
+            $script:IntegrationEnabled = $true
+        } catch {
+            $script:IntegrationEnabled = $false
+        }
+    }
 }
 
 Describe 'TU-ACME full-scale issuance against a test ACME server' -Tag 'Integration' -Skip:(-not $script:IntegrationEnabled) {

@@ -361,8 +361,12 @@ function Invoke-NewCertificate {
 
     # ---- Step 5: Confirm & run ----
     $domains    = $identifiers -join ','
+    # Quote each identifier separately so the displayed/dry-run command passes a
+    # real string array to -Domain (matching the live -Domain $identifiers call),
+    # rather than a single comma-joined string that would not create SANs.
+    $domainArg  = ($identifiers | ForEach-Object { "'$_'" }) -join ','
     $serverArg  = Resolve-PAServerArg $server
-    $cmdLine    = "New-PACertificate -Domain '$domains' -Plugin $plugin; " +
+    $cmdLine    = "New-PACertificate -Domain $domainArg -Plugin $plugin; " +
                   "Get-PACertificate '$($identifiers[0])' | " +
                   "Install-PACertificate -StoreLocation LocalMachine -StoreName $store"
 
@@ -388,7 +392,7 @@ function Invoke-NewCertificate {
         -Action { Set-PAServer $serverArg }
 
     $newCert = Invoke-PAAction -Description 'Request certificate' `
-        -DryRunCommand "New-PACertificate -Domain '$domains' -Plugin $plugin" `
+        -DryRunCommand "New-PACertificate -Domain $domainArg -Plugin $plugin" `
         -Action { New-PACertificate -Domain $identifiers -Plugin $plugin }
 
     if ($script:DryRun -or $script:WhatIf) {

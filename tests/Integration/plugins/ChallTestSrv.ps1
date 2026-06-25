@@ -27,7 +27,7 @@ function Add-DnsTxt {
     # challtestsrv expects fully-qualified host names with a trailing dot.
     $body = @{ host = "$RecordName."; value = $TxtValue } | ConvertTo-Json -Compress
     Write-Verbose "Adding TXT record $RecordName via $CTSMgmtUri/set-txt"
-    Invoke-RestMethod -Method Post -Uri "$CTSMgmtUri/set-txt" -Body $body -ErrorAction Stop | Out-Null
+    Invoke-RestMethod -Method Post -Uri "$CTSMgmtUri/set-txt" -Body $body -ContentType 'application/json' -ErrorAction Stop | Out-Null
 }
 
 function Remove-DnsTxt {
@@ -43,7 +43,7 @@ function Remove-DnsTxt {
     )
     $body = @{ host = "$RecordName." } | ConvertTo-Json -Compress
     Write-Verbose "Clearing TXT record $RecordName via $CTSMgmtUri/clear-txt"
-    Invoke-RestMethod -Method Post -Uri "$CTSMgmtUri/clear-txt" -Body $body -ErrorAction Stop | Out-Null
+    Invoke-RestMethod -Method Post -Uri "$CTSMgmtUri/clear-txt" -Body $body -ContentType 'application/json' -ErrorAction Stop | Out-Null
 }
 
 function Save-DnsTxt {
