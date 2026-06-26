@@ -94,6 +94,21 @@ try {
     exit 2
 }
 
+# ---- Runner error logging helper --------------------------------------------
+# Write-TUACMELog is a private module function; invoke it in the module scope so
+# unattended failures land in the shared renewal log, not just stderr. Falls back
+# to stderr only if the module call itself fails.
+function Write-RunnerErrorLog {
+    param([Parameter(Mandatory)][string]$Message)
+    try {
+        Invoke-Command -ScriptBlock {
+            param($m) Write-TUACMELog -Level ERROR -Message $m
+        } -ArgumentList $Message -ModuleName TU-ACME
+    } catch {
+        Write-Error "Could not write error to renewal log: $_"
+    }
+}
+
 # ---- Apply optional overrides to module config ------------------------------
 # The module exposes $script:Config via InModuleScope; override through the
 # module's exported state by dot-running inside the module scope.
@@ -124,6 +139,7 @@ if ($ServerName) {
         Set-PAServer $srvArg -ErrorAction Stop | Out-Null
     } catch {
         Write-Error "Cannot activate server '$ServerName': $_"
+        Write-RunnerErrorLog "Cannot activate server '$ServerName': $_"
         exit 2
     }
 }
@@ -133,6 +149,7 @@ if ($AccountID) {
         Set-PAAccount -ID $AccountID -ErrorAction Stop | Out-Null
     } catch {
         Write-Error "Cannot activate account '$AccountID': $_"
+        Write-RunnerErrorLog "Cannot activate account '$AccountID': $_"
         exit 2
     }
 }
@@ -147,6 +164,7 @@ try {
     } -ArgumentList ([bool]$Force) -ModuleName TU-ACME
 } catch {
     Write-Error "Renewal run failed: $_"
+    Write-RunnerErrorLog "Renewal run failed: $_"
     $exitCode = 1
 }
 

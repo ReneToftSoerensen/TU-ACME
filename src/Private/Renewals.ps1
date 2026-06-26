@@ -115,6 +115,7 @@ function Invoke-RenewSingle {
     }
     if (-not $renewedCert -or -not $renewedCert.Thumbprint) {
         Write-Err 'Renewal completed but the new certificate could not be loaded. Manual re-bind required.'
+        Write-TUACMELog -Level ERROR -Message "Renewal of $($Order.MainDomain) completed but the new certificate could not be loaded. Manual re-bind required."
         return
     }
 
@@ -189,6 +190,7 @@ function Invoke-RenewAll {
 
         try { Install-TUACMECertificate -OrderName ($cert.MainDomain) -StoreName $script:Config.CertStore } catch {
             Write-Info "Install step skipped/failed for $newTP : $_"
+            Write-TUACMELog -Level ERROR -Message "Install step failed for $($cert.MainDomain) ($newTP): $_"
         }
         $res = Update-IISCertificateBinding -Thumbprint $newTP -HostHeaders $sans `
             -OldThumbprint $oldTP -StoreName $script:Config.CertStore
