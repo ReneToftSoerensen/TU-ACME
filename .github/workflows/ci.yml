@@ -56,6 +56,11 @@ jobs:
           Invoke-WebRequest "$base/pebble-challtestsrv-windows-amd64.zip" -OutFile challtestsrv.zip
           Expand-Archive -Path pebble.zip -DestinationPath pebble -Force
           Expand-Archive -Path challtestsrv.zip -DestinationPath challtestsrv -Force
+          # Pebble v2.10.1+ requires cert/key files for ListenAndServeTLS; download
+          # the official test certs from the same release tag used for the binaries.
+          $certBase = "https://raw.githubusercontent.com/letsencrypt/pebble/$env:PEBBLE_VERSION/test/certs/localhost"
+          Invoke-WebRequest "$certBase/cert.pem" -OutFile pebble-cert.pem
+          Invoke-WebRequest "$certBase/key.pem"  -OutFile pebble-key.pem
 
       - name: Start Pebble and challtestsrv
         shell: pwsh
@@ -75,11 +80,12 @@ jobs:
 
           # Pebble is the official test ACME CA; point it at challtestsrv for DNS.
           # PEBBLE_VA_NOSLEEP removes the randomized validation delay so the test
-          # finishes quickly. The config omits certificate/privateKey, so Pebble
-          # generates an ephemeral self-signed cert (the suite uses -SkipCertificateCheck).
+          # finishes quickly. The config points at the test cert/key downloaded
+          # above; the suite uses -SkipCertificateCheck for Pebble's self-signed cert.
           $env:PEBBLE_VA_NOSLEEP = '1'
           Start-Process -FilePath $pebble `
             -ArgumentList "-config `"$config`" -dnsserver 127.0.0.1:8053" `
+            -WorkingDirectory $PWD `
             -RedirectStandardOutput pebble.out.log -RedirectStandardError pebble.err.log
 
       - name: Wait for the ACME directory
