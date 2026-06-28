@@ -25,8 +25,8 @@ function Invoke-ManageRenewals {
     Write-Host ''
     Write-Host 'Options:' -ForegroundColor Cyan
     Write-Host '  v <n>   View details of order #n'
-    Write-Host '  r <n>   Force-renew order #n  (append "nocache" to refresh from CA first)'
-    Write-Host '  a       Renew all due orders (batch)  (append "force" and/or "nocache")'
+    Write-Host '  r <n>   Force-renew order #n'
+    Write-Host '  a       Renew all due orders (batch)  (append "force" to ignore RenewAfter)'
     Write-Host '  d <n>   Delete order #n (does NOT revoke cert)'
     Write-Host '  c       Cancel'
     Write-Host ''
@@ -41,21 +41,14 @@ function Invoke-ManageRenewals {
     if ($cmd -eq 'a') {
         $renewArgs = @{ Orders = $orders }
         foreach ($flag in ($arg -split '\s+')) {
-            switch ($flag.ToLower()) {
-                'force'   { $renewArgs.Force   = $true }
-                'nocache' { $renewArgs.NoCache = $true }
-            }
+            if ($flag.ToLower() -eq 'force') { $renewArgs.Force = $true }
         }
         Invoke-RenewAll @renewArgs
         return
     }
 
-    # v / r / d take a leading order number; r additionally accepts trailing flags.
-    $argTokens = if ($arg) { $arg -split '\s+' } else { @() }
-    $numToken  = if ($argTokens.Count -gt 0) { $argTokens[0] } else { '' }
-    $flagTokens = if ($argTokens.Count -gt 1) { $argTokens[1..($argTokens.Count - 1)] } else { @() }
-    if (-not $numToken -or $numToken -notmatch '^\d+$') { Write-Warn 'Provide a number.'; Wait-UI; return }
-    $idx = [int]$numToken - 1
+    if (-not $arg -or $arg -notmatch '^\d+$') { Write-Warn 'Provide a number.'; Wait-UI; return }
+    $idx = [int]$arg - 1
     if ($idx -lt 0 -or $idx -ge $orders.Count) { Write-Warn 'Out of range.'; Wait-UI; return }
     $order = $orders[$idx]
 
@@ -81,14 +74,7 @@ function Invoke-ManageRenewals {
             }
             Wait-UI
         }
-        'r' {
-            $singleArgs = @{ Order = $order }
-            foreach ($flag in $flagTokens) {
-                if ($flag.ToLower() -eq 'nocache') { $singleArgs.NoCache = $true }
-            }
-            Invoke-RenewSingle @singleArgs
-            Wait-UI
-        }
+        'r' { Invoke-RenewSingle -Order $order; Wait-UI }
         'd' {
             if (-not (Confirm-Prompt "Delete order '$($order.MainDomain)'? (Certificate will NOT be revoked.)")) { return }
             Invoke-PAAction -Description "Delete order $($order.MainDomain)" `
@@ -105,14 +91,8 @@ function Invoke-RenewSingle {
         .SYNOPSIS
             Force-renews one order and re-points its IIS bindings. Refuses to renew
             an Invalid order (delete + re-issue path instead).
-        .PARAMETER Order
-            The normalised order object to renew.
-        .PARAMETER NoCache
-            Refresh the order from the CA (Get-PAOrder -Refresh) before renewing
-            instead of trusting the locally cached order data. Useful in test runs
-            and for surfacing field errors against live CA state.
     #>
-    param([Parameter(Mandatory)][object]$Order, [switch]$NoCache)
+    param([Parameter(Mandatory)][object]$Order)
 
     if ($Order.Status -ieq 'invalid') {
         Write-Err "Order '$($Order.MainDomain)' is INVALID and cannot be renewed."
@@ -123,20 +103,9 @@ function Invoke-RenewSingle {
     $oldTP = $Order.CertThumb
     if (-not (Confirm-Prompt "Force-renew '$($Order.MainDomain)'?")) { return }
 
-    $selectDryCmd = if ($NoCache) {
-        "Get-PAOrder -Name '$($Order.Name)' -Refresh | Out-Null"
-    } else {
-        "Get-PAOrder -Name '$($Order.Name)' | Out-Null"
-    }
     Invoke-PAAction -Description "Select order '$($Order.Name)' as current" `
-        -DryRunCommand $selectDryCmd `
-        -Action {
-            if ($NoCache) {
-                Get-PAOrder -Name $Order.Name -Refresh | Out-Null
-            } else {
-                Get-PAOrder -Name $Order.Name | Out-Null
-            }
-        }
+        -DryRunCommand "Get-PAOrder -Name '$($Order.Name)' | Out-Null" `
+        -Action { Get-PAOrder -Name $Order.Name | Out-Null }
 
     $renewedCert = Invoke-PAAction -Description "Submit renewal for $($Order.MainDomain)" `
         -DryRunCommand 'Submit-Renewal -Force' `
@@ -183,12 +152,8 @@ function Invoke-RenewAll {
             fetched.
         .PARAMETER Force
             Pass -Force to Submit-Renewal to renew regardless of RenewAfter.
-        .PARAMETER NoCache
-            Refresh order state from the CA (Get-PAOrder -Refresh) before renewing
-            instead of trusting the locally cached order data. Useful in test runs
-            and for surfacing field errors against live CA state.
     #>
-    param([object[]]$Orders, [switch]$Force, [switch]$NoCache)
+    param([object[]]$Orders, [switch]$Force)
 
     if (-not $Orders) { $Orders = Get-PAOrdersList }
     Write-Host ''
@@ -201,14 +166,6 @@ function Invoke-RenewAll {
     }
     Write-Host ''
     if (-not (Confirm-Prompt 'Submit renewal for all due orders?')) { return }
-
-    # -NoCache: re-query the CA so renewal acts on live order state rather than the
-    # locally cached copy in POSHACME_HOME.
-    if ($NoCache) {
-        Invoke-PAAction -Description 'Refresh order state from the CA (no cache)' `
-            -DryRunCommand 'Get-PAOrder -List -Refresh | Out-Null' `
-            -Action { Get-PAOrder -List -Refresh -ErrorAction SilentlyContinue | Out-Null } | Out-Null
-    }
 
     # Snapshot old thumbprints so we can fall back to thumbprint-match rebind.
     $thumbBefore = @{}

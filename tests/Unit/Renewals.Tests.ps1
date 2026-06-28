@@ -185,31 +185,6 @@ Describe 'Invoke-RenewAll' {
         }
     }
 
-    It 'refreshes order state from the CA when -NoCache is specified' {
-        InModuleScope TU-ACME {
-            Mock Get-PAOrdersList { @() }
-            Mock Submit-Renewal { @() }
-            Mock Get-PAOrder { @() }
-
-            Invoke-RenewAll -NoCache
-
-            Should -Invoke Get-PAOrder -Times 1 `
-                -ParameterFilter { $List -eq $true -and $Refresh -eq $true }
-        }
-    }
-
-    It 'does not refresh order state from the CA when -NoCache is omitted' {
-        InModuleScope TU-ACME {
-            Mock Get-PAOrdersList { @() }
-            Mock Submit-Renewal { @() }
-            Mock Get-PAOrder { @() }
-
-            Invoke-RenewAll
-
-            Should -Not -Invoke Get-PAOrder
-        }
-    }
-
     It 'does nothing (no Install or Rebind) when Submit-Renewal returns no certs' {
         InModuleScope TU-ACME {
             Mock Get-PAOrdersList { @() }
