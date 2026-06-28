@@ -221,14 +221,18 @@ try {
             Set-PAServer $acct.ServerArg -ErrorAction Stop | Out-Null
             Set-PAAccount -ID $acct.AccountID -ErrorAction Stop | Out-Null
 
-            # Snapshot current IIS HTTPS binding -> thumbprint map for diagnostics
-            # and old-thumbprint fallback rebind.
-            $bindingSnapshot = @{}
+            # Snapshot pre-renewal HostHeader -> Thumbprint map.
+            # Taken BEFORE Submit-Renewal so we always have the pre-renewal thumbprint
+            # for the old-thumbprint fallback rebind, even on retry runs where the
+            # binding may already carry the new thumbprint.
+            $hostThumbSnapshot = @{}
             try {
                 foreach ($b in @(Get-IISSslBindings)) {
-                    if ($b.Thumbprint) { $bindingSnapshot[$b.BindingInformation] = $b.Thumbprint }
+                    if ($b.HostHeader -and $b.Thumbprint) {
+                        $hostThumbSnapshot[$b.HostHeader.ToLower()] = $b.Thumbprint
+                    }
                 }
-                Write-RunLog "IIS snapshot: $($bindingSnapshot.Count) HTTPS binding(s)"
+                Write-RunLog "IIS snapshot: $($hostThumbSnapshot.Count) HTTPS binding(s) with host headers"
             } catch {
                 Write-RunLog "Could not snapshot IIS bindings: $_" -Level WARN
             }
@@ -284,15 +288,14 @@ try {
                     $sans   = @($cert.AllSANs)
                     if (-not $sans) { $sans = @($cert.MainDomain) }
 
-                    # Derive the old thumbprint: look in the snapshot for a binding
-                    # whose host header matches a SAN (first match wins).
+                    # Derive old thumbprint from the pre-renewal host snapshot so
+                    # the value is correct even on retry runs (when the binding may
+                    # already carry the new thumbprint in a live IIS query).
                     $oldTP = ''
-                    try {
-                        $matchedBinding = @(Get-IISSslBindings | Where-Object {
-                            $_.HostHeader -and $_.HostHeader -in $sans
-                        }) | Select-Object -First 1
-                        if ($matchedBinding) { $oldTP = $matchedBinding.Thumbprint }
-                    } catch { }
+                    foreach ($san in $sans) {
+                        $key = $san.ToLower()
+                        if ($hostThumbSnapshot.ContainsKey($key)) { $oldTP = $hostThumbSnapshot[$key]; break }
+                    }
 
                     $res = Update-IISCertificateBinding -Thumbprint $newTP `
                         -HostHeaders $sans -OldThumbprint $oldTP -StoreName $resolvedStore

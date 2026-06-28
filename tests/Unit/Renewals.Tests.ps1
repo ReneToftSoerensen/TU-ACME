@@ -214,8 +214,10 @@ Describe 'Invoke-RenewAll' {
                     Identifiers = 'x.example.com'
                     Status      = 'valid'
                     CertThumb   = 'AABBCCDDEEFF'
-                    NotAfter    = $null
-                    RenewAfter  = $null
+                    # Provide both DateTime and ISO-8601 string to exercise
+                    # ConvertTo-DateTime normalisation in the display path.
+                    NotAfter    = [datetime]'2026-12-31T23:59:00'
+                    RenewAfter  = '2026-09-01T00:00:00'
                 })
             }
             Mock Submit-Renewal { @($fakeCert) }
