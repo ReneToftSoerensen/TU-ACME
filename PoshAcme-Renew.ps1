@@ -316,13 +316,9 @@ try {
                             $exitCode = 1
                         } else {
                             try {
-                                if ($WhatIfPreference) {
-                                    Write-RunLog "WHAT-IF: would invoke '$resolvedHook' for $newTP"
-                                } else {
-                                    & $resolvedHook -Certificate $cert -Thumbprint $newTP -StoreName $resolvedStore
-                                    Write-RunLog "PostDeployHook ran for $newTP via '$resolvedHook'"
-                                    Write-TUACMELog -Message "PostDeployHook ran for $newTP" -Path $resolvedLogPath
-                                }
+                                & $resolvedHook -Certificate $cert -Thumbprint $newTP -StoreName $resolvedStore
+                                Write-RunLog "PostDeployHook ran for $newTP via '$resolvedHook'"
+                                Write-TUACMELog -Message "PostDeployHook ran for $newTP" -Path $resolvedLogPath
                             } catch {
                                 Write-RunLog "PostDeployHook failed for $newTP : $_" -Level ERROR
                                 Write-TUACMELog -Level ERROR `
