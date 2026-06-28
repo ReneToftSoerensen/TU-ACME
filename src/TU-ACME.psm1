@@ -57,4 +57,13 @@ foreach ($file in @($privateFiles + $publicFiles)) {
     . $file.FullName
 }
 
-Export-ModuleMember -Function 'Start-TUACME'
+Export-ModuleMember -Function @(
+    'Start-TUACME',
+    # Shared helpers called by PoshAcme-Renew.ps1 (ISSUE-02)
+    'Install-TUACMECertificate',
+    'Update-IISCertificateBinding',
+    'Invoke-TUACMEPostDeployHook',
+    'Get-AllPAAccounts',
+    'Write-TUACMELog',
+    'Get-IISSslBindings'
+)

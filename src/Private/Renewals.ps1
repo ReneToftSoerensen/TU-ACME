@@ -140,8 +140,13 @@ function Invoke-RenewAll {
         .SYNOPSIS
             Batch-renews all due orders via Submit-Renewal -AllOrders, then
             re-points IIS bindings for each renewed cert.
+        .PARAMETER Orders
+            Pre-fetched order list. If omitted, the current server's orders are
+            fetched.
+        .PARAMETER Force
+            Pass -Force to Submit-Renewal to renew regardless of RenewAfter.
     #>
-    param([object[]]$Orders)
+    param([object[]]$Orders, [switch]$Force)
 
     if (-not $Orders) { $Orders = Get-PAOrdersList }
     Write-Host ''
@@ -159,9 +164,16 @@ function Invoke-RenewAll {
     $thumbBefore = @{}
     foreach ($o in $Orders) { if ($o.CertThumb) { $thumbBefore[$o.Name] = $o.CertThumb } }
 
+    $renewDryCmd = if ($Force) { 'Submit-Renewal -AllOrders -Force' } else { 'Submit-Renewal -AllOrders' }
     $renewed = Invoke-PAAction -Description 'Submit renewal for all due orders' `
-        -DryRunCommand 'Submit-Renewal -AllOrders' `
-        -Action { Submit-Renewal -AllOrders }
+        -DryRunCommand $renewDryCmd `
+        -Action {
+            if ($Force) {
+                Submit-Renewal -AllOrders -Force
+            } else {
+                Submit-Renewal -AllOrders
+            }
+        }
 
     if ($script:DryRun -or $script:WhatIf) {
         $label = if ($script:DryRun) { 'DRY-RUN' } else { 'WHAT-IF' }
