@@ -98,7 +98,9 @@ Describe 'Update-IISCertificateBinding' {
                 -HostHeaders @('c.example.com') -OldThumbprint 'oldthumb' -StoreName 'WebHosting'
 
             # The binding must be targeted exactly once, not twice.
-            $result.Targets | Should -Be 1
+            $result.Targets  | Should -Be 1
+            $result.Rebound  | Should -Be 1
+            $result.Failed   | Should -Be 0
             Should -Invoke Set-IISBindingCertificate -Times 1
         }
     }

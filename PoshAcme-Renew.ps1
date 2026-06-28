@@ -296,8 +296,8 @@ try {
 
                     $res = Update-IISCertificateBinding -Thumbprint $newTP `
                         -HostHeaders $sans -OldThumbprint $oldTP -StoreName $resolvedStore
-                    Write-RunLog ("Rebind $($cert.Subject): rebound=$($res.Rebound) failed=$($res.Failed)" +
-                        "  [SAN-match + thumb-fallback]")
+                    Write-RunLog ("Rebind $($cert.Subject): rebound=$($res.Rebound) failed=$($res.Failed) " +
+                        "[SAN-match + thumb-fallback]")
                     Write-TUACMELog -Message ("Runner renewed $($cert.Subject): $oldTP -> $newTP  " +
                         "rebound=$($res.Rebound) failed=$($res.Failed)") -Path $resolvedLogPath
 
