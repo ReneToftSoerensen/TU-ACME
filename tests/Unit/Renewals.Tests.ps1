@@ -8,7 +8,7 @@ BeforeAll {
     # so that Mock can target them. These stubs are overridden by each test's Mock.
     if (-not (Get-Command Submit-Renewal -ErrorAction SilentlyContinue)) {
         function global:Submit-Renewal {
-            [CmdletBinding()] param([switch]$AllOrders, [switch]$Force)
+            [CmdletBinding()] param([switch]$AllOrders, [switch]$Force, [string]$Name, [string]$MainDomain)
         }
     }
     if (-not (Get-Command Get-PAOrder -ErrorAction SilentlyContinue)) {

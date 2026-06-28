@@ -103,13 +103,9 @@ function Invoke-RenewSingle {
     $oldTP = $Order.CertThumb
     if (-not (Confirm-Prompt "Force-renew '$($Order.MainDomain)'?")) { return }
 
-    Invoke-PAAction -Description "Select order '$($Order.Name)' as current" `
-        -DryRunCommand "Get-PAOrder -Name '$($Order.Name)' | Out-Null" `
-        -Action { Get-PAOrder -Name $Order.Name | Out-Null }
-
     $renewedCert = Invoke-PAAction -Description "Submit renewal for $($Order.MainDomain)" `
-        -DryRunCommand 'Submit-Renewal -Force' `
-        -Action { Submit-Renewal -Force }
+        -DryRunCommand "Submit-Renewal -Name '$($Order.Name)' -Force" `
+        -Action { Submit-Renewal -Name $Order.Name -Force }
 
     if ($script:DryRun -or $script:WhatIf) {
         $label = if ($script:DryRun) { 'DRY-RUN' } else { 'WHAT-IF' }
