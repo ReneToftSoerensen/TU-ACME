@@ -27,6 +27,11 @@
 .PARAMETER Force
     Pass -Force to Submit-Renewal to renew regardless of RenewAfter (bypass ARI).
 
+.PARAMETER NoCache
+    Refresh order state from the CA (Get-PAOrder -Refresh) before renewing instead
+    of trusting the locally cached order data. Useful in test runs and for
+    surfacing field errors against live CA state.
+
 .PARAMETER CertStore
     LocalMachine cert store name to import renewed certs into (default: WebHosting).
     Overrides the value in config.json.
@@ -45,6 +50,7 @@
     pwsh -NoProfile -ExecutionPolicy Bypass -File .\PoshAcme-Renew.ps1
     pwsh -NoProfile -ExecutionPolicy Bypass -File .\PoshAcme-Renew.ps1 -ServerName LE_PROD -AccountID abc123
     pwsh -NoProfile -ExecutionPolicy Bypass -File .\PoshAcme-Renew.ps1 -Force
+    pwsh -NoProfile -ExecutionPolicy Bypass -File .\PoshAcme-Renew.ps1 -Force -NoCache
 #>
 
 #Requires -Version 7.0
@@ -56,6 +62,7 @@ param(
     [string]$ServerName    = '',
     [string]$AccountID     = '',
     [switch]$Force,
+    [switch]$NoCache,
     [string]$CertStore     = '',
     [string]$PostDeployHook = '',
     [string]$LogPath       = ''
@@ -175,7 +182,7 @@ Write-RunLog '====== TU-ACME Renewal Run Start ======'
 if ($poshAcmeHomeFallback) {
     Write-RunLog "POSHACME_HOME not set in machine environment; using fallback '$poshAcmeHome'" -Level WARN
 }
-Write-RunLog "POSHACME_HOME=$poshAcmeHome  CertStore=$resolvedStore  Force=$Force  WhatIf=$($WhatIfPreference)"
+Write-RunLog "POSHACME_HOME=$poshAcmeHome  CertStore=$resolvedStore  Force=$Force  NoCache=$NoCache  WhatIf=$($WhatIfPreference)"
 
 try {
     Import-Module Posh-ACME -Force -ErrorAction Stop
@@ -241,9 +248,21 @@ try {
             # Renew due orders (or all orders when -Force).
             # ----------------------------------------------------------
             if ($WhatIfPreference) {
+                if ($NoCache) { Write-RunLog 'WHAT-IF: would refresh order state from CA (Get-PAOrder -List -Refresh)' }
                 $renewCmd = if ($Force) { 'Submit-Renewal -AllOrders -Force' } else { 'Submit-Renewal -AllOrders' }
                 Write-RunLog "WHAT-IF: would run: $renewCmd"
                 continue
+            }
+
+            # -NoCache: re-query the CA so renewal acts on live order state rather
+            # than the locally cached copy in POSHACME_HOME.
+            if ($NoCache) {
+                try {
+                    Get-PAOrder -List -Refresh -ErrorAction Stop | Out-Null
+                    Write-RunLog 'Refreshed order state from CA (-NoCache).'
+                } catch {
+                    Write-RunLog "Could not refresh order state from CA (-NoCache): $_" -Level WARN
+                }
             }
 
             $renewedCerts = $null
