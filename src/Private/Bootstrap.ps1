@@ -48,7 +48,11 @@ function Set-TUACMEAcl {
             Applies the ACL on the TU-ACME ProgramData root:
               Administrators : FullControl
               SYSTEM         : FullControl
-              Users          : ReadAndExecute
+            The tree holds the shared Posh-ACME store (account private keys and
+            certificate key material), so non-administrators are granted NO access:
+            only the interactive admin and the SYSTEM scheduled task need it.
+            Identities are resolved from well-known SIDs (not localised names) so
+            the ACL is applied correctly on non-English Windows installations.
             Inheritance from the parent is disabled so inherited ACEs (e.g. from
             %ProgramData%) cannot grant broader rights than intended.
     #>
@@ -57,6 +61,11 @@ function Set-TUACMEAcl {
 
     if (-not (Test-TUACMEOnWindows)) { return }
     if (-not $PSCmdlet.ShouldProcess($Path, 'Apply TU-ACME ACL')) { return }
+
+    $adminSid  = [Security.Principal.SecurityIdentifier]::new(
+        [Security.Principal.WellKnownSidType]::BuiltinAdministratorsSid, $null)
+    $systemSid = [Security.Principal.SecurityIdentifier]::new(
+        [Security.Principal.WellKnownSidType]::LocalSystemSid, $null)
 
     $acl = Get-Acl $Path
     # Protect the ACL (isProtected=$true) and do NOT copy inherited rules
@@ -68,11 +77,9 @@ function Set-TUACMEAcl {
 
     $rules = @(
         [Security.AccessControl.FileSystemAccessRule]::new(
-            'BUILTIN\Administrators', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'),
+            $adminSid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'),
         [Security.AccessControl.FileSystemAccessRule]::new(
-            'NT AUTHORITY\SYSTEM', 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'),
-        [Security.AccessControl.FileSystemAccessRule]::new(
-            'BUILTIN\Users', 'ReadAndExecute', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
+            $systemSid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
     )
     foreach ($rule in $rules) { $acl.AddAccessRule($rule) }
     Set-Acl -Path $Path -AclObject $acl

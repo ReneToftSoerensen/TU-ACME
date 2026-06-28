@@ -39,8 +39,8 @@ $script:EventLogSource = 'TU-ACME'
 $script:Config = [ordered]@{
     ACMEServer        = 'acme.fragt.root.local'  # alias or directory URL
     ContactEmail      = ''
-    ValidationPlugin  = 'WebSelfHost'            # WebSelfHost (HTTP-01) | DNS plugin name
-    DnsPluginArgs     = @{}                       # plugin args for DNS-01
+    ValidationPlugin  = 'WebSelfHost'            # passed to New-PACertificate -Plugin
+    PluginArgs        = @{}                       # passed to New-PACertificate -PluginArgs
     CertStore         = 'WebHosting'             # drives import + binding + label
     PostDeployHook    = ''                         # optional .ps1 for non-IIS deploy; empty = off
     RenewalDaysBefore = 30

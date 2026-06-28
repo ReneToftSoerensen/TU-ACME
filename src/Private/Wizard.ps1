@@ -325,6 +325,14 @@ function Invoke-NewCertificate {
     $store  = $script:Config.CertStore
     $server = if ((Get-CurrentPAContext).Server) { (Get-CurrentPAContext).Server.Name } else { $script:Config.ACMEServer }
 
+    # Optional plugin args (DNS-01 plugins). Empty for the default WebSelfHost path.
+    $pluginArgs = if ($script:Config.PluginArgs) { $script:Config.PluginArgs } else { @{} }
+    $pluginArgsArg = ''
+    if ($pluginArgs.Count -gt 0) {
+        $pairs = $pluginArgs.GetEnumerator() | ForEach-Object { "$($_.Key)='$($_.Value)'" }
+        $pluginArgsArg = " -PluginArgs @{ $($pairs -join '; ') }"
+    }
+
     # ---- Invalid-order cleanup ----
     if (-not $script:DryRun) {
         $invalid = Get-PAInvalidOrdersForIdentifiers -Identifiers $identifiers
@@ -366,7 +374,7 @@ function Invoke-NewCertificate {
     # rather than a single comma-joined string that would not create SANs.
     $domainArg  = ($identifiers | ForEach-Object { "'$_'" }) -join ','
     $serverArg  = Resolve-PAServerArg $server
-    $cmdLine    = "New-PACertificate -Domain $domainArg -Plugin $plugin; " +
+    $cmdLine    = "New-PACertificate -Domain $domainArg -Plugin $plugin$pluginArgsArg; " +
                   "Get-PACertificate '$($identifiers[0])' | " +
                   "Install-PACertificate -StoreLocation LocalMachine -StoreName $store"
 
@@ -392,8 +400,14 @@ function Invoke-NewCertificate {
         -Action { Set-PAServer $serverArg }
 
     $newCert = Invoke-PAAction -Description 'Request certificate' `
-        -DryRunCommand "New-PACertificate -Domain $domainArg -Plugin $plugin" `
-        -Action { New-PACertificate -Domain $identifiers -Plugin $plugin }
+        -DryRunCommand "New-PACertificate -Domain $domainArg -Plugin $plugin$pluginArgsArg" `
+        -Action {
+            if ($pluginArgs.Count -gt 0) {
+                New-PACertificate -Domain $identifiers -Plugin $plugin -PluginArgs $pluginArgs
+            } else {
+                New-PACertificate -Domain $identifiers -Plugin $plugin
+            }
+        }
 
     if ($script:DryRun -or $script:WhatIf) {
         Write-Host ''
