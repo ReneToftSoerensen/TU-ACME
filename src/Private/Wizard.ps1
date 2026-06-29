@@ -329,7 +329,7 @@ function Invoke-NewCertificate {
     $pluginArgs = if ($script:Config.PluginArgs -and $script:Config.PluginArgs.Count -gt 0) { $script:Config.PluginArgs } elseif ($script:Config.Keys -contains 'DnsPluginArgs' -and $script:Config.DnsPluginArgs -and $script:Config.DnsPluginArgs.Count -gt 0) { $script:Config.DnsPluginArgs } else { @{} }
     $pluginArgsArg = ''
     if ($pluginArgs.Count -gt 0) {
-        $pairs = $pluginArgs.GetEnumerator() | ForEach-Object { "$($_.Key)='$($_.Value)'" }
+        $pairs = $pluginArgs.Keys | Sort-Object | ForEach-Object { "$_='<redacted>'" }
         $pluginArgsArg = " -PluginArgs @{ $($pairs -join '; ') }"
     }
 
