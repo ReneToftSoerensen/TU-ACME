@@ -235,6 +235,73 @@ Describe 'Invoke-RenewAll' {
 }
 
 # ---------------------------------------------------------------------------
+# Invoke-RenewSingle - passes -Name to Submit-Renewal for the correct order
+# ---------------------------------------------------------------------------
+Describe 'Invoke-RenewSingle' {
+    BeforeEach {
+        InModuleScope TU-ACME {
+            Mock Write-Host { }
+            Mock Write-Step { }
+            Mock Write-Ok   { }
+            Mock Write-Warn { }
+            Mock Write-Info { }
+            Mock Write-Err  { }
+            Mock Wait-UI    { }
+            Mock Write-TUACMELog { }
+            Mock Confirm-Prompt { $true }
+        }
+    }
+
+    It 'passes -Name and -Force to Submit-Renewal for the specified order' {
+        InModuleScope TU-ACME {
+            $script:Config.CertStore = 'WebHosting'
+
+            $fakeCert = [pscustomobject]@{
+                Thumbprint = 'AABBCCDDEEFF'
+                MainDomain = 'single.example.com'
+                AllSANs    = @('single.example.com')
+            }
+            Mock Submit-Renewal { $fakeCert }
+            Mock Install-TUACMECertificate { }
+            Mock Update-IISCertificateBinding {
+                [pscustomobject]@{ Rebound = 1; Failed = 0; Targets = 1 }
+            }
+
+            $order = [pscustomobject]@{
+                Name        = 'single.example.com'
+                MainDomain  = 'single.example.com'
+                Status      = 'valid'
+                CertThumb   = 'OLDTHUMB'
+                Identifiers = 'single.example.com'
+            }
+
+            Invoke-RenewSingle -Order $order
+
+            Should -Invoke Submit-Renewal -Times 1 `
+                -ParameterFilter { $Name -eq 'single.example.com' -and $Force -eq $true }
+        }
+    }
+
+    It 'does not call Submit-Renewal when the order status is invalid' {
+        InModuleScope TU-ACME {
+            Mock Submit-Renewal { }
+
+            $order = [pscustomobject]@{
+                Name        = 'bad.example.com'
+                MainDomain  = 'bad.example.com'
+                Status      = 'invalid'
+                CertThumb   = ''
+                Identifiers = 'bad.example.com'
+            }
+
+            Invoke-RenewSingle -Order $order
+
+            Should -Not -Invoke Submit-Renewal
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
 # Install-TUACMECertificate - delegates to Get-PACertificate | Install-PACertificate
 # ---------------------------------------------------------------------------
 Describe 'Install-TUACMECertificate' {
