@@ -326,7 +326,7 @@ function Invoke-NewCertificate {
     $server = if ((Get-CurrentPAContext).Server) { (Get-CurrentPAContext).Server.Name } else { $script:Config.ACMEServer }
 
     # Optional plugin args (DNS-01 plugins). Empty for the default WebSelfHost path.
-    $pluginArgs = if ($script:Config.PluginArgs) { $script:Config.PluginArgs } else { @{} }
+    $pluginArgs = if ($script:Config.PluginArgs -and $script:Config.PluginArgs.Count -gt 0) { $script:Config.PluginArgs } elseif ($script:Config.Keys -contains 'DnsPluginArgs' -and $script:Config.DnsPluginArgs -and $script:Config.DnsPluginArgs.Count -gt 0) { $script:Config.DnsPluginArgs } else { @{} }
     $pluginArgsArg = ''
     if ($pluginArgs.Count -gt 0) {
         $pairs = $pluginArgs.GetEnumerator() | ForEach-Object { "$($_.Key)='$($_.Value)'" }
