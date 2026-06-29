@@ -21,9 +21,11 @@ export default defineConfig({
   retries: 2,
   trace: true,
   // The full-integration spec issues a real certificate, which can take a
-  // couple of minutes (ACME order -> DNS-01 -> finalize). Menu specs finish in
-  // seconds regardless of this ceiling.
-  timeout: 5 * 60 * 1000,
+  // couple of minutes (ACME order -> DNS-01 -> finalize). The issuance wait
+  // alone allows up to 4 minutes, and there are several wizard steps before and
+  // after it, so the ceiling is set to 10 minutes to leave ample headroom on
+  // slower CI runners. Menu specs finish in seconds regardless of this ceiling.
+  timeout: 10 * 60 * 1000,
   expect: { timeout: 10 * 1000 },
   use: {
     shell: Shell.Powershell,
