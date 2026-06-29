@@ -15,7 +15,8 @@ import { test, expect } from "@microsoft/tui-test";
 
 const integrationEnabled =
   process.env.TUACME_TUI_INTEGRATION === "1" &&
-  !!process.env.TUACME_ACME_DIRECTORY;
+  !!process.env.TUACME_ACME_DIRECTORY &&
+  !!process.env.TUACME_TUI_HOST;
 
 // Allow plenty of time for the ACME order -> DNS-01 -> finalize round trip.
 const issueTimeout = 4 * 60 * 1000;

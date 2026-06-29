@@ -1,4 +1,4 @@
-//# hash=be8b8cdf71f6531f1b103b3ea440b3f2
+//# hash=be19c4be6e7d587a698671f182a66622
 //# sourceMappingURL=integration.test.js.map
 
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
@@ -142,7 +142,7 @@ function _ts_generator(thisArg, body) {
 // header (signalled by TUACME_TUI_INTEGRATION=1). Off that path it is skipped,
 // so a plain `npx @microsoft/tui-test` run executes only the menu specs.
 import { test, expect } from "@microsoft/tui-test";
-var integrationEnabled = process.env.TUACME_TUI_INTEGRATION === "1" && !!process.env.TUACME_ACME_DIRECTORY;
+var integrationEnabled = process.env.TUACME_TUI_INTEGRATION === "1" && !!process.env.TUACME_ACME_DIRECTORY && !!process.env.TUACME_TUI_HOST;
 // Allow plenty of time for the ACME order -> DNS-01 -> finalize round trip.
 var issueTimeout = 4 * 60 * 1000;
 test.when(integrationEnabled, "issues a certificate end-to-end through the wizard", function(param) {
