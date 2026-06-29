@@ -17,10 +17,16 @@ jobs:
     env:
       # Native Pebble release to download for the full-scale issuance test.
       PEBBLE_VERSION: v2.10.1
-      # The integration suite (tagged 'Integration') self-enables when this is set.
+      # The integration suites (Pester 'Integration' tag and the tui-test
+      # integration spec) self-enable when these are set.
       TUACME_ACME_DIRECTORY: https://localhost:14000/dir
       TUACME_CHALLTESTSRV: http://localhost:8055
       POSHACME_PLUGINS: ${{ github.workspace }}/tests/Integration/plugins
+      # The TUI full-integration spec drives the wizard to issue a real cert; it
+      # needs an IIS site whose HTTP binding carries this host header so the
+      # WACS-style picker has a host to select.
+      TUACME_TUI_INTEGRATION: '1'
+      TUACME_TUI_HOST: tui.acme.test
 
     steps:
       - name: Checkout
@@ -33,6 +39,35 @@ jobs:
           Install-Module -Name Pester -MinimumVersion 5.0 -Force -Scope CurrentUser
           Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
           Install-Module -Name Posh-ACME -MinimumVersion 4.0 -Force -Scope CurrentUser
+          Install-Module -Name IISAdministration -Force -Scope CurrentUser
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install IIS and a host-header HTTP endpoint
+        shell: pwsh
+        run: |
+          # IIS provides the Microsoft.Web.Administration types the module's IIS
+          # helpers use, and a site whose HTTP binding carries a host header for
+          # the WACS-style picker. The binding is on port 8080 so it never
+          # competes with Pebble or the loopback ACME traffic.
+          Install-WindowsFeature -Name Web-Server, Web-Mgmt-Console | Out-Null
+          Import-Module IISAdministration
+          $root = Join-Path $env:SystemDrive 'inetpub\tuiacme'
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+          $existing = Get-IISSite -Name 'tuiacme' -ErrorAction SilentlyContinue
+          if (-not $existing) {
+              New-IISSite -Name 'tuiacme' -PhysicalPath $root `
+                  -BindingInformation "*:8080:$env:TUACME_TUI_HOST" -Protocol http
+          }
+          Get-IISSite | Format-Table -AutoSize | Out-String | Write-Host
+
+      - name: Install tui-test dependencies
+        shell: pwsh
+        working-directory: tests/Tui
+        run: npm ci
 
       - name: Import module
         shell: pwsh
@@ -106,6 +141,19 @@ jobs:
           $config.Run.Exit = $true
           $config.Output.Verbosity = 'Detailed'
           Invoke-Pester -Configuration $config
+
+      - name: Run tui-test (interactive UI + full integration)
+        shell: pwsh
+        working-directory: tests/Tui
+        run: npx @microsoft/tui-test
+
+      - name: Upload tui-test traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tui-traces
+          path: tests/Tui/tui-traces
+          if-no-files-found: ignore
 
       - name: Test server logs on failure
         if: failure()

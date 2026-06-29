@@ -6,6 +6,10 @@
 // harness imports the module and starts the interactive menu against a throwaway
 // temp state directory. A wide terminal is used because the menu separators are
 // 108 columns wide (Private/UI.ps1 Write-Sep) and would otherwise wrap.
+//
+// NOTE: PowerShell's Read-Host only receives pty keystrokes on Windows (conpty);
+// on Linux/macOS the menu renders but cannot be driven. CI therefore runs this
+// suite on a Windows runner.
 
 import path from "node:path";
 import { defineConfig, Shell } from "@microsoft/tui-test";
@@ -16,6 +20,11 @@ export default defineConfig({
   // Retry and trace make the suite resilient and debuggable on CI.
   retries: 2,
   trace: true,
+  // The full-integration spec issues a real certificate, which can take a
+  // couple of minutes (ACME order -> DNS-01 -> finalize). Menu specs finish in
+  // seconds regardless of this ceiling.
+  timeout: 5 * 60 * 1000,
+  expect: { timeout: 10 * 1000 },
   use: {
     shell: Shell.Powershell,
     columns: 120,
