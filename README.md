@@ -85,7 +85,7 @@ On first run, `Initialize-TUACMEHome`:
 | `ACMEServer`        | `acme.fragt.root.local`    | Built-in alias, custom server short name, or directory URL. |
 | `ContactEmail`      | *(empty)*                  | Account contact email.                                      |
 | `ValidationPlugin`  | `WebSelfHost`              | Passed via `-Plugin` (HTTP-01 self-host or a DNS plugin).   |
-| `DnsPluginArgs`     | `@{}`                      | Plugin args for DNS-01 validation.                          |
+| `PluginArgs`        | `@{}`                      | Passed via `-PluginArgs` (e.g. credentials for a DNS plugin). |
 | `CertStore`         | `WebHosting`               | Single source of truth: drives import store, binding store, and the UI label. |
 | `PostDeployHook`    | *(empty)*                  | Optional `.ps1` for non-IIS deployment targets.             |
 | `RenewalDaysBefore` | `30`                       | Renew this many days before expiry.                         |

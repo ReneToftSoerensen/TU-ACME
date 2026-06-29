@@ -26,7 +26,7 @@ function Invoke-ManageRenewals {
     Write-Host 'Options:' -ForegroundColor Cyan
     Write-Host '  v <n>   View details of order #n'
     Write-Host '  r <n>   Force-renew order #n'
-    Write-Host '  a       Renew all due orders (batch)'
+    Write-Host '  a       Renew all due orders (batch)  (append "force" to ignore RenewAfter)'
     Write-Host '  d <n>   Delete order #n (does NOT revoke cert)'
     Write-Host '  c       Cancel'
     Write-Host ''
@@ -38,7 +38,14 @@ function Invoke-ManageRenewals {
     $arg   = if ($parts.Count -gt 1) { $parts[1].Trim() } else { '' }
 
     if ($cmd -eq 'c') { return }
-    if ($cmd -eq 'a') { Invoke-RenewAll -Orders $orders; return }
+    if ($cmd -eq 'a') {
+        $renewArgs = @{ Orders = $orders }
+        foreach ($flag in ($arg -split '\s+')) {
+            if ($flag.ToLower() -eq 'force') { $renewArgs.Force = $true }
+        }
+        Invoke-RenewAll @renewArgs
+        return
+    }
 
     if (-not $arg -or $arg -notmatch '^\d+$') { Write-Warn 'Provide a number.'; Wait-UI; return }
     $idx = [int]$arg - 1
@@ -96,13 +103,9 @@ function Invoke-RenewSingle {
     $oldTP = $Order.CertThumb
     if (-not (Confirm-Prompt "Force-renew '$($Order.MainDomain)'?")) { return }
 
-    Invoke-PAAction -Description "Select order '$($Order.Name)' as current" `
-        -DryRunCommand "Get-PAOrder -Name '$($Order.Name)' | Out-Null" `
-        -Action { Get-PAOrder -Name $Order.Name | Out-Null }
-
     $renewedCert = Invoke-PAAction -Description "Submit renewal for $($Order.MainDomain)" `
-        -DryRunCommand 'Submit-Renewal -Force' `
-        -Action { Submit-Renewal -Force }
+        -DryRunCommand "Submit-Renewal -Name '$($Order.Name)' -Force" `
+        -Action { Submit-Renewal -Name $Order.Name -Force }
 
     if ($script:DryRun -or $script:WhatIf) {
         $label = if ($script:DryRun) { 'DRY-RUN' } else { 'WHAT-IF' }
@@ -140,8 +143,13 @@ function Invoke-RenewAll {
         .SYNOPSIS
             Batch-renews all due orders via Submit-Renewal -AllOrders, then
             re-points IIS bindings for each renewed cert.
+        .PARAMETER Orders
+            Pre-fetched order list. If omitted, the current server's orders are
+            fetched.
+        .PARAMETER Force
+            Pass -Force to Submit-Renewal to renew regardless of RenewAfter.
     #>
-    param([object[]]$Orders)
+    param([object[]]$Orders, [switch]$Force)
 
     if (-not $Orders) { $Orders = Get-PAOrdersList }
     Write-Host ''
@@ -159,9 +167,16 @@ function Invoke-RenewAll {
     $thumbBefore = @{}
     foreach ($o in $Orders) { if ($o.CertThumb) { $thumbBefore[$o.Name] = $o.CertThumb } }
 
+    $renewDryCmd = if ($Force) { 'Submit-Renewal -AllOrders -Force' } else { 'Submit-Renewal -AllOrders' }
     $renewed = Invoke-PAAction -Description 'Submit renewal for all due orders' `
-        -DryRunCommand 'Submit-Renewal -AllOrders' `
-        -Action { Submit-Renewal -AllOrders }
+        -DryRunCommand $renewDryCmd `
+        -Action {
+            if ($Force) {
+                Submit-Renewal -AllOrders -Force
+            } else {
+                Submit-Renewal -AllOrders
+            }
+        }
 
     if ($script:DryRun -or $script:WhatIf) {
         $label = if ($script:DryRun) { 'DRY-RUN' } else { 'WHAT-IF' }
