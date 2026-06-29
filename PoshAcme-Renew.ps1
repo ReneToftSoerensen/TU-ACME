@@ -240,8 +240,8 @@ try {
             # ----------------------------------------------------------
             # Renew due orders (or all orders when -Force).
             # ----------------------------------------------------------
-            if ($WhatIfPreference) {
-                $renewCmd = if ($Force) { 'Submit-Renewal -AllOrders -Force' } else { 'Submit-Renewal -AllOrders' }
+            $renewCmd = if ($Force) { 'Submit-Renewal -AllOrders -Force' } else { 'Submit-Renewal -AllOrders' }
+            if (-not $PSCmdlet.ShouldProcess("[$($acct.ServerName)] $($acct.AccountID)", $renewCmd)) {
                 Write-RunLog "WHAT-IF: would run: $renewCmd"
                 continue
             }
