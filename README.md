@@ -103,6 +103,31 @@ CI runs the analyzer and the Pester suite on `windows-latest`
 only; full integration is manual on Windows (e.g. against a Pebble/Boulder test
 CA).
 
+### Terminal UI (TUI) tests
+
+`tests/Tui/` drives the live interactive menu (`Start-TUACME`) through a real
+terminal with [tui-test](https://github.com/Factory-AI/tui-test). The specs spawn
+`pwsh` running `launch.ps1` (which isolates all state under a temp directory) and
+assert on the rendered menu:
+
+```powershell
+cd tests/Tui
+npm ci
+npx '@microsoft/tui-test'
+```
+
+> Run these on **Windows**. PowerShell's `Read-Host` only receives terminal
+> keystrokes under Windows' conpty, so on Linux/macOS the menu renders but cannot
+> be driven (only the banner / Dry-Run specs pass there).
+
+The menu-navigation specs (`menu.test.ts`, `dryrun.test.ts`) need only the
+module. `integration.test.ts` is a full end-to-end test that drives the 6-step
+wizard to issue a **real** certificate; it self-enables only when CI has
+provisioned an IIS site with a host-header HTTP binding (`TUACME_TUI_HOST`) and a
+test ACME server (`TUACME_ACME_DIRECTORY`), and is otherwise skipped. CI runs the
+whole suite on every pull request, reusing the same Pebble + `challtestsrv`
+servers as the Pester integration test.
+
 ### Full-scale integration test
 
 `tests/Integration/TU-ACME.Integration.Tests.ps1` is an opt-in, end-to-end test
