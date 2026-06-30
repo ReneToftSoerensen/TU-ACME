@@ -92,12 +92,56 @@ jobs:
           Expand-Archive -Path pebble.zip -DestinationPath pebble -Force
           Expand-Archive -Path challtestsrv.zip -DestinationPath challtestsrv -Force
 
+      - name: Generate Pebble TLS certificate and runtime config
+        shell: pwsh
+        run: |
+          $tlsRoot = Join-Path $PWD 'pebble-tls'
+          New-Item -ItemType Directory -Path $tlsRoot -Force | Out-Null
+
+          $key = [System.Security.Cryptography.RSA]::Create(2048)
+          $request = [System.Security.Cryptography.X509Certificates.CertificateRequest]::new(
+            'CN=localhost',
+            $key,
+            [System.Security.Cryptography.HashAlgorithmName]::SHA256,
+            [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
+          )
+          $sanBuilder = [System.Security.Cryptography.X509Certificates.SubjectAlternativeNameBuilder]::new()
+          $sanBuilder.AddDnsName('localhost')
+          $sanBuilder.AddIpAddress([System.Net.IPAddress]::Loopback)
+          $request.CertificateExtensions.Add($sanBuilder.Build())
+          $request.CertificateExtensions.Add(
+            [System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension]::new($false, $false, 0, $false)
+          )
+          $request.CertificateExtensions.Add(
+            [System.Security.Cryptography.X509Certificates.X509KeyUsageExtension]::new(
+              [System.Security.Cryptography.X509Certificates.X509KeyUsageFlags]::DigitalSignature,
+              $false
+            )
+          )
+
+          $cert = $request.CreateSelfSigned(
+            [System.DateTimeOffset]::UtcNow.AddDays(-1),
+            [System.DateTimeOffset]::UtcNow.AddDays(7)
+          )
+
+          $certPath = Join-Path $tlsRoot 'pebble-cert.pem'
+          $keyPath = Join-Path $tlsRoot 'pebble-key.pem'
+          Set-Content -Path $certPath -Value $cert.ExportCertificatePem() -NoNewline
+          Set-Content -Path $keyPath -Value $key.ExportPkcs8PrivateKeyPem() -NoNewline
+
+          $configPath = Join-Path $PWD 'tests/Integration/pebble-config.json'
+          $config = Get-Content -Path $configPath -Raw | ConvertFrom-Json
+          $config.pebble | Add-Member -NotePropertyName certificate -NotePropertyValue $certPath
+          $config.pebble | Add-Member -NotePropertyName privateKey -NotePropertyValue $keyPath
+          $runtimeConfigPath = Join-Path $PWD 'pebble-config.runtime.json'
+          $config | ConvertTo-Json -Depth 5 | Set-Content -Path $runtimeConfigPath -Encoding UTF8
+
       - name: Start Pebble and challtestsrv
         shell: pwsh
         run: |
           $cts = Join-Path $PWD 'challtestsrv/pebble-challtestsrv-windows-amd64/windows/amd64/pebble-challtestsrv.exe'
           $pebble = Join-Path $PWD 'pebble/pebble-windows-amd64/windows/amd64/pebble.exe'
-          $config = Join-Path $PWD 'tests/Integration/pebble-config.json'
+          $config = Join-Path $PWD 'pebble-config.runtime.json'
 
           # pebble-challtestsrv answers DNS-01 lookups and exposes a management API
           # the ChallTestSrv test plugin uses to publish/clear TXT records. The
@@ -110,8 +154,9 @@ jobs:
 
           # Pebble is the official test ACME CA; point it at challtestsrv for DNS.
           # PEBBLE_VA_NOSLEEP removes the randomized validation delay so the test
-          # finishes quickly. The config omits certificate/privateKey, so Pebble
-          # generates an ephemeral self-signed cert (the suite uses -SkipCertificateCheck).
+          # finishes quickly. The runtime config injects a short-lived self-signed
+          # certificate because the Windows Pebble binary now requires explicit TLS
+          # certificate and key paths.
           $env:PEBBLE_VA_NOSLEEP = '1'
           Start-Process -FilePath $pebble `
             -ArgumentList "-config `"$config`" -dnsserver 127.0.0.1:8053" `
