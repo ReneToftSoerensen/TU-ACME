@@ -137,10 +137,20 @@ jobs:
 
           $configPath = Join-Path $PWD 'tests/Integration/pebble-config.json'
           $config = Get-Content -Path $configPath -Raw | ConvertFrom-Json
-          $config.pebble | Add-Member -NotePropertyName certificate -NotePropertyValue $certPath
-          $config.pebble | Add-Member -NotePropertyName privateKey -NotePropertyValue $keyPath
+          # -Force: the sample config may already carry certificate/privateKey
+          # keys with repo-relative paths; without -Force the Add-Member error is
+          # non-terminating and the stale paths survive into the runtime config,
+          # making Pebble exit at startup.
+          $config.pebble | Add-Member -NotePropertyName certificate -NotePropertyValue $certPath -Force
+          $config.pebble | Add-Member -NotePropertyName privateKey -NotePropertyValue $keyPath -Force
           $runtimeConfigPath = Join-Path $PWD 'pebble-config.runtime.json'
           $config | ConvertTo-Json -Depth 5 | Set-Content -Path $runtimeConfigPath -Encoding UTF8
+
+          # Fail here, not two steps later, if the paths didn't land.
+          $verify = Get-Content -Path $runtimeConfigPath -Raw | ConvertFrom-Json
+          if ($verify.pebble.certificate -ne $certPath -or $verify.pebble.privateKey -ne $keyPath) {
+              throw "Runtime config does not contain the generated TLS paths. certificate='$($verify.pebble.certificate)' privateKey='$($verify.pebble.privateKey)'"
+          }
 
       - name: Start Pebble and challtestsrv
         shell: pwsh
@@ -148,6 +158,12 @@ jobs:
           $cts = Join-Path $PWD 'challtestsrv/pebble-challtestsrv-windows-amd64/windows/amd64/pebble-challtestsrv.exe'
           $pebble = Join-Path $PWD 'pebble/pebble-windows-amd64/windows/amd64/pebble.exe'
           $config = Join-Path $PWD 'pebble-config.runtime.json'
+
+          foreach ($exe in $cts, $pebble) {
+              if (-not (Test-Path $exe)) {
+                  throw "Binary not found at '$exe'. The release zip layout may have changed for $env:PEBBLE_VERSION."
+              }
+          }
 
           # pebble-challtestsrv answers DNS-01 lookups and exposes a management API
           # the ChallTestSrv test plugin uses to publish/clear TXT records. The
@@ -172,6 +188,12 @@ jobs:
         shell: pwsh
         run: |
           for ($i = 0; $i -lt 30; $i++) {
+              # Pebble exits immediately on config/TLS errors; detect that instead
+              # of polling a dead endpoint for 60 seconds.
+              if (-not (Get-Process -Name pebble -ErrorAction SilentlyContinue)) {
+                  Write-Host 'Pebble process is not running.'
+                  break
+              }
               try {
                   Invoke-WebRequest -Uri $env:TUACME_ACME_DIRECTORY -SkipCertificateCheck -UseBasicParsing | Out-Null
                   Write-Host 'ACME directory is up.'
@@ -181,8 +203,15 @@ jobs:
                   Start-Sleep -Seconds 2
               }
           }
+          # Pebble logs startup errors to stdout, so dump both streams.
+          foreach ($log in 'pebble.out.log', 'pebble.err.log', 'challtestsrv.out.log', 'challtestsrv.err.log') {
+              if (Test-Path $log) {
+                  Write-Host "::group::$log"
+                  Get-Content $log | Write-Host
+                  Write-Host '::endgroup::'
+              }
+          }
           Write-Error 'Pebble did not become ready in time.'
-          if (Test-Path pebble.err.log) { Get-Content pebble.err.log | Write-Host }
           exit 1
 
       - name: Run Pester (unit and integration)
