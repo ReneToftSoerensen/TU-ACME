@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, NewTestTui]
 
 permissions:
   contents: read
@@ -92,12 +92,89 @@ jobs:
           Expand-Archive -Path pebble.zip -DestinationPath pebble -Force
           Expand-Archive -Path challtestsrv.zip -DestinationPath challtestsrv -Force
 
+      - name: Generate Pebble TLS certificate and runtime config
+        shell: pwsh
+        run: |
+          $tlsRoot = Join-Path $PWD 'pebble-tls'
+          New-Item -ItemType Directory -Path $tlsRoot -Force | Out-Null
+
+          $key = [System.Security.Cryptography.RSA]::Create(2048)
+          $request = [System.Security.Cryptography.X509Certificates.CertificateRequest]::new(
+            'CN=localhost',
+            $key,
+            [System.Security.Cryptography.HashAlgorithmName]::SHA256,
+            [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
+          )
+          $sanBuilder = [System.Security.Cryptography.X509Certificates.SubjectAlternativeNameBuilder]::new()
+          $sanBuilder.AddDnsName('localhost')
+          $sanBuilder.AddIpAddress([System.Net.IPAddress]::Loopback)
+          $request.CertificateExtensions.Add($sanBuilder.Build())
+          $request.CertificateExtensions.Add(
+            [System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension]::new($false, $false, 0, $false)
+          )
+          $request.CertificateExtensions.Add(
+            [System.Security.Cryptography.X509Certificates.X509KeyUsageExtension]::new(
+              [System.Security.Cryptography.X509Certificates.X509KeyUsageFlags]::DigitalSignature -bor
+              [System.Security.Cryptography.X509Certificates.X509KeyUsageFlags]::KeyEncipherment,
+              $false
+            )
+          )
+          $ekuOids = [System.Security.Cryptography.OidCollection]::new()
+          $ekuOids.Add([System.Security.Cryptography.Oid]::new('1.3.6.1.5.5.7.3.1', 'Server Authentication')) | Out-Null
+          $request.CertificateExtensions.Add(
+            [System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]::new($ekuOids, $false)
+          )
+
+          $cert = $request.CreateSelfSigned(
+            [System.DateTimeOffset]::UtcNow.AddDays(-1),
+            [System.DateTimeOffset]::UtcNow.AddDays(7)
+          )
+
+          $certPath = Join-Path $tlsRoot 'pebble-cert.pem'
+          $keyPath = Join-Path $tlsRoot 'pebble-key.pem'
+          Set-Content -Path $certPath -Value $cert.ExportCertificatePem() -NoNewline
+          # ExportRSAPrivateKeyPem() emits a PKCS#1 key (BEGIN RSA PRIVATE KEY)
+          # rather than PKCS#8 (BEGIN PRIVATE KEY).  Both are valid in Go's TLS
+          # stack, but the PKCS#1 form is more broadly compatible and avoids a
+          # silent parse failure seen on Windows Server 2025 with Go 1.24.
+          Set-Content -Path $keyPath -Value $key.ExportRSAPrivateKeyPem() -NoNewline
+
+          $configPath = Join-Path $PWD 'tests/Integration/pebble-config.json'
+          $config = Get-Content -Path $configPath -Raw | ConvertFrom-Json
+          # -Force: the sample config may already carry certificate/privateKey
+          # keys with repo-relative paths; without -Force the Add-Member error is
+          # non-terminating and the stale paths survive into the runtime config,
+          # making Pebble exit at startup.
+          $config.pebble | Add-Member -NotePropertyName certificate -NotePropertyValue $certPath -Force
+          $config.pebble | Add-Member -NotePropertyName privateKey -NotePropertyValue $keyPath -Force
+          $runtimeConfigPath = Join-Path $PWD 'pebble-config.runtime.json'
+          $config | ConvertTo-Json -Depth 5 | Set-Content -Path $runtimeConfigPath -Encoding UTF8
+
+          # Fail here, not two steps later, if the paths didn't land.
+          $verify = Get-Content -Path $runtimeConfigPath -Raw | ConvertFrom-Json
+          if ($verify.pebble.certificate -ne $certPath -or $verify.pebble.privateKey -ne $keyPath) {
+              throw "Runtime config does not contain the generated TLS paths. certificate='$($verify.pebble.certificate)' privateKey='$($verify.pebble.privateKey)'"
+          }
+
       - name: Start Pebble and challtestsrv
         shell: pwsh
         run: |
           $cts = Join-Path $PWD 'challtestsrv/pebble-challtestsrv-windows-amd64/windows/amd64/pebble-challtestsrv.exe'
           $pebble = Join-Path $PWD 'pebble/pebble-windows-amd64/windows/amd64/pebble.exe'
-          $config = Join-Path $PWD 'tests/Integration/pebble-config.json'
+          $config = Join-Path $PWD 'pebble-config.runtime.json'
+
+          foreach ($exe in $cts, $pebble) {
+              if (-not (Test-Path $exe)) {
+                  throw "Binary not found at '$exe'. The release zip layout may have changed for $env:PEBBLE_VERSION."
+              }
+          }
+
+          # Exclude the Pebble directory from Windows Defender real-time
+          # protection so that behavioural scanning does not terminate the
+          # process mid-start before it has a chance to log an error.
+          $pebbleDir = Split-Path -Parent $pebble
+          Add-MpPreference -ExclusionPath $pebbleDir -ErrorAction SilentlyContinue
+          Add-MpPreference -ExclusionProcess 'pebble.exe' -ErrorAction SilentlyContinue
 
           # pebble-challtestsrv answers DNS-01 lookups and exposes a management API
           # the ChallTestSrv test plugin uses to publish/clear TXT records. The
@@ -110,27 +187,54 @@ jobs:
 
           # Pebble is the official test ACME CA; point it at challtestsrv for DNS.
           # PEBBLE_VA_NOSLEEP removes the randomized validation delay so the test
-          # finishes quickly. The config omits certificate/privateKey, so Pebble
-          # generates an ephemeral self-signed cert (the suite uses -SkipCertificateCheck).
+          # finishes quickly. The runtime config injects a short-lived self-signed
+          # certificate because the Windows Pebble binary now requires explicit TLS
+          # certificate and key paths.
+          #
+          # Run Pebble via a thin pwsh wrapper so that its stderr (where Go's
+          # FailOnError writes) is merged into stdout via 2>&1 before being
+          # captured in pebble.out.log.  Start-Process -RedirectStandardError has
+          # a late-drain race on some Windows Server 2025 runner images that
+          # silently discards the error text, making failures impossible to
+          # diagnose; the wrapper eliminates that race.
           $env:PEBBLE_VA_NOSLEEP = '1'
-          Start-Process -FilePath $pebble `
-            -ArgumentList "-config `"$config`" -dnsserver 127.0.0.1:8053" `
-            -RedirectStandardOutput pebble.out.log -RedirectStandardError pebble.err.log
+          $runPebble = Join-Path $PWD 'run-pebble.ps1'
+          @(
+              "`$env:PEBBLE_VA_NOSLEEP = '1'",
+              "& `"$pebble`" -config `"$config`" -dnsserver 127.0.0.1:8053 2>&1"
+          ) -join "`n" | Set-Content $runPebble -Encoding UTF8 -NoNewline
+          Start-Process pwsh.exe `
+            -ArgumentList '-NoProfile', '-NonInteractive', '-File', $runPebble `
+            -RedirectStandardOutput pebble.out.log
 
       - name: Wait for the ACME directory
         shell: pwsh
         run: |
           for ($i = 0; $i -lt 30; $i++) {
+              # Pebble exits immediately on config/TLS errors; detect that instead
+              # of polling a dead endpoint for 60 seconds.
+              if (-not (Get-Process -Name pebble -ErrorAction SilentlyContinue)) {
+                  Write-Host 'Pebble process is not running.'
+                  break
+              }
               try {
                   Invoke-WebRequest -Uri $env:TUACME_ACME_DIRECTORY -SkipCertificateCheck -UseBasicParsing | Out-Null
                   Write-Host 'ACME directory is up.'
                   exit 0
               } catch {
+                  Write-Host "Attempt $($i + 1)/30 failed: $($_.Exception.Message)"
                   Start-Sleep -Seconds 2
               }
           }
+          # pebble.out.log contains both stdout and stderr (merged in wrapper).
+          foreach ($log in 'pebble.out.log', 'pebble.err.log', 'challtestsrv.out.log', 'challtestsrv.err.log') {
+              if (Test-Path $log) {
+                  Write-Host "::group::$log"
+                  Get-Content $log | Write-Host
+                  Write-Host '::endgroup::'
+              }
+          }
           Write-Error 'Pebble did not become ready in time.'
-          if (Test-Path pebble.err.log) { Get-Content pebble.err.log | Write-Host }
           exit 1
 
       - name: Run Pester (unit and integration)

@@ -144,17 +144,41 @@ CI runs it automatically in the single `build` job on `windows-latest`, which
 downloads the native Pebble and `pebble-challtestsrv` Windows binaries and runs
 them as background processes (no Docker). To run it locally on Windows, download
 the matching release from
-[Pebble releases](https://github.com/letsencrypt/pebble/releases) and start both
-servers (the config omits a certificate/private key, so Pebble generates an
-ephemeral self-signed cert):
+[Pebble releases](https://github.com/letsencrypt/pebble/releases), generate a
+short-lived self-signed TLS certificate for Pebble, and then start both servers:
 
 ```powershell
 # pebble-challtestsrv answers DNS-01 and exposes the management API on :8055.
 Start-Process .\pebble-challtestsrv.exe -ArgumentList `
   '-management :8055 -dnsserver :8053 -http01 "" -https01 "" -tlsalpn01 "" -doh ""'
+
+$pebbleTls = Join-Path $PWD 'pebble-tls'
+New-Item -ItemType Directory -Path $pebbleTls -Force | Out-Null
+$key = [System.Security.Cryptography.RSA]::Create(2048)
+$request = [System.Security.Cryptography.X509Certificates.CertificateRequest]::new(
+  'CN=localhost',
+  $key,
+  [System.Security.Cryptography.HashAlgorithmName]::SHA256,
+  [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
+)
+$sanBuilder = [System.Security.Cryptography.X509Certificates.SubjectAlternativeNameBuilder]::new()
+$sanBuilder.AddDnsName('localhost')
+$sanBuilder.AddIpAddress([System.Net.IPAddress]::Loopback)
+$request.CertificateExtensions.Add($sanBuilder.Build())
+$cert = $request.CreateSelfSigned([System.DateTimeOffset]::UtcNow.AddDays(-1), [System.DateTimeOffset]::UtcNow.AddDays(7))
+$certPath = Join-Path $pebbleTls 'pebble-cert.pem'
+$keyPath = Join-Path $pebbleTls 'pebble-key.pem'
+Set-Content -Path $certPath -Value $cert.ExportCertificatePem() -NoNewline
+Set-Content -Path $keyPath -Value $key.ExportPkcs8PrivateKeyPem() -NoNewline
+
+$config = Get-Content .\tests\Integration\pebble-config.json -Raw | ConvertFrom-Json
+$config.pebble | Add-Member -NotePropertyName certificate -NotePropertyValue $certPath
+$config.pebble | Add-Member -NotePropertyName privateKey -NotePropertyValue $keyPath
+$config | ConvertTo-Json -Depth 5 | Set-Content .\pebble-config.runtime.json -Encoding UTF8
+
 $env:PEBBLE_VA_NOSLEEP = '1'
 Start-Process .\pebble.exe -ArgumentList `
-  '-config .\tests\Integration\pebble-config.json -dnsserver 127.0.0.1:8053'
+  '-config .\pebble-config.runtime.json -dnsserver 127.0.0.1:8053'
 ```
 
 ```powershell
