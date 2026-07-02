@@ -133,7 +133,11 @@ jobs:
           $certPath = Join-Path $tlsRoot 'pebble-cert.pem'
           $keyPath = Join-Path $tlsRoot 'pebble-key.pem'
           Set-Content -Path $certPath -Value $cert.ExportCertificatePem() -NoNewline
-          Set-Content -Path $keyPath -Value $key.ExportPkcs8PrivateKeyPem() -NoNewline
+          # ExportRSAPrivateKeyPem() emits a PKCS#1 key (BEGIN RSA PRIVATE KEY)
+          # rather than PKCS#8 (BEGIN PRIVATE KEY).  Both are valid in Go's TLS
+          # stack, but the PKCS#1 form is more broadly compatible and avoids a
+          # silent parse failure seen on Windows Server 2025 with Go 1.24.
+          Set-Content -Path $keyPath -Value $key.ExportRSAPrivateKeyPem() -NoNewline
 
           $configPath = Join-Path $PWD 'tests/Integration/pebble-config.json'
           $config = Get-Content -Path $configPath -Raw | ConvertFrom-Json
@@ -165,6 +169,13 @@ jobs:
               }
           }
 
+          # Exclude the Pebble directory from Windows Defender real-time
+          # protection so that behavioural scanning does not terminate the
+          # process mid-start before it has a chance to log an error.
+          $pebbleDir = Split-Path -Parent $pebble
+          Add-MpPreference -ExclusionPath $pebbleDir -ErrorAction SilentlyContinue
+          Add-MpPreference -ExclusionProcess 'pebble.exe' -ErrorAction SilentlyContinue
+
           # pebble-challtestsrv answers DNS-01 lookups and exposes a management API
           # the ChallTestSrv test plugin uses to publish/clear TXT records. The
           # HTTP/HTTPS/TLS-ALPN challenge servers are disabled (empty addresses).
@@ -179,10 +190,22 @@ jobs:
           # finishes quickly. The runtime config injects a short-lived self-signed
           # certificate because the Windows Pebble binary now requires explicit TLS
           # certificate and key paths.
+          #
+          # Run Pebble via a thin pwsh wrapper so that its stderr (where Go's
+          # FailOnError writes) is merged into stdout via 2>&1 before being
+          # captured in pebble.out.log.  Start-Process -RedirectStandardError has
+          # a late-drain race on some Windows Server 2025 runner images that
+          # silently discards the error text, making failures impossible to
+          # diagnose; the wrapper eliminates that race.
           $env:PEBBLE_VA_NOSLEEP = '1'
-          Start-Process -FilePath $pebble `
-            -ArgumentList "-config `"$config`" -dnsserver 127.0.0.1:8053" `
-            -RedirectStandardOutput pebble.out.log -RedirectStandardError pebble.err.log
+          $runPebble = Join-Path $PWD 'run-pebble.ps1'
+          @(
+              "`$env:PEBBLE_VA_NOSLEEP = '1'",
+              "& `"$pebble`" -config `"$config`" -dnsserver 127.0.0.1:8053 2>&1"
+          ) -join "`n" | Set-Content $runPebble -Encoding UTF8 -NoNewline
+          Start-Process pwsh.exe `
+            -ArgumentList '-NoProfile', '-NonInteractive', '-File', $runPebble `
+            -RedirectStandardOutput pebble.out.log
 
       - name: Wait for the ACME directory
         shell: pwsh
@@ -203,7 +226,7 @@ jobs:
                   Start-Sleep -Seconds 2
               }
           }
-          # Pebble logs startup errors to stdout, so dump both streams.
+          # pebble.out.log contains both stdout and stderr (merged in wrapper).
           foreach ($log in 'pebble.out.log', 'pebble.err.log', 'challtestsrv.out.log', 'challtestsrv.err.log') {
               if (Test-Path $log) {
                   Write-Host "::group::$log"
